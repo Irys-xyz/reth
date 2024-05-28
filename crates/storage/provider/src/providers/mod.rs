@@ -72,7 +72,7 @@ pub use consistent_view::{ConsistentDbView, ConsistentViewError};
 #[allow(missing_debug_implementations)]
 pub struct BlockchainProvider<DB> {
     /// Provider type used to access the database.
-    database: ProviderFactory<DB>,
+    pub database: ProviderFactory<DB>,
     /// The blockchain tree instance.
     tree: Arc<dyn TreeViewer>,
     /// Tracks the chain info wrt forkchoice updates
