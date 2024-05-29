@@ -37,7 +37,7 @@ pub use crate::core::cli::*;
 pub struct Cli<Ext: clap::Args + fmt::Debug = NoArgs> {
     /// The command to run
     #[command(subcommand)]
-    command: Commands<Ext>,
+    pub command: Commands<Ext>,
 
     /// The chain this node is running.
     ///
@@ -50,7 +50,7 @@ pub struct Cli<Ext: clap::Args + fmt::Debug = NoArgs> {
         value_parser = genesis_value_parser,
         global = true,
     )]
-    chain: Arc<ChainSpec>,
+    pub chain: Arc<ChainSpec>,
 
     /// Add a new instance of a node.
     ///
@@ -66,10 +66,10 @@ pub struct Cli<Ext: clap::Args + fmt::Debug = NoArgs> {
     /// - HTTP_RPC_PORT: default - `instance` + 1
     /// - WS_RPC_PORT: default + `instance` * 2 - 2
     #[arg(long, value_name = "INSTANCE", global = true, default_value_t = 1, value_parser = value_parser!(u16).range(..=200))]
-    instance: u16,
+    pub instance: u16,
 
     #[command(flatten)]
-    logs: LogArgs,
+    pub logs: LogArgs,
 }
 
 impl Cli {
