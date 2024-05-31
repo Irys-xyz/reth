@@ -3,10 +3,10 @@ use reth_node_api::FullNodeComponents;
 use std::fmt;
 
 /// Container for all the configurable hook functions.
-pub(crate) struct NodeHooks<Node: FullNodeComponents> {
-    pub(crate) on_component_initialized: Box<dyn OnComponentInitializedHook<Node>>,
-    pub(crate) on_node_started: Box<dyn OnNodeStartedHook<Node>>,
-    pub(crate) _marker: std::marker::PhantomData<Node>,
+pub struct NodeHooks<Node: FullNodeComponents> {
+    pub on_component_initialized: Box<dyn OnComponentInitializedHook<Node>>,
+    pub on_node_started: Box<dyn OnNodeStartedHook<Node>>,
+    pub _marker: std::marker::PhantomData<Node>,
 }
 
 impl<Node: FullNodeComponents> NodeHooks<Node> {

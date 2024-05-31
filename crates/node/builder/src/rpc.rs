@@ -35,9 +35,9 @@ pub struct RethRpcServerHandles {
 }
 
 /// Contains hooks that are called during the rpc setup.
-pub(crate) struct RpcHooks<Node: FullNodeComponents> {
-    pub(crate) on_rpc_started: Box<dyn OnRpcStarted<Node>>,
-    pub(crate) extend_rpc_modules: Box<dyn ExtendRpcModules<Node>>,
+pub struct RpcHooks<Node: FullNodeComponents> {
+    pub on_rpc_started: Box<dyn OnRpcStarted<Node>>,
+    pub extend_rpc_modules: Box<dyn ExtendRpcModules<Node>>,
 }
 
 impl<Node: FullNodeComponents> RpcHooks<Node> {
@@ -251,7 +251,7 @@ impl<'a, Node: FullNodeComponents> RpcContext<'a, Node> {
 }
 
 /// Launch the rpc servers.
-pub(crate) async fn launch_rpc_servers<Node, Engine>(
+pub async fn launch_rpc_servers<Node, Engine>(
     node: Node,
     engine_api: Engine,
     config: &NodeConfig,

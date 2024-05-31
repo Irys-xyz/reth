@@ -56,9 +56,9 @@ impl<T: FullNodeTypes> NodeBuilderWithTypes<T> {
 }
 
 /// Container for the node's types and the database the node uses.
-pub(crate) struct NodeTypesAdapter<T: FullNodeTypes> {
+pub struct NodeTypesAdapter<T: FullNodeTypes> {
     /// The database type used by the node.
-    pub(crate) database: T::DB,
+    pub database: T::DB,
 }
 
 impl<T: FullNodeTypes> NodeTypesAdapter<T> {
@@ -144,13 +144,13 @@ impl<T: FullNodeTypes, C: NodeComponents<T>> Clone for NodeAdapter<T, C> {
 /// Supports adding additional addons to the node.
 pub struct NodeBuilderWithComponents<T: FullNodeTypes, CB: NodeComponentsBuilder<T>> {
     /// All settings for how the node should be configured.
-    pub(crate) config: NodeConfig,
+    pub config: NodeConfig,
     /// Adapter for the underlying node types and database
-    pub(crate) adapter: NodeTypesAdapter<T>,
+    pub adapter: NodeTypesAdapter<T>,
     /// container for type specific components
-    pub(crate) components_builder: CB,
+    pub components_builder: CB,
     /// Additional node extensions.
-    pub(crate) add_ons: NodeAddOns<NodeAdapter<T, CB::Components>>,
+    pub add_ons: NodeAddOns<NodeAdapter<T, CB::Components>>,
 }
 
 impl<T: FullNodeTypes, CB: NodeComponentsBuilder<T>> NodeBuilderWithComponents<T, CB> {
@@ -229,11 +229,11 @@ impl<T: FullNodeTypes, CB: NodeComponentsBuilder<T>> NodeBuilderWithComponents<T
 }
 
 /// Additional node extensions.
-pub(crate) struct NodeAddOns<Node: FullNodeComponents> {
+pub struct NodeAddOns<Node: FullNodeComponents> {
     /// Additional NodeHooks that are called at specific points in the node's launch lifecycle.
-    pub(crate) hooks: NodeHooks<Node>,
+    pub hooks: NodeHooks<Node>,
     /// Additional RPC hooks.
-    pub(crate) rpc: RpcHooks<Node>,
+    pub rpc: RpcHooks<Node>,
     /// The ExExs (execution extensions) of the node.
-    pub(crate) exexs: Vec<(String, Box<dyn BoxedLaunchExEx<Node>>)>,
+    pub exexs: Vec<(String, Box<dyn BoxedLaunchExEx<Node>>)>,
 }

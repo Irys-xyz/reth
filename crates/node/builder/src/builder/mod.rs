@@ -214,9 +214,9 @@ where
 /// This exposes the same methods as [NodeBuilder] but with the launch context already configured,
 /// See [WithLaunchContext::launch]
 pub struct WithLaunchContext<Builder> {
-    builder: Builder,
-    task_executor: TaskExecutor,
-    data_dir: ChainPath<DataDirPath>,
+    pub builder: Builder,
+    pub task_executor: TaskExecutor,
+    pub data_dir: ChainPath<DataDirPath>,
 }
 
 impl<Builder> WithLaunchContext<Builder> {
