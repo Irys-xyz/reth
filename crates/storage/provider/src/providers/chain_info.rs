@@ -10,7 +10,7 @@ use std::{
 
 /// Tracks the chain info: canonical head, safe block, finalized block.
 #[derive(Debug, Clone)]
-pub(crate) struct ChainInfoTracker {
+pub struct ChainInfoTracker {
     inner: Arc<ChainInfoInner>,
 }
 

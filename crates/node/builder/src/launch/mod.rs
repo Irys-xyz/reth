@@ -452,6 +452,7 @@ where
         });
 
         let full_node = FullNode {
+            db: blockchain_db.clone(),
             evm_config: node_adapter.components.evm_config().clone(),
             pool: node_adapter.components.pool().clone(),
             network: node_adapter.components.network().clone(),
