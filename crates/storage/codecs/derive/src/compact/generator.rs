@@ -53,13 +53,19 @@ pub fn generate_from_to(ident: &Ident, fields: &FieldList, is_zstd: bool) -> Tok
 fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> TokenStream2 {
     let mut lines = vec![];
     let mut known_types =
-        vec!["B256", "Address", "Bloom", "Vec", "TxHash", "BlockHash", "FixedBytes"];
+        vec!["B256", "Address", "Bloom", "Vec", "TxHash", "BlockHash", "FixedBytes", "TxId"];
 
     // Only types without `Bytes` should be added here. It's currently manually added, since
     // it's hard to figure out with derive_macro which types have Bytes fields.
     //
     // This removes the requirement of the field to be placed last in the struct.
-    known_types.extend_from_slice(&["TxKind", "AccessList", "Signature", "CheckpointBlockRange"]);
+    known_types.extend_from_slice(&[
+        "TxKind",
+        "AccessList",
+        "Signature",
+        "CheckpointBlockRange",
+        "TxId",
+    ]);
 
     // let mut handle = FieldListHandler::new(fields);
     let is_enum = fields.iter().any(|field| matches!(field, FieldTypes::EnumVariant(_)));

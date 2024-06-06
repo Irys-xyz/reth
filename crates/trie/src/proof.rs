@@ -74,7 +74,7 @@ where
                     let storage_root = if hashed_address == target_hashed_address {
                         let (storage_root, storage_proofs) =
                             self.storage_root_with_proofs(hashed_address, slots)?;
-                        account_proof.set_account(account, storage_root, storage_proofs);
+                        account_proof.set_account(account.clone(), storage_root, storage_proofs);
                         storage_root
                     } else {
                         self.storage_root(hashed_address)?
@@ -116,7 +116,7 @@ where
 
         // short circuit on empty storage
         if hashed_storage_cursor.is_storage_empty()? {
-            return Ok((EMPTY_ROOT_HASH, proofs))
+            return Ok((EMPTY_ROOT_HASH, proofs));
         }
 
         let target_nibbles = proofs.iter().map(|p| p.nibbles.clone()).collect::<Vec<_>>();

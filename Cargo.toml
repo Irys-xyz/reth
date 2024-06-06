@@ -98,7 +98,7 @@ members = [
     "examples/rpc-db/",
     "examples/txpool-tracing/",
     "testing/ef-tests/",
-    "testing/testing-utils",
+    "testing/testing-utils", "crates/acyc",
 ]
 default-members = ["bin/reth"]
 
@@ -293,23 +293,23 @@ reth-tracing = { path = "crates/tracing" }
 reth-transaction-pool = { path = "crates/transaction-pool" }
 reth-trie = { path = "crates/trie" }
 reth-trie-parallel = { path = "crates/trie-parallel" }
-
+acyc =  {path = "crates/acyc" }
 # revm
-# revm = { version = "9.0.0", features = [
+ revm = { version = "9.0.0", features = [
+     "std",
+     "secp256k1",
+ ], default-features = false }
+ revm-primitives = { version = "4.0.0", features = [
+     "std",
+ ], default-features = false }
+
+# revm = { path = "../revm/crates/revm", features = [
 #     "std",
 #     "secp256k1",
 # ], default-features = false }
-# revm-primitives = { version = "4.0.0", features = [
+# revm-primitives = { path = "../revm/crates/primitives", features = [
 #     "std",
 # ], default-features = false }
-
-revm = { path = "../revm/crates/revm", features = [
-    "std",
-    "secp256k1",
-], default-features = false }
-revm-primitives = { path = "../revm/crates/primitives", features = [
-    "std",
-], default-features = false }
 
 revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "5a4fd5e" }
 
@@ -434,3 +434,9 @@ proptest-derive = "0.4"
 serial_test = "3"
 similar-asserts = "1.5.0"
 test-fuzz = "5"
+
+[patch.crates-io]
+revm = { path = "../revm/crates/revm"} 
+revm-primitives = { path = "../revm/crates/primitives"}
+# revm = { path = "../revm-9.0.0"} 
+# revm-primitives = { path = "../revm-primitives-4.0.0"}

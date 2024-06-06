@@ -4,7 +4,7 @@ use super::{
     proof::{verify_proof, ProofVerificationError},
     Nibbles, TrieAccount,
 };
-use crate::{keccak256, Account, Address, Bytes, B256, U256};
+use crate::{account, keccak256, Account, Address, Bytes, B256, U256};
 use alloy_rlp::encode_fixed_size;
 use alloy_trie::EMPTY_ROOT_HASH;
 
@@ -65,7 +65,8 @@ impl AccountProof {
             None
         } else {
             Some(alloy_rlp::encode(TrieAccount::from((
-                self.info.unwrap_or_default(),
+                <std::option::Option<account::Account> as Clone>::clone(&self.info)
+                    .unwrap_or_default(),
                 self.storage_root,
             ))))
         };

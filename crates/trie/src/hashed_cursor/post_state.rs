@@ -72,18 +72,18 @@ impl<'b, C> HashedPostStateAccountCursor<'b, C> {
         post_state_item: Option<&(B256, Account)>,
         db_item: Option<(B256, Account)>,
     ) -> Option<(B256, Account)> {
-        match (post_state_item, db_item) {
+        match (post_state_item.clone(), db_item.clone()) {
             // If both are not empty, return the smallest of the two
             // Post state is given precedence if keys are equal
             (Some((post_state_address, post_state_account)), Some((db_address, db_account))) => {
                 if post_state_address <= &db_address {
-                    Some((*post_state_address, *post_state_account))
+                    Some((post_state_address.clone(), post_state_account.clone()))
                 } else {
                     Some((db_address, db_account))
                 }
             }
             // Return either non-empty entry
-            _ => post_state_item.copied().or(db_item),
+            _ => post_state_item.cloned().or(db_item.clone()),
         }
     }
 }
@@ -118,7 +118,7 @@ where
         if let Some((address, account)) = post_state_entry {
             if address == &key {
                 self.last_account = Some(*address);
-                return Ok(Some((*address, *account)))
+                return Ok(Some((*address, account.clone())));
             }
         }
 
@@ -269,7 +269,7 @@ where
         if let Some((slot, value)) = post_state_entry {
             if slot == &subkey {
                 self.last_slot = Some(*slot);
-                return Ok(Some((*slot, *value)))
+                return Ok(Some((*slot, *value)));
             }
         }
 

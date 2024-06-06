@@ -10,6 +10,7 @@ pub fn into_reth_acc(revm_acc: AccountInfo) -> Account {
         balance: revm_acc.balance,
         nonce: revm_acc.nonce,
         bytecode_hash: (code_hash != KECCAK_EMPTY).then_some(code_hash),
+        pledges: revm_acc.pledges,
     }
 }
 
@@ -22,6 +23,7 @@ pub fn into_revm_acc(reth_acc: Account) -> AccountInfo {
         nonce: reth_acc.nonce,
         code_hash: reth_acc.bytecode_hash.unwrap_or(KECCAK_EMPTY),
         code: None,
+        pledges: reth_acc.pledges,
     }
 }
 
