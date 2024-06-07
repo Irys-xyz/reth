@@ -186,6 +186,7 @@ pub fn insert_state<'a, 'b, DB: Database>(
                     balance: account.balance,
                     bytecode_hash,
                     pledges: None,
+                    stake: None,
                 }),
                 storage,
             ),

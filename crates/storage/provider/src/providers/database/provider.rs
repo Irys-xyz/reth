@@ -31,6 +31,7 @@ use reth_interfaces::p2p::headers::downloader::SyncTarget;
 use reth_primitives::{
     keccak256,
     revm::{config::revm_spec, env::fill_block_env},
+    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     trie::Nibbles,
     Account, Address, Block, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders,
@@ -724,6 +725,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         let block_ommers = self.get_or_take::<tables::BlockOmmers, TAKE>(range.clone())?;
         let block_withdrawals =
             self.get_or_take::<tables::BlockWithdrawals, TAKE>(range.clone())?;
+        let block_shadows = self.get_or_take::<tables::BlockShadows, TAKE>(range.clone())?;
 
         let block_tx = self.get_take_block_transaction_range::<TAKE>(range.clone())?;
 
@@ -747,8 +749,10 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         // Ommers can be empty for some blocks
         let mut block_ommers_iter = block_ommers.into_iter();
         let mut block_withdrawals_iter = block_withdrawals.into_iter();
+        let mut block_shadows_iter = block_shadows.into_iter();
         let mut block_ommers = block_ommers_iter.next();
         let mut block_withdrawals = block_withdrawals_iter.next();
+        let mut block_shadows = block_shadows_iter.next();
 
         let mut blocks = Vec::new();
         for ((main_block_number, header), (_, header_hash), (_, tx)) in
@@ -782,8 +786,16 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
                 withdrawals = None
             }
 
+            let mut shadows: Option<Shadows> = None;
+            if let Some((block_number, _)) = block_shadows.as_ref() {
+                if *block_number == main_block_number {
+                    shadows = Some(block_shadows.take().unwrap().1.shadows);
+                    block_shadows = block_shadows_iter.next();
+                }
+            };
+
             blocks.push(SealedBlockWithSenders {
-                block: SealedBlock { header, body, ommers, withdrawals },
+                block: SealedBlock { header, body, ommers, withdrawals, shadows },
                 senders,
             })
         }
@@ -1297,7 +1309,13 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
         mut assemble_block: F,
     ) -> ProviderResult<Vec<R>>
     where
-        F: FnMut(Range<TxNumber>, Header, Vec<Header>, Option<Withdrawals>) -> ProviderResult<R>,
+        F: FnMut(
+            Range<TxNumber>,
+            Header,
+            Vec<Header>,
+            Option<Withdrawals>,
+            Option<Shadows>,
+        ) -> ProviderResult<R>,
     {
         if range.is_empty() {
             return Ok(Vec::new());
@@ -1310,6 +1328,7 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
         let mut ommers_cursor = self.tx.cursor_read::<tables::BlockOmmers>()?;
         let mut withdrawals_cursor = self.tx.cursor_read::<tables::BlockWithdrawals>()?;
         let mut block_body_cursor = self.tx.cursor_read::<tables::BlockBodyIndices>()?;
+        let mut shadows_cursor = self.tx.cursor_read::<tables::BlockShadows>()?;
 
         for header in headers {
             // If the body indices are not found, this means that the transactions either do
@@ -1342,7 +1361,9 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
                             .map(|(_, o)| o.ommers)
                             .unwrap_or_default()
                     };
-                if let Ok(b) = assemble_block(tx_range, header, ommers, withdrawals) {
+                let shadows = shadows_cursor.seek_exact(header.number)?.map(|(_, s)| s.shadows);
+
+                if let Ok(b) = assemble_block(tx_range, header, ommers, withdrawals, shadows) {
                     blocks.push(b);
                 }
             }
@@ -1370,6 +1391,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
             if let Some(header) = self.header_by_number(number)? {
                 let withdrawals = self.withdrawals_by_block(number.into(), header.timestamp)?;
                 let ommers = self.ommers(number.into())?.unwrap_or_default();
+                let shadows = self.shadows(number.into())?;
                 // If the body indices are not found, this means that the transactions either do not
                 // exist in the database yet, or they do exit but are not indexed.
                 // If they exist but are not indexed, we don't have enough
@@ -1379,7 +1401,13 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
                     None => return Ok(None),
                 };
 
-                return Ok(Some(Block { header, body: transactions, ommers, withdrawals }));
+                return Ok(Some(Block {
+                    header,
+                    body: transactions,
+                    ommers,
+                    withdrawals,
+                    shadows,
+                }));
             }
         }
 
@@ -1413,6 +1441,13 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
         Ok(None)
     }
 
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        if let Some(number) = self.convert_hash_or_number(id)? {
+            return Ok(self.tx.get::<tables::BlockShadows>(number)?.map(|s| s.shadows));
+        }
+        Ok(None)
+    }
+
     fn block_body_indices(&self, num: u64) -> ProviderResult<Option<StoredBlockBodyIndices>> {
         Ok(self.tx.get::<tables::BlockBodyIndices>(num)?)
     }
@@ -1435,7 +1470,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
 
         let ommers = self.ommers(block_number.into())?.unwrap_or_default();
         let withdrawals = self.withdrawals_by_block(block_number.into(), header.timestamp)?;
-
+        let shadows = self.shadows(block_number.into())?;
         // Get the block body
         //
         // If the body indices are not found, this means that the transactions either do not exist
@@ -1465,7 +1500,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
             })
             .collect();
 
-        Block { header, body, ommers, withdrawals }
+        Block { header, body, ommers, withdrawals, shadows }
             // Note: we're using unchecked here because we know the block contains valid txs wrt to
             // its height and can ignore the s value check so pre EIP-2 txs are allowed
             .try_with_senders_unchecked(senders)
@@ -1475,7 +1510,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
 
     fn block_range(&self, range: RangeInclusive<BlockNumber>) -> ProviderResult<Vec<Block>> {
         let mut tx_cursor = self.tx.cursor_read::<tables::Transactions>()?;
-        self.process_block_range(range, |tx_range, header, ommers, withdrawals| {
+        self.process_block_range(range, |tx_range, header, ommers, withdrawals, shadows| {
             let body = if tx_range.is_empty() {
                 Vec::new()
             } else {
@@ -1484,7 +1519,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
                     .map(Into::into)
                     .collect()
             };
-            Ok(Block { header, body, ommers, withdrawals })
+            Ok(Block { header, body, ommers, withdrawals, shadows })
         })
     }
 
@@ -1495,7 +1530,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
         let mut tx_cursor = self.tx.cursor_read::<tables::Transactions>()?;
         let mut senders_cursor = self.tx.cursor_read::<tables::TransactionSenders>()?;
 
-        self.process_block_range(range, |tx_range, header, ommers, withdrawals| {
+        self.process_block_range(range, |tx_range, header, ommers, withdrawals, shadows| {
             let (body, senders) = if tx_range.is_empty() {
                 (Vec::new(), Vec::new())
             } else {
@@ -1527,7 +1562,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
                 (body, senders)
             };
 
-            Block { header, body, ommers, withdrawals }
+            Block { header, body, ommers, withdrawals, shadows }
                 .try_with_senders_unchecked(senders)
                 .map_err(|_| ProviderError::SenderRecoveryError)
         })

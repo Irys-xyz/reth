@@ -9,11 +9,11 @@ use parking_lot::Mutex;
 use reth_db::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;
 use reth_primitives::{
-    keccak256, trie::AccountProof, Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId,
-    BlockNumber, BlockWithSenders, Bytecode, Bytes, ChainInfo, ChainSpec, Header, Receipt,
-    SealedBlock, SealedBlockWithSenders, SealedHeader, StorageKey, StorageValue, TransactionMeta,
-    TransactionSigned, TransactionSignedNoHash, TxHash, TxNumber, Withdrawal, Withdrawals, B256,
-    U256,
+    keccak256, shadow::Shadows, trie::AccountProof, Account, Address, Block, BlockHash,
+    BlockHashOrNumber, BlockId, BlockNumber, BlockWithSenders, Bytecode, Bytes, ChainInfo,
+    ChainSpec, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StorageKey,
+    StorageValue, TransactionMeta, TransactionSigned, TransactionSignedNoHash, TxHash, TxNumber,
+    Withdrawal, Withdrawals, B256, U256,
 };
 use reth_storage_errors::provider::{ProviderError, ProviderResult};
 use reth_trie::updates::TrieUpdates;
@@ -63,7 +63,7 @@ impl ExtendedAccount {
     /// Create new instance of extended account
     pub fn new(nonce: u64, balance: U256) -> Self {
         Self {
-            account: Account { nonce, balance, bytecode_hash: None, pledges: None },
+            account: Account { nonce, balance, bytecode_hash: None, pledges: None, stake: None },
             bytecode: None,
             storage: Default::default(),
         }
@@ -489,6 +489,10 @@ impl BlockReader for MockEthProvider {
         _range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         Ok(vec![])
+    }
+
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        Ok(None)
     }
 }
 

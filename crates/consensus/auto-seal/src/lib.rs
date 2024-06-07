@@ -22,9 +22,11 @@ use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
     constants::{EMPTY_TRANSACTIONS, ETHEREUM_BLOCK_GAS_LIMIT},
     eip4844::calculate_excess_blob_gas,
-    proofs, Block, BlockBody, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders,
-    ChainSpec, Header, Receipt, Receipts, SealedBlock, SealedHeader, TransactionSigned,
-    Withdrawals, B256, U256,
+    proofs,
+    shadow::Shadows,
+    Block, BlockBody, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders, ChainSpec,
+    Header, Receipt, Receipts, SealedBlock, SealedHeader, TransactionSigned, Withdrawals, B256,
+    U256,
 };
 use reth_provider::{
     BlockReaderIdExt, BundleStateWithReceipts, CanonStateNotificationSender, StateProviderFactory,
@@ -359,6 +361,7 @@ impl StorageInner {
         transactions: Vec<TransactionSigned>,
         ommers: Vec<Header>,
         withdrawals: Option<Withdrawals>,
+        shadows: Option<Shadows>,
         provider: &Provider,
         chain_spec: Arc<ChainSpec>,
         executor: &Executor,
@@ -375,6 +378,7 @@ impl StorageInner {
             body: transactions,
             ommers: ommers.clone(),
             withdrawals: withdrawals.clone(),
+            shadows: shadows.clone(),
         }
         .with_recovered_senders()
         .ok_or(BlockExecutionError::Validation(BlockValidationError::SenderRecoveryError))?;
@@ -395,7 +399,7 @@ impl StorageInner {
         );
 
         let Block { mut header, body, .. } = block.block;
-        let body = BlockBody { transactions: body, ommers, withdrawals };
+        let body = BlockBody { transactions: body, ommers, withdrawals, shadows };
 
         trace!(target: "consensus::auto", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
 

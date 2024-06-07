@@ -41,6 +41,7 @@ mod prune;
 mod receipt;
 /// Helpers for working with revm
 pub mod revm;
+pub mod shadow;
 pub mod stage;
 pub use reth_static_file_types as static_file;
 mod storage;

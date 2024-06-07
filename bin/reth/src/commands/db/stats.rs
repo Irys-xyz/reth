@@ -8,12 +8,12 @@ use human_bytes::human_bytes;
 use itertools::Itertools;
 use reth_db::{
     database::Database, mdbx, static_file::iter_static_files, AccountChangeSets, AccountsHistory,
-    AccountsTrie, BlockBodyIndices, BlockOmmers, BlockWithdrawals, Bytecodes, CanonicalHeaders,
-    DatabaseEnv, HashedAccounts, HashedStorages, HeaderNumbers, HeaderTerminalDifficulties,
-    Headers, PlainAccountState, PlainStorageState, PruneCheckpoints, Receipts,
-    StageCheckpointProgresses, StageCheckpoints, StorageChangeSets, StoragesHistory, StoragesTrie,
-    Tables, TransactionBlocks, TransactionHashNumbers, TransactionSenders, Transactions,
-    VersionHistory,
+    AccountsTrie, BlockBodyIndices, BlockOmmers, BlockShadows, BlockWithdrawals, Bytecodes,
+    CanonicalHeaders, DatabaseEnv, HashedAccounts, HashedStorages, HeaderNumbers,
+    HeaderTerminalDifficulties, Headers, PlainAccountState, PlainStorageState, PruneCheckpoints,
+    Receipts, StageCheckpointProgresses, StageCheckpoints, StorageChangeSets, StoragesHistory,
+    StoragesTrie, Tables, TransactionBlocks, TransactionHashNumbers, TransactionSenders,
+    Transactions, VersionHistory,
 };
 use reth_fs_util as fs;
 use reth_node_core::dirs::{ChainPath, DataDirPath};
@@ -279,10 +279,10 @@ impl Command {
                         .add_cell(Cell::new(human_bytes(segment_config_size as f64)));
                 }
                 row.add_cell(Cell::new(human_bytes(
-                    (segment_data_size +
-                        segment_index_size +
-                        segment_offsets_size +
-                        segment_config_size) as f64,
+                    (segment_data_size
+                        + segment_index_size
+                        + segment_offsets_size
+                        + segment_config_size) as f64,
                 )));
                 table.add_row(row);
             }
@@ -360,6 +360,7 @@ impl Command {
                 Tables::TransactionSenders => viewer.get_checksum::<TransactionSenders>().unwrap(),
                 Tables::Transactions => viewer.get_checksum::<Transactions>().unwrap(),
                 Tables::VersionHistory => viewer.get_checksum::<VersionHistory>().unwrap(),
+                Tables::BlockShadows => viewer.get_checksum::<BlockShadows>().unwrap(),
             };
 
             // increment duration for final report

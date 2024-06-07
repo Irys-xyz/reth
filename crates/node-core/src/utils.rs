@@ -119,6 +119,7 @@ where
         body: block.transactions,
         ommers: block.ommers,
         withdrawals: block.withdrawals,
+        shadows: block.shadows,
     };
 
     validate_block_pre_execution(&block, &chain_spec)?;

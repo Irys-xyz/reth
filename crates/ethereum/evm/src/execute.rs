@@ -135,6 +135,8 @@ where
             &mut evm,
         )?;
 
+        // execute block shadows
+
         // execute transactions
         let mut cumulative_gas_used = 0;
         let mut receipts = Vec::with_capacity(block.body.len());
@@ -147,7 +149,7 @@ where
                     transaction_gas_limit: transaction.gas_limit(),
                     block_available_gas,
                 }
-                .into())
+                .into());
             }
 
             EvmConfig::fill_tx_env(evm.tx_mut(), transaction, *sender);

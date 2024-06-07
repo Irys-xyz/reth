@@ -13,8 +13,18 @@ pub struct Pledge {
     quantity: U256,
     dest_hash: TxId,
     height: u64,
-    tx_type: u8,
+    // tx_type: u8,
 }
+
+#[derive(PartialEq, Debug, Default, Eq, Clone, Copy /* Serialize, Deserialize */)]
+#[main_codec(no_arbitrary)]
+#[derive(PledgeArbitrary, PledgePropTestArbitrary)]
+pub struct Stake {
+    tx_id: TxId,
+    quantity: U256,
+    height: u64,
+}
+
 // #[main_codec(no_arbitrary)]
 wrap_fixed_bytes!(
     extra_derives: [],

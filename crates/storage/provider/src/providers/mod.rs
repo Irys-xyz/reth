@@ -18,6 +18,7 @@ use reth_db::{
 };
 use reth_evm::ConfigureEvmEnv;
 use reth_primitives::{
+    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId, BlockNumHash, BlockNumber,
     BlockNumberOrTag, BlockWithSenders, ChainInfo, ChainSpec, Header, PruneCheckpoint,
@@ -338,6 +339,10 @@ where
         range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         self.database.block_with_senders_range(range)
+    }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.database.shadows(id)
     }
 }
 

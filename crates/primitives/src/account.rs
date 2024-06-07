@@ -3,7 +3,7 @@ use crate::{
     revm_primitives::{Bytecode as RevmBytecode, Bytes},
     GenesisAccount, B256, KECCAK_EMPTY, U256,
 };
-use acyc::pledge::Pledge;
+use acyc::pledge::{Pledge, Stake};
 use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
@@ -24,6 +24,7 @@ pub struct Account {
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
     pub pledges: Option<Vec<Pledge>>,
+    pub stake: Option<Stake>,
 }
 
 impl Account {
@@ -48,6 +49,7 @@ impl Account {
             balance: value.balance,
             bytecode_hash: value.code.as_ref().map(keccak256),
             pledges: None, // TODO: should we allow genesis accounts to have pledges?
+            stake: None,
         }
     }
 
@@ -169,7 +171,13 @@ mod tests {
 
     #[test]
     fn test_empty_account() {
-        let mut acc = Account { nonce: 0, balance: U256::ZERO, bytecode_hash: None, pledges: None };
+        let mut acc = Account {
+            nonce: 0,
+            balance: U256::ZERO,
+            bytecode_hash: None,
+            pledges: None,
+            stake: None,
+        };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.
         assert!(acc.is_empty());
 

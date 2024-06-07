@@ -5,8 +5,9 @@ use crate::{
 use auto_impl::auto_impl;
 use reth_db::models::StoredBlockBodyIndices;
 use reth_primitives::{
-    Block, BlockHashOrNumber, BlockId, BlockNumber, BlockNumberOrTag, BlockWithSenders, Header,
-    PruneModes, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, B256,
+    shadow::Shadows, Block, BlockHashOrNumber, BlockId, BlockNumber, BlockNumberOrTag,
+    BlockWithSenders, Header, PruneModes, Receipt, SealedBlock, SealedBlockWithSenders,
+    SealedHeader, B256,
 };
 use reth_storage_errors::provider::ProviderResult;
 use reth_trie::{updates::TrieUpdates, HashedPostState};
@@ -98,6 +99,8 @@ pub trait BlockReader:
     ///
     /// Returns `None` if block is not found.
     fn ommers(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Vec<Header>>>;
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>>;
 
     /// Returns the block with matching hash from the database.
     ///

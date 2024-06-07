@@ -9,6 +9,7 @@ use crate::{
 use reth_db::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;
 use reth_primitives::{
+    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     trie::AccountProof,
     Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId, BlockNumber, BlockWithSenders,
@@ -122,6 +123,10 @@ impl BlockReader for NoopProvider {
         _range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         Ok(vec![])
+    }
+
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        Ok(None)
     }
 }
 

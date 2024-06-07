@@ -86,6 +86,7 @@ impl<DB: StateProvider> DatabaseRef for StateProviderDatabase<DB> {
             code_hash: account.bytecode_hash.unwrap_or(KECCAK_EMPTY),
             code: None,
             pledges: None,
+            stake: None,
         }))
     }
 

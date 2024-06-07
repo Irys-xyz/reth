@@ -1,5 +1,5 @@
 use crate::{
-    Address, Bytes, GotExpected, Header, SealedHeader, TransactionSigned,
+    shadow::Shadows, Address, Bytes, GotExpected, Header, SealedHeader, TransactionSigned,
     TransactionSignedEcRecovered, Withdrawals, B256,
 };
 use alloy_rlp::{RlpDecodable, RlpEncodable};
@@ -45,6 +45,7 @@ pub struct Block {
         proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Withdrawals>())")
     )]
     pub withdrawals: Option<Withdrawals>,
+    pub shadows: Option<Shadows>,
 }
 
 impl Block {
@@ -55,6 +56,7 @@ impl Block {
             body: self.body,
             ommers: self.ommers,
             withdrawals: self.withdrawals,
+            shadows: self.shadows,
         }
     }
 
@@ -67,6 +69,7 @@ impl Block {
             body: self.body,
             ommers: self.ommers,
             withdrawals: self.withdrawals,
+            shadows: self.shadows,
         }
     }
 
@@ -106,7 +109,7 @@ impl Block {
             let Some(senders) =
                 TransactionSigned::recover_signers_unchecked(&self.body, self.body.len())
             else {
-                return Err(self)
+                return Err(self);
             };
             senders
         };
@@ -257,14 +260,15 @@ pub struct SealedBlock {
         proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Withdrawals>())")
     )]
     pub withdrawals: Option<Withdrawals>,
+    pub shadows: Option<Shadows>,
 }
 
 impl SealedBlock {
     /// Create a new sealed block instance using the sealed header and block body.
     #[inline]
     pub fn new(header: SealedHeader, body: BlockBody) -> Self {
-        let BlockBody { transactions, ommers, withdrawals } = body;
-        Self { header, body: transactions, ommers, withdrawals }
+        let BlockBody { transactions, ommers, withdrawals, shadows } = body;
+        Self { header, body: transactions, ommers, withdrawals, shadows }
     }
 
     /// Header hash.
@@ -288,6 +292,7 @@ impl SealedBlock {
                 transactions: self.body,
                 ommers: self.ommers,
                 withdrawals: self.withdrawals,
+                shadows: self.shadows,
             },
         )
     }
@@ -343,6 +348,7 @@ impl SealedBlock {
             body: self.body,
             ommers: self.ommers,
             withdrawals: self.withdrawals,
+            shadows: self.shadows,
         }
     }
 
@@ -386,7 +392,7 @@ impl SealedBlock {
             return Err(GotExpected {
                 got: calculated_root,
                 expected: self.header.transactions_root,
-            })
+            });
         }
 
         Ok(())
@@ -514,6 +520,7 @@ pub struct BlockBody {
     pub ommers: Vec<Header>,
     /// Withdrawals in the block.
     pub withdrawals: Option<Withdrawals>,
+    pub shadows: Option<Shadows>,
 }
 
 impl BlockBody {
@@ -524,6 +531,7 @@ impl BlockBody {
             body: self.transactions.clone(),
             ommers: self.ommers.clone(),
             withdrawals: self.withdrawals.clone(),
+            shadows: self.shadows.clone(),
         }
     }
 
@@ -546,11 +554,12 @@ impl BlockBody {
     /// Calculates a heuristic for the in-memory size of the [BlockBody].
     #[inline]
     pub fn size(&self) -> usize {
-        self.transactions.iter().map(TransactionSigned::size).sum::<usize>() +
-            self.transactions.capacity() * std::mem::size_of::<TransactionSigned>() +
-            self.ommers.iter().map(Header::size).sum::<usize>() +
-            self.ommers.capacity() * std::mem::size_of::<Header>() +
-            self.withdrawals
+        self.transactions.iter().map(TransactionSigned::size).sum::<usize>()
+            + self.transactions.capacity() * std::mem::size_of::<TransactionSigned>()
+            + self.ommers.iter().map(Header::size).sum::<usize>()
+            + self.ommers.capacity() * std::mem::size_of::<Header>()
+            + self
+                .withdrawals
                 .as_ref()
                 .map_or(std::mem::size_of::<Option<Withdrawals>>(), Withdrawals::total_size)
     }
@@ -558,7 +567,12 @@ impl BlockBody {
 
 impl From<Block> for BlockBody {
     fn from(block: Block) -> Self {
-        Self { transactions: block.body, ommers: block.ommers, withdrawals: block.withdrawals }
+        Self {
+            transactions: block.body,
+            ommers: block.ommers,
+            withdrawals: block.withdrawals,
+            shadows: block.shadows,
+        }
     }
 }
 

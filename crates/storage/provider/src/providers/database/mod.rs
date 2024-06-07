@@ -14,6 +14,7 @@ use reth_db::{
 use reth_evm::ConfigureEvmEnv;
 use reth_interfaces::{RethError, RethResult};
 use reth_primitives::{
+    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     Address, Block, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders, ChainInfo,
     ChainSpec, Header, PruneCheckpoint, PruneSegment, Receipt, SealedBlock, SealedBlockWithSenders,
@@ -198,7 +199,7 @@ impl<DB: Database> HeaderProvider for ProviderFactory<DB> {
         if let Some(td) = self.chain_spec.final_paris_total_difficulty(number) {
             // if this block is higher than the final paris(merge) block, return the final paris
             // difficulty
-            return Ok(Some(td))
+            return Ok(Some(td));
         }
 
         self.static_file_provider.get_with_static_file_or_database(
@@ -342,6 +343,10 @@ impl<DB: Database> BlockReader for ProviderFactory<DB> {
         range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         self.provider()?.block_with_senders_range(range)
+    }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.provider()?.shadows(id)
     }
 }
 

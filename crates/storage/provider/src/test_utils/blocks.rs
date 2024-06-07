@@ -8,6 +8,7 @@ use reth_primitives::{
     hex_literal::hex,
     proofs::{state_root_unhashed, storage_root_unhashed},
     revm::compat::into_reth_acc,
+    shadow::Shadows,
     Address, BlockNumber, Bytes, Header, Receipt, Receipts, SealedBlock, SealedBlockWithSenders,
     TxType, Withdrawal, Withdrawals, B256, U256,
 };
@@ -108,6 +109,7 @@ pub fn genesis() -> SealedBlock {
         body: vec![],
         ommers: vec![],
         withdrawals: Some(Withdrawals::default()),
+        shadows: Some(Shadows::default()),
     }
 }
 
