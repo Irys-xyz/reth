@@ -1,7 +1,7 @@
 //! Block related models and types.
 
 use reth_codecs::{main_codec, Compact};
-use reth_primitives::{shadow::Shadows, Header, TxNumber, Withdrawals, B256};
+use reth_primitives::{revm_primitives::shadow::Shadows, Header, TxNumber, Withdrawals, B256};
 use std::ops::Range;
 
 /// Total number of transactions.

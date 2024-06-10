@@ -5,12 +5,12 @@ use crate::{
 use auto_impl::auto_impl;
 use reth_db::models::StoredBlockBodyIndices;
 use reth_primitives::{
-    shadow::Shadows, Block, BlockHashOrNumber, BlockId, BlockNumber, BlockNumberOrTag,
-    BlockWithSenders, Header, PruneModes, Receipt, SealedBlock, SealedBlockWithSenders,
-    SealedHeader, B256,
+    Block, BlockHashOrNumber, BlockId, BlockNumber, BlockNumberOrTag, BlockWithSenders, Header,
+    PruneModes, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, B256,
 };
 use reth_storage_errors::provider::ProviderResult;
 use reth_trie::{updates::TrieUpdates, HashedPostState};
+use revm::primitives::shadow::Shadows;
 use std::ops::RangeInclusive;
 
 /// Enum to control transaction hash inclusion.

@@ -19,7 +19,6 @@ use reth_db::{
 use reth_nippy_jar::NippyJar;
 use reth_primitives::{
     keccak256,
-    shadow::Shadows,
     static_file::{find_fixed_range, HighestStaticFiles, SegmentHeader, SegmentRangeInclusive},
     Address, Block, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders, ChainInfo, Header,
     Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta,
@@ -27,6 +26,7 @@ use reth_primitives::{
     U256,
 };
 use reth_storage_errors::provider::{ProviderError, ProviderResult};
+use revm::primitives::shadow::Shadows;
 use std::{
     collections::{hash_map::Entry, BTreeMap, HashMap},
     ops::{Deref, Range, RangeBounds, RangeInclusive},

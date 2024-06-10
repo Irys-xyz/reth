@@ -9,17 +9,17 @@ use parking_lot::Mutex;
 use reth_db::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;
 use reth_primitives::{
-    keccak256, shadow::Shadows, trie::AccountProof, Account, Address, Block, BlockHash,
-    BlockHashOrNumber, BlockId, BlockNumber, BlockWithSenders, Bytecode, Bytes, ChainInfo,
-    ChainSpec, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StorageKey,
-    StorageValue, TransactionMeta, TransactionSigned, TransactionSignedNoHash, TxHash, TxNumber,
-    Withdrawal, Withdrawals, B256, U256,
+    keccak256, trie::AccountProof, Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId,
+    BlockNumber, BlockWithSenders, Bytecode, Bytes, ChainInfo, ChainSpec, Header, Receipt,
+    SealedBlock, SealedBlockWithSenders, SealedHeader, StorageKey, StorageValue, TransactionMeta,
+    TransactionSigned, TransactionSignedNoHash, TxHash, TxNumber, Withdrawal, Withdrawals, B256,
+    U256,
 };
 use reth_storage_errors::provider::{ProviderError, ProviderResult};
 use reth_trie::updates::TrieUpdates;
 use revm::{
     db::BundleState,
-    primitives::{BlockEnv, CfgEnvWithHandlerCfg},
+    primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg},
 };
 use std::{
     collections::{BTreeMap, HashMap},

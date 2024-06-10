@@ -432,6 +432,8 @@ mod tests {
             balance: U256::ZERO,
             bytecode_hash: Some(keccak256(BEACON_ROOTS_CODE.clone())),
             nonce: 1,
+            pledges: None,
+            stake: None,
         };
 
         db.insert_account(

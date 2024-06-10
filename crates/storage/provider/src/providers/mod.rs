@@ -18,7 +18,6 @@ use reth_db::{
 };
 use reth_evm::ConfigureEvmEnv;
 use reth_primitives::{
-    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId, BlockNumHash, BlockNumber,
     BlockNumberOrTag, BlockWithSenders, ChainInfo, ChainSpec, Header, PruneCheckpoint,
@@ -27,7 +26,7 @@ use reth_primitives::{
     U256,
 };
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     collections::{BTreeMap, HashSet},
     fmt,

@@ -3,11 +3,13 @@ use crate::{
     revm_primitives::{Bytecode as RevmBytecode, Bytes},
     GenesisAccount, B256, KECCAK_EMPTY, U256,
 };
-use acyc::pledge::{Pledge, Stake};
 use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
-use revm_primitives::JumpTable;
+use revm_primitives::{
+    pledge::{Pledge, Stake},
+    JumpTable,
+};
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, ops::Deref};
 use zstd::bulk::{Compressor, Decompressor};

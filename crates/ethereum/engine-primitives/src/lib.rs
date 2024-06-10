@@ -15,12 +15,9 @@ use reth_engine_primitives::{
     validate_version_specific_fields, EngineApiMessageVersion, EngineObjectValidationError,
     EngineTypes, PayloadOrAttributes,
 };
-use reth_primitives::ChainSpec;
+use reth_primitives::{ChainSpec, PayloadAttributes as EthPayloadAttributes};
 use reth_rpc_types::{
-    engine::{
-        ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3,
-        PayloadAttributes as EthPayloadAttributes,
-    },
+    engine::{ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3},
     ExecutionPayloadV1,
 };
 

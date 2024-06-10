@@ -7,13 +7,15 @@ use reth_primitives::{
     BlobTransactionSidecar, ChainSpec, Hardfork, Header, SealedBlock, Withdrawals, B256, U256,
 };
 use reth_rpc_types::engine::{
-    ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3, ExecutionPayloadV1, PayloadAttributes,
-    PayloadId,
+    ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3, ExecutionPayloadV1, PayloadId,
 };
 use reth_rpc_types_compat::engine::payload::{
     block_to_payload_v1, block_to_payload_v3, convert_block_to_payload_field_v2,
 };
-use revm_primitives::{BlobExcessGasAndPrice, BlockEnv, CfgEnv, CfgEnvWithHandlerCfg, SpecId};
+use revm_primitives::{
+    payload::PayloadAttributes, shadow::Shadows, BlobExcessGasAndPrice, BlockEnv, CfgEnv,
+    CfgEnvWithHandlerCfg, SpecId,
+};
 use std::convert::Infallible;
 
 /// Contains the built payload.
@@ -145,6 +147,7 @@ pub struct EthPayloadBuilderAttributes {
     pub prev_randao: B256,
     /// Withdrawals for the generated payload
     pub withdrawals: Withdrawals,
+    pub shadows: Shadows,
     /// Root of the parent beacon block
     pub parent_beacon_block_root: Option<B256>,
 }
@@ -171,6 +174,7 @@ impl EthPayloadBuilderAttributes {
             prev_randao: attributes.prev_randao,
             withdrawals: attributes.withdrawals.unwrap_or_default().into(),
             parent_beacon_block_root: attributes.parent_beacon_block_root,
+            shadows: attributes.shadows.unwrap_or_default(),
         }
     }
 }

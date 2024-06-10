@@ -14,7 +14,6 @@ use reth_db::{
 use reth_evm::ConfigureEvmEnv;
 use reth_interfaces::{RethError, RethResult};
 use reth_primitives::{
-    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     Address, Block, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders, ChainInfo,
     ChainSpec, Header, PruneCheckpoint, PruneSegment, Receipt, SealedBlock, SealedBlockWithSenders,
@@ -22,7 +21,7 @@ use reth_primitives::{
     TxHash, TxNumber, Withdrawal, Withdrawals, B256, U256,
 };
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     ops::{RangeBounds, RangeInclusive},
     path::{Path, PathBuf},

@@ -22,17 +22,15 @@ use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
     constants::{EMPTY_TRANSACTIONS, ETHEREUM_BLOCK_GAS_LIMIT},
     eip4844::calculate_excess_blob_gas,
-    proofs,
-    shadow::Shadows,
-    Block, BlockBody, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders, ChainSpec,
-    Header, Receipt, Receipts, SealedBlock, SealedHeader, TransactionSigned, Withdrawals, B256,
-    U256,
+    proofs, Block, BlockBody, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders,
+    ChainSpec, Header, Receipt, Receipts, SealedBlock, SealedHeader, TransactionSigned,
+    Withdrawals, B256, U256,
 };
 use reth_provider::{
     BlockReaderIdExt, BundleStateWithReceipts, CanonStateNotificationSender, StateProviderFactory,
     StateRootProvider,
 };
-use reth_revm::database::StateProviderDatabase;
+use reth_revm::{database::StateProviderDatabase, primitives::shadow::Shadows};
 use reth_transaction_pool::TransactionPool;
 use std::{
     collections::HashMap,

@@ -9,7 +9,6 @@ use crate::{
 use reth_db::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;
 use reth_primitives::{
-    shadow::Shadows,
     stage::{StageCheckpoint, StageId},
     trie::AccountProof,
     Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId, BlockNumber, BlockWithSenders,
@@ -22,7 +21,7 @@ use reth_storage_errors::provider::ProviderResult;
 use reth_trie::updates::TrieUpdates;
 use revm::{
     db::BundleState,
-    primitives::{BlockEnv, CfgEnvWithHandlerCfg},
+    primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg},
 };
 use std::{
     ops::{RangeBounds, RangeInclusive},

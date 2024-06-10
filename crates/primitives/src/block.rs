@@ -1,11 +1,12 @@
 use crate::{
-    shadow::Shadows, Address, Bytes, GotExpected, Header, SealedHeader, TransactionSigned,
+    Address, Bytes, GotExpected, Header, SealedHeader, TransactionSigned,
     TransactionSignedEcRecovered, Withdrawals, B256,
 };
 use alloy_rlp::{RlpDecodable, RlpEncodable};
 #[cfg(any(test, feature = "arbitrary"))]
 use proptest::prelude::{any, prop_compose};
 use reth_codecs::derive_arbitrary;
+use revm_primitives::shadow::Shadows;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
