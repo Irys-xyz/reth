@@ -99,8 +99,8 @@ impl CliRunner {
 }
 
 /// [CliRunner] configuration when executing commands asynchronously
-struct AsyncCliRunner {
-    context: CliContext,
+pub struct AsyncCliRunner {
+    pub context: CliContext,
     task_manager: TaskManager,
     tokio_runtime: tokio::runtime::Runtime,
 }
@@ -110,7 +110,7 @@ struct AsyncCliRunner {
 impl AsyncCliRunner {
     /// Attempts to create a tokio Runtime and additional context required to execute commands
     /// asynchronously.
-    fn new() -> Result<Self, std::io::Error> {
+    pub fn new() -> Result<Self, std::io::Error> {
         let tokio_runtime = tokio_runtime()?;
         let task_manager = TaskManager::new(tokio_runtime.handle().clone());
         let task_executor = task_manager.executor();

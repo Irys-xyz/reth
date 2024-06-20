@@ -30,7 +30,7 @@ use reth_provider::{
     BlockReaderIdExt, BundleStateWithReceipts, CanonStateNotificationSender, StateProviderFactory,
     StateRootProvider,
 };
-use reth_revm::database::StateProviderDatabase;
+use reth_revm::{database::StateProviderDatabase, primitives::shadow::Shadows};
 use reth_transaction_pool::TransactionPool;
 use std::{
     collections::HashMap,
@@ -359,6 +359,7 @@ impl StorageInner {
         transactions: Vec<TransactionSigned>,
         ommers: Vec<Header>,
         withdrawals: Option<Withdrawals>,
+        shadows: Option<Shadows>,
         provider: &Provider,
         chain_spec: Arc<ChainSpec>,
         executor: &Executor,
@@ -375,6 +376,7 @@ impl StorageInner {
             body: transactions,
             ommers: ommers.clone(),
             withdrawals: withdrawals.clone(),
+            shadows: shadows.clone(),
         }
         .with_recovered_senders()
         .ok_or(BlockExecutionError::Validation(BlockValidationError::SenderRecoveryError))?;
@@ -395,7 +397,7 @@ impl StorageInner {
         );
 
         let Block { mut header, body, .. } = block.block;
-        let body = BlockBody { transactions: body, ommers, withdrawals };
+        let body = BlockBody { transactions: body, ommers, withdrawals, shadows };
 
         trace!(target: "consensus::auto", ?bundle_state, ?header, ?body, "executed block, calculating state root and completing header");
 

@@ -3,10 +3,11 @@ use crate::{
 };
 use reth_primitives::{
     revm_primitives::{BlockEnv, CfgEnvWithHandlerCfg},
-    Address, ChainSpec, Header, SealedBlock, Withdrawals, B256, U256,
+    Address, ChainSpec, Header, PayloadAttributes as EthPayloadAttributes, SealedBlock,
+    Withdrawals, B256, U256,
 };
 use reth_rpc_types::{
-    engine::{OptimismPayloadAttributes, PayloadAttributes as EthPayloadAttributes, PayloadId},
+    engine::{OptimismPayloadAttributes, PayloadId},
     Withdrawal,
 };
 
@@ -148,7 +149,7 @@ impl PayloadAttributes for OptimismPayloadAttributes {
         if self.gas_limit.is_none() && chain_spec.is_optimism() {
             return Err(EngineObjectValidationError::InvalidParams(
                 "MissingGasLimitInPayloadAttributes".to_string().into(),
-            ))
+            ));
         }
 
         Ok(())

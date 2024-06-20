@@ -6,13 +6,18 @@ use crate::{
 use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
-use revm_primitives::JumpTable;
+use revm_primitives::{
+    pledge::{Pledge, Stake},
+    JumpTable,
+};
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
-
+use std::{cell::RefCell, ops::Deref};
+use zstd::bulk::{Compressor, Decompressor};
 /// An Ethereum account.
+
+// TODO: figure out how to use CompactZstd/main_codec(zstd) so we can compact accounts w/ pledges
 #[main_codec]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct Account {
     /// Account nonce.
     pub nonce: u64,
@@ -20,6 +25,8 @@ pub struct Account {
     pub balance: U256,
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
+    pub pledges: Option<Vec<Pledge>>,
+    pub stake: Option<Stake>,
 }
 
 impl Account {
@@ -31,9 +38,9 @@ impl Account {
     /// After SpuriousDragon empty account is defined as account with nonce == 0 && balance == 0 &&
     /// bytecode = None (or hash is [`KECCAK_EMPTY`]).
     pub fn is_empty(&self) -> bool {
-        self.nonce == 0 &&
-            self.balance.is_zero() &&
-            self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
+        self.nonce == 0
+            && self.balance.is_zero()
+            && self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
     }
 
     /// Makes an [Account] from [GenesisAccount] type
@@ -43,6 +50,8 @@ impl Account {
             nonce: value.nonce.unwrap_or_default(),
             balance: value.balance,
             bytecode_hash: value.code.as_ref().map(keccak256),
+            pledges: None, // TODO: should we allow genesis accounts to have pledges?
+            stake: None,
         }
     }
 
@@ -132,6 +141,14 @@ impl Compact for Bytecode {
     }
 }
 
+thread_local! {
+pub static ACCOUNT_COMPRESSOR: RefCell<Compressor<'static>> =
+    RefCell::new(Compressor::new(4).expect("failed to initialize account compressor"));
+
+    pub static ACCOUNT_DECOMPRESSOR: RefCell<Decompressor<'static>> =
+    RefCell::new(Decompressor::new().expect("failed to initialize account decompressor"));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,7 +173,13 @@ mod tests {
 
     #[test]
     fn test_empty_account() {
-        let mut acc = Account { nonce: 0, balance: U256::ZERO, bytecode_hash: None };
+        let mut acc = Account {
+            nonce: 0,
+            balance: U256::ZERO,
+            bytecode_hash: None,
+            pledges: None,
+            stake: None,
+        };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.
         assert!(acc.is_empty());
 

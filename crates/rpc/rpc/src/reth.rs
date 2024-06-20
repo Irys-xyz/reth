@@ -63,7 +63,7 @@ where
 
     fn try_balance_changes_in_block(&self, block_id: BlockId) -> EthResult<HashMap<Address, U256>> {
         let Some(block_number) = self.provider().block_number_for_id(block_id)? else {
-            return Err(EthApiError::UnknownBlockNumber)
+            return Err(EthApiError::UnknownBlockNumber);
         };
 
         let state = self.provider().state_by_block_id(block_id)?;
@@ -72,7 +72,10 @@ where
             HashMap::new(),
             |mut hash_map, account_before| -> RethResult<_> {
                 let current_balance = state.account_balance(account_before.address)?;
-                let prev_balance = account_before.info.map(|info| info.balance);
+                let prev_balance = <std::option::Option<reth_primitives::Account> as Clone>::clone(
+                    &account_before.info,
+                )
+                .map(|info| info.balance);
                 if current_balance != prev_balance {
                     hash_map.insert(account_before.address, current_balance.unwrap_or_default());
                 }

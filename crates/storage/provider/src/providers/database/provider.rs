@@ -45,7 +45,7 @@ use reth_trie::{
     updates::TrieUpdates,
     HashedPostState, StateRoot,
 };
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg, SpecId};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg, SpecId};
 use std::{
     cmp::Ordering,
     collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
@@ -168,10 +168,10 @@ impl<TX: DbTx + 'static> DatabaseProvider<TX> {
         self,
         mut block_number: BlockNumber,
     ) -> ProviderResult<StateProviderBox> {
-        if block_number == self.best_block_number().unwrap_or_default() &&
-            block_number == self.last_block_number().unwrap_or_default()
+        if block_number == self.best_block_number().unwrap_or_default()
+            && block_number == self.last_block_number().unwrap_or_default()
         {
-            return Ok(Box::new(LatestStateProvider::new(self.tx, self.static_file_provider)))
+            return Ok(Box::new(LatestStateProvider::new(self.tx, self.static_file_provider)));
         }
 
         // +1 as the changeset that we want is the one that was applied after this block.
@@ -267,7 +267,7 @@ where
     while let Some((sharded_key, list)) = item {
         // If the shard does not belong to the key, break.
         if !shard_belongs_to_key(&sharded_key) {
-            break
+            break;
         }
         cursor.delete_current()?;
 
@@ -276,12 +276,12 @@ where
         let first = list.iter().next().expect("List can't be empty");
         if first >= block_number {
             item = cursor.prev()?;
-            continue
+            continue;
         } else if block_number <= sharded_key.as_ref().highest_block_number {
             // Filter out all elements greater than block number.
-            return Ok(list.iter().take_while(|i| *i < block_number).collect::<Vec<_>>())
+            return Ok(list.iter().take_while(|i| *i < block_number).collect::<Vec<_>>());
         } else {
-            return Ok(list.iter().collect::<Vec<_>>())
+            return Ok(list.iter().collect::<Vec<_>>());
         }
     }
 
@@ -394,7 +394,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<BundleStateWithReceipts> {
         if range.is_empty() {
-            return Ok(BundleStateWithReceipts::default())
+            return Ok(BundleStateWithReceipts::default());
         }
         let start_block_number = *range.start();
 
@@ -434,11 +434,11 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
             match state.entry(address) {
                 hash_map::Entry::Vacant(entry) => {
                     let new_info = plain_accounts_cursor.seek_exact(address)?.map(|kv| kv.1);
-                    entry.insert((old_info, new_info, HashMap::new()));
+                    entry.insert((old_info.clone(), new_info.clone(), HashMap::new()));
                 }
                 hash_map::Entry::Occupied(mut entry) => {
                     // overwrite old account state.
-                    entry.get_mut().0 = old_info;
+                    entry.get_mut().0 = old_info.clone();
                 }
             }
             // insert old info into reverts.
@@ -452,7 +452,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
             let account_state = match state.entry(address) {
                 hash_map::Entry::Vacant(entry) => {
                     let present_info = plain_accounts_cursor.seek_exact(address)?.map(|kv| kv.1);
-                    entry.insert((present_info, present_info, HashMap::new()))
+                    entry.insert((present_info.clone(), present_info, HashMap::new()))
                 }
                 hash_map::Entry::Occupied(entry) => entry.into_mut(),
             };
@@ -487,7 +487,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
                 if old_account != new_account {
                     let existing_entry = plain_accounts_cursor.seek_exact(*address)?;
                     if let Some(account) = old_account {
-                        plain_accounts_cursor.upsert(*address, *account)?;
+                        plain_accounts_cursor.upsert(*address, account.clone())?;
                     } else if existing_entry.is_some() {
                         plain_accounts_cursor.delete_current()?;
                     }
@@ -572,7 +572,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         let block_bodies = self.get_or_take::<tables::BlockBodyIndices, false>(range)?;
 
         if block_bodies.is_empty() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         // Compute the first and last tx ID in the range
@@ -581,7 +581,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
 
         // If this is the case then all of the blocks in the range are empty
         if last_transaction < first_transaction {
-            return Ok(block_bodies.into_iter().map(|(n, _)| (n, Vec::new())).collect())
+            return Ok(block_bodies.into_iter().map(|(n, _)| (n, Vec::new())).collect());
         }
 
         // Get transactions and senders
@@ -716,7 +716,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
 
         let block_headers = self.get_or_take::<tables::Headers, TAKE>(range.clone())?;
         if block_headers.is_empty() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         let block_header_hashes =
@@ -724,6 +724,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         let block_ommers = self.get_or_take::<tables::BlockOmmers, TAKE>(range.clone())?;
         let block_withdrawals =
             self.get_or_take::<tables::BlockWithdrawals, TAKE>(range.clone())?;
+        let block_shadows = self.get_or_take::<tables::BlockShadows, TAKE>(range.clone())?;
 
         let block_tx = self.get_take_block_transaction_range::<TAKE>(range.clone())?;
 
@@ -747,8 +748,10 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         // Ommers can be empty for some blocks
         let mut block_ommers_iter = block_ommers.into_iter();
         let mut block_withdrawals_iter = block_withdrawals.into_iter();
+        let mut block_shadows_iter = block_shadows.into_iter();
         let mut block_ommers = block_ommers_iter.next();
         let mut block_withdrawals = block_withdrawals_iter.next();
+        let mut block_shadows = block_shadows_iter.next();
 
         let mut blocks = Vec::new();
         for ((main_block_number, header), (_, header_hash), (_, tx)) in
@@ -782,8 +785,16 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
                 withdrawals = None
             }
 
+            let mut shadows: Option<Shadows> = None;
+            if let Some((block_number, _)) = block_shadows.as_ref() {
+                if *block_number == main_block_number {
+                    shadows = Some(block_shadows.take().unwrap().1.shadows);
+                    block_shadows = block_shadows_iter.next();
+                }
+            };
+
             blocks.push(SealedBlockWithSenders {
-                block: SealedBlock { header, body, ommers, withdrawals },
+                block: SealedBlock { header, body, ommers, withdrawals, shadows },
                 senders,
             })
         }
@@ -822,7 +833,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
 
         while let Some(Ok((entry_key, _))) = reverse_walker.next() {
             if selector(entry_key.clone()) <= key {
-                break
+                break;
             }
             reverse_walker.delete_current()?;
             deleted += 1;
@@ -869,7 +880,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
                     table = %T::NAME,
                     "Pruning limit reached"
                 );
-                break
+                break;
             }
 
             let row = cursor.seek_exact(key)?;
@@ -912,7 +923,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
                     table = %T::NAME,
                     "Pruning limit reached"
                 );
-                break false
+                break false;
             }
 
             let done = self.prune_table_with_range_step(
@@ -923,7 +934,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
             )?;
 
             if done {
-                break true
+                break true;
             } else {
                 deleted_entries += 1;
             }
@@ -971,7 +982,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
             // delete old shard so new one can be inserted.
             self.tx.delete::<T>(shard_key, None)?;
             let list = list.iter().collect::<Vec<_>>();
-            return Ok(list)
+            return Ok(list);
         }
         Ok(Vec::new())
     }
@@ -1116,7 +1127,7 @@ impl<TX: DbTx> HeaderSyncGapProvider for DatabaseProvider<TX> {
             }
             Ordering::Less => {
                 // There's either missing or corrupted files.
-                return Err(ProviderError::HeaderNotFound(next_static_file_block_num.into()))
+                return Err(ProviderError::HeaderNotFound(next_static_file_block_num.into()));
             }
             Ordering::Equal => {}
         }
@@ -1164,7 +1175,7 @@ impl<TX: DbTx> HeaderProvider for DatabaseProvider<TX> {
         if let Some(td) = self.chain_spec.final_paris_total_difficulty(number) {
             // if this block is higher than the final paris(merge) block, return the final paris
             // difficulty
-            return Ok(Some(td))
+            return Ok(Some(td));
         }
 
         self.static_file_provider.get_with_static_file_or_database(
@@ -1221,7 +1232,7 @@ impl<TX: DbTx> HeaderProvider for DatabaseProvider<TX> {
                         .ok_or_else(|| ProviderError::HeaderNotFound(number.into()))?;
                     let sealed = header.seal(hash);
                     if !predicate(&sealed) {
-                        break
+                        break;
                     }
                     headers.push(sealed);
                 }
@@ -1297,10 +1308,16 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
         mut assemble_block: F,
     ) -> ProviderResult<Vec<R>>
     where
-        F: FnMut(Range<TxNumber>, Header, Vec<Header>, Option<Withdrawals>) -> ProviderResult<R>,
+        F: FnMut(
+            Range<TxNumber>,
+            Header,
+            Vec<Header>,
+            Option<Withdrawals>,
+            Option<Shadows>,
+        ) -> ProviderResult<R>,
     {
         if range.is_empty() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         let len = range.end().saturating_sub(*range.start()) as usize;
@@ -1310,6 +1327,7 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
         let mut ommers_cursor = self.tx.cursor_read::<tables::BlockOmmers>()?;
         let mut withdrawals_cursor = self.tx.cursor_read::<tables::BlockWithdrawals>()?;
         let mut block_body_cursor = self.tx.cursor_read::<tables::BlockBodyIndices>()?;
+        let mut shadows_cursor = self.tx.cursor_read::<tables::BlockShadows>()?;
 
         for header in headers {
             // If the body indices are not found, this means that the transactions either do
@@ -1342,7 +1360,9 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
                             .map(|(_, o)| o.ommers)
                             .unwrap_or_default()
                     };
-                if let Ok(b) = assemble_block(tx_range, header, ommers, withdrawals) {
+                let shadows = shadows_cursor.seek_exact(header.number)?.map(|(_, s)| s.shadows);
+
+                if let Ok(b) = assemble_block(tx_range, header, ommers, withdrawals, shadows) {
                     blocks.push(b);
                 }
             }
@@ -1370,6 +1390,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
             if let Some(header) = self.header_by_number(number)? {
                 let withdrawals = self.withdrawals_by_block(number.into(), header.timestamp)?;
                 let ommers = self.ommers(number.into())?.unwrap_or_default();
+                let shadows = self.shadows(number.into())?;
                 // If the body indices are not found, this means that the transactions either do not
                 // exist in the database yet, or they do exit but are not indexed.
                 // If they exist but are not indexed, we don't have enough
@@ -1379,7 +1400,13 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
                     None => return Ok(None),
                 };
 
-                return Ok(Some(Block { header, body: transactions, ommers, withdrawals }))
+                return Ok(Some(Block {
+                    header,
+                    body: transactions,
+                    ommers,
+                    withdrawals,
+                    shadows,
+                }));
             }
         }
 
@@ -1403,13 +1430,20 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
             // If the Paris (Merge) hardfork block is known and block is after it, return empty
             // ommers.
             if self.chain_spec.final_paris_total_difficulty(number).is_some() {
-                return Ok(Some(Vec::new()))
+                return Ok(Some(Vec::new()));
             }
 
             let ommers = self.tx.get::<tables::BlockOmmers>(number)?.map(|o| o.ommers);
-            return Ok(ommers)
+            return Ok(ommers);
         }
 
+        Ok(None)
+    }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        if let Some(number) = self.convert_hash_or_number(id)? {
+            return Ok(self.tx.get::<tables::BlockShadows>(number)?.map(|s| s.shadows));
+        }
         Ok(None)
     }
 
@@ -1435,7 +1469,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
 
         let ommers = self.ommers(block_number.into())?.unwrap_or_default();
         let withdrawals = self.withdrawals_by_block(block_number.into(), header.timestamp)?;
-
+        let shadows = self.shadows(block_number.into())?;
         // Get the block body
         //
         // If the body indices are not found, this means that the transactions either do not exist
@@ -1465,7 +1499,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
             })
             .collect();
 
-        Block { header, body, ommers, withdrawals }
+        Block { header, body, ommers, withdrawals, shadows }
             // Note: we're using unchecked here because we know the block contains valid txs wrt to
             // its height and can ignore the s value check so pre EIP-2 txs are allowed
             .try_with_senders_unchecked(senders)
@@ -1475,7 +1509,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
 
     fn block_range(&self, range: RangeInclusive<BlockNumber>) -> ProviderResult<Vec<Block>> {
         let mut tx_cursor = self.tx.cursor_read::<tables::Transactions>()?;
-        self.process_block_range(range, |tx_range, header, ommers, withdrawals| {
+        self.process_block_range(range, |tx_range, header, ommers, withdrawals, shadows| {
             let body = if tx_range.is_empty() {
                 Vec::new()
             } else {
@@ -1484,7 +1518,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
                     .map(Into::into)
                     .collect()
             };
-            Ok(Block { header, body, ommers, withdrawals })
+            Ok(Block { header, body, ommers, withdrawals, shadows })
         })
     }
 
@@ -1495,7 +1529,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
         let mut tx_cursor = self.tx.cursor_read::<tables::Transactions>()?;
         let mut senders_cursor = self.tx.cursor_read::<tables::TransactionSenders>()?;
 
-        self.process_block_range(range, |tx_range, header, ommers, withdrawals| {
+        self.process_block_range(range, |tx_range, header, ommers, withdrawals, shadows| {
             let (body, senders) = if tx_range.is_empty() {
                 (Vec::new(), Vec::new())
             } else {
@@ -1527,7 +1561,7 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
                 (body, senders)
             };
 
-            Block { header, body, ommers, withdrawals }
+            Block { header, body, ommers, withdrawals, shadows }
                 .try_with_senders_unchecked(senders)
                 .map_err(|_| ProviderError::SenderRecoveryError)
         })
@@ -1676,7 +1710,7 @@ impl<TX: DbTx> TransactionsProvider for DatabaseProvider<TX> {
                                 timestamp: header.timestamp,
                             };
 
-                            return Ok(Some((transaction, meta)))
+                            return Ok(Some((transaction, meta)));
                         }
                     }
                 }
@@ -1709,7 +1743,7 @@ impl<TX: DbTx> TransactionsProvider for DatabaseProvider<TX> {
                             .map(Into::into)
                             .collect(),
                     ))
-                }
+                };
             }
         }
         Ok(None)
@@ -1787,7 +1821,7 @@ impl<TX: DbTx> ReceiptProvider for DatabaseProvider<TX> {
                     Ok(Some(Vec::new()))
                 } else {
                     self.receipts_by_tx_range(tx_range).map(Some)
-                }
+                };
             }
         }
         Ok(None)
@@ -1822,7 +1856,7 @@ impl<TX: DbTx> WithdrawalsProvider for DatabaseProvider<TX> {
                     .get::<tables::BlockWithdrawals>(number)
                     .map(|w| w.map(|w| w.withdrawals))?
                     .unwrap_or_default();
-                return Ok(Some(withdrawals))
+                return Ok(Some(withdrawals));
             }
         }
         Ok(None)
@@ -2077,7 +2111,7 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
         let mut hashed_accounts_cursor = self.tx.cursor_write::<tables::HashedAccounts>()?;
         for (hashed_address, account) in &hashed_accounts {
             if let Some(account) = account {
-                hashed_accounts_cursor.upsert(*hashed_address, *account)?;
+                hashed_accounts_cursor.upsert(*hashed_address, account.clone())?;
             } else if hashed_accounts_cursor.seek_exact(*hashed_address)?.is_some() {
                 hashed_accounts_cursor.delete_current()?;
             }
@@ -2095,7 +2129,7 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
             accounts.into_iter().map(|(ad, ac)| (keccak256(ad), ac)).collect::<BTreeMap<_, _>>();
         for (hashed_address, account) in &hashed_accounts {
             if let Some(account) = account {
-                hashed_accounts_cursor.upsert(*hashed_address, *account)?;
+                hashed_accounts_cursor.upsert(*hashed_address, account.clone())?;
             } else if hashed_accounts_cursor.seek_exact(*hashed_address)?.is_some() {
                 hashed_accounts_cursor.delete_current()?;
             }
@@ -2248,7 +2282,7 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
                     root: GotExpected { got: state_root, expected: expected_state_root },
                     block_number: *range.end(),
                     block_hash: end_block_hash,
-                })))
+                })));
             }
             trie_updates.flush(&self.tx)?;
         }
@@ -2328,8 +2362,8 @@ impl<TX: DbTxMut + DbTx> HistoryWriter for DatabaseProvider<TX> {
                 StorageShardedKey::last(address, storage_key),
                 rem_index,
                 |storage_sharded_key| {
-                    storage_sharded_key.address == address &&
-                        storage_sharded_key.sharded_key.key == storage_key
+                    storage_sharded_key.address == address
+                        && storage_sharded_key.sharded_key.key == storage_key
                 },
             )?;
 
@@ -2444,7 +2478,7 @@ impl<TX: DbTxMut + DbTx> BlockExecutionWriter for DatabaseProvider<TX> {
                     root: GotExpected { got: new_state_root, expected: parent_state_root },
                     block_number: parent_number,
                     block_hash: parent_hash,
-                })))
+                })));
             }
             trie_updates.flush(&self.tx)?;
         }
@@ -2616,7 +2650,7 @@ impl<TX: DbTxMut + DbTx> BlockWriter for DatabaseProvider<TX> {
     ) -> ProviderResult<()> {
         if blocks.is_empty() {
             debug!(target: "providers::db", "Attempted to append empty block range");
-            return Ok(())
+            return Ok(());
         }
 
         let first_number = blocks.first().unwrap().number;

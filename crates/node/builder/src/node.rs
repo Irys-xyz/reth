@@ -1,4 +1,7 @@
-use crate::rpc::{RethRpcServerHandles, RpcRegistry};
+use crate::{
+    rpc::{RethRpcServerHandles, RpcRegistry},
+    NodeAdapter,
+};
 use reth_network::NetworkHandle;
 use reth_node_api::FullNodeComponents;
 use reth_node_core::{
@@ -11,7 +14,7 @@ use reth_node_core::{
 };
 use reth_payload_builder::PayloadBuilderHandle;
 use reth_primitives::ChainSpec;
-use reth_provider::ChainSpecProvider;
+use reth_provider::{providers::BlockchainProvider, ChainSpecProvider};
 use reth_tasks::TaskExecutor;
 use std::sync::Arc;
 
@@ -55,6 +58,8 @@ pub struct FullNode<Node: FullNodeComponents> {
     pub config: NodeConfig,
     /// The data dir of the node.
     pub data_dir: ChainPath<DataDirPath>,
+    // pub adapter: NodeAdapter,
+    pub db: BlockchainProvider<Node::DB>,
 }
 
 impl<Node: FullNodeComponents> FullNode<Node> {
@@ -109,6 +114,7 @@ impl<Node: FullNodeComponents> Clone for FullNode<Node> {
             rpc_registry: self.rpc_registry.clone(),
             config: self.config.clone(),
             data_dir: self.data_dir.clone(),
+            db: self.db.clone(),
         }
     }
 }

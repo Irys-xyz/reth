@@ -30,18 +30,18 @@ use reth_primitives::{
     constants::eip4844::{LoadKzgSettingsError, MAINNET_KZG_TRUSTED_SETUP},
     revm_primitives::KzgSettings,
     stage::StageId,
-    Address, BlobTransaction, BlobTransactionSidecar, Bytes, ChainSpec, PooledTransactionsElement,
-    Receipts, SealedBlock, SealedBlockWithSenders, Transaction, TransactionSigned, TxEip4844, B256,
-    U256,
+    Address, BlobTransaction, BlobTransactionSidecar, Bytes, ChainSpec, PayloadAttributes,
+    PooledTransactionsElement, Receipts, SealedBlock, SealedBlockWithSenders, Transaction,
+    TransactionSigned, TxEip4844, B256, U256,
 };
 use reth_provider::{
     providers::BlockchainProvider, BlockHashReader, BlockReader, BlockWriter,
     BundleStateWithReceipts, ProviderFactory, StageCheckpointReader, StateProviderFactory,
 };
 use reth_revm::database::StateProviderDatabase;
+use reth_rpc_types::engine::BlobsBundleV1;
 #[cfg(feature = "optimism")]
 use reth_rpc_types::engine::OptimismPayloadAttributes;
-use reth_rpc_types::engine::{BlobsBundleV1, PayloadAttributes};
 use reth_transaction_pool::{
     blobstore::InMemoryBlobStore, BlobStore, EthPooledTransaction, PoolConfig, TransactionOrigin,
     TransactionPool, TransactionValidationTaskExecutor,
@@ -250,6 +250,7 @@ impl Command {
             suggested_fee_recipient: self.suggested_fee_recipient,
             // TODO: add support for withdrawals
             withdrawals: None,
+            shadows: None,
         };
         let payload_config = PayloadConfig::new(
             Arc::clone(&best_block),

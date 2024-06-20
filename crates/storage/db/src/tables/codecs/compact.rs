@@ -44,6 +44,7 @@ impl_compression_for_compact!(
     StoredBlockBodyIndices,
     StoredBlockOmmers,
     StoredBlockWithdrawals,
+    StoredBlockShadows,
     Bytecode,
     AccountBeforeTx,
     TransactionSignedNoHash,

@@ -26,9 +26,10 @@ use reth_primitives::{
     U256,
 };
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     collections::{BTreeMap, HashSet},
+    fmt,
     ops::{RangeBounds, RangeInclusive},
     sync::Arc,
     time::Instant,
@@ -71,9 +72,19 @@ pub struct BlockchainProvider<DB> {
     /// Provider type used to access the database.
     pub database: ProviderFactory<DB>,
     /// The blockchain tree instance.
-    tree: Arc<dyn TreeViewer>,
+    pub tree: Arc<dyn TreeViewer>,
     /// Tracks the chain info wrt forkchoice updates
-    chain_info: ChainInfoTracker,
+    pub chain_info: ChainInfoTracker,
+}
+
+impl<DB> fmt::Debug for BlockchainProvider<DB> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BlockchainProvider")
+            .field("database", &"fixme".to_string())
+            .field("tree", &"fixme".to_string())
+            .field("chain_info", &"fixme".to_string())
+            .finish()
+    }
 }
 
 impl<DB> BlockchainProvider<DB> {
@@ -327,6 +338,10 @@ where
         range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         self.database.block_with_senders_range(range)
+    }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.database.shadows(id)
     }
 }
 
@@ -618,7 +633,7 @@ where
 
         if let Some(block) = self.tree.pending_block_num_hash() {
             if let Ok(pending) = self.tree.pending_state_provider(block.hash) {
-                return self.pending_with_provider(pending)
+                return self.pending_with_provider(pending);
             }
         }
 
@@ -628,7 +643,7 @@ where
 
     fn pending_state_by_hash(&self, block_hash: B256) -> ProviderResult<Option<StateProviderBox>> {
         if let Some(state) = self.tree.find_pending_state_provider(block_hash) {
-            return Ok(Some(self.pending_with_provider(state)?))
+            return Ok(Some(self.pending_with_provider(state)?));
         }
         Ok(None)
     }

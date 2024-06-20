@@ -21,7 +21,7 @@ use reth_storage_errors::provider::ProviderResult;
 use reth_trie::updates::TrieUpdates;
 use revm::{
     db::BundleState,
-    primitives::{BlockEnv, CfgEnvWithHandlerCfg},
+    primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg},
 };
 use std::{
     ops::{RangeBounds, RangeInclusive},
@@ -122,6 +122,10 @@ impl BlockReader for NoopProvider {
         _range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         Ok(vec![])
+    }
+
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        Ok(None)
     }
 }
 

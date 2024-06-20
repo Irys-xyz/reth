@@ -13,7 +13,7 @@ use reth_primitives::{
 };
 use revm::{
     db::BundleState,
-    primitives::{AccountInfo, HashMap},
+    primitives::{shadow::Shadows, AccountInfo, HashMap},
 };
 
 /// Assert genesis block
@@ -108,6 +108,7 @@ pub fn genesis() -> SealedBlock {
         body: vec![],
         ommers: vec![],
         withdrawals: Some(Withdrawals::default()),
+        shadows: Some(Shadows::default()),
     }
 }
 

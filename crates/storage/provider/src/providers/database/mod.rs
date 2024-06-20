@@ -21,7 +21,7 @@ use reth_primitives::{
     TxHash, TxNumber, Withdrawal, Withdrawals, B256, U256,
 };
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     ops::{RangeBounds, RangeInclusive},
     path::{Path, PathBuf},
@@ -198,7 +198,7 @@ impl<DB: Database> HeaderProvider for ProviderFactory<DB> {
         if let Some(td) = self.chain_spec.final_paris_total_difficulty(number) {
             // if this block is higher than the final paris(merge) block, return the final paris
             // difficulty
-            return Ok(Some(td))
+            return Ok(Some(td));
         }
 
         self.static_file_provider.get_with_static_file_or_database(
@@ -342,6 +342,10 @@ impl<DB: Database> BlockReader for ProviderFactory<DB> {
         range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         self.provider()?.block_with_senders_range(range)
+    }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.provider()?.shadows(id)
     }
 }
 

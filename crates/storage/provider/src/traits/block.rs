@@ -10,6 +10,7 @@ use reth_primitives::{
 };
 use reth_storage_errors::provider::ProviderResult;
 use reth_trie::{updates::TrieUpdates, HashedPostState};
+use revm::primitives::shadow::Shadows;
 use std::ops::RangeInclusive;
 
 /// Enum to control transaction hash inclusion.
@@ -98,6 +99,8 @@ pub trait BlockReader:
     ///
     /// Returns `None` if block is not found.
     fn ommers(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Vec<Header>>>;
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>>;
 
     /// Returns the block with matching hash from the database.
     ///

@@ -19,7 +19,7 @@ use reth_storage_errors::provider::{ProviderError, ProviderResult};
 use reth_trie::updates::TrieUpdates;
 use revm::{
     db::BundleState,
-    primitives::{BlockEnv, CfgEnvWithHandlerCfg},
+    primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg},
 };
 use std::{
     collections::{BTreeMap, HashMap},
@@ -63,7 +63,7 @@ impl ExtendedAccount {
     /// Create new instance of extended account
     pub fn new(nonce: u64, balance: U256) -> Self {
         Self {
-            account: Account { nonce, balance, bytecode_hash: None },
+            account: Account { nonce, balance, bytecode_hash: None, pledges: None, stake: None },
             bytecode: None,
             storage: Default::default(),
         }
@@ -249,7 +249,7 @@ impl TransactionsProvider for MockEthProvider {
                         excess_blob_gas: block.header.excess_blob_gas,
                         timestamp: block.header.timestamp,
                     };
-                    return Ok(Some((tx.clone(), meta)))
+                    return Ok(Some((tx.clone(), meta)));
                 }
             }
         }
@@ -261,7 +261,7 @@ impl TransactionsProvider for MockEthProvider {
         let mut current_tx_number: TxNumber = 0;
         for block in lock.values() {
             if current_tx_number + (block.body.len() as TxNumber) > id {
-                return Ok(Some(block.header.number))
+                return Ok(Some(block.header.number));
             }
             current_tx_number += block.body.len() as TxNumber;
         }
@@ -489,6 +489,10 @@ impl BlockReader for MockEthProvider {
         _range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<BlockWithSenders>> {
         Ok(vec![])
+    }
+
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        Ok(None)
     }
 }
 
