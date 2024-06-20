@@ -33,11 +33,11 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
     }
 
     /// Retrieves a v3 payload from the engine api as serde value
-    pub async fn get_payload_v3_value(
+    pub async fn get_payload_v1_irys_value(
         &self,
         payload_id: PayloadId,
     ) -> eyre::Result<serde_json::Value> {
-        Ok(self.engine_api_client.request("engine_getPayloadV3", (payload_id,)).await?)
+        Ok(self.engine_api_client.request("engine_getPayloadV1Irys", (payload_id,)).await?)
     }
 
     /// Submits a payload to the engine api
