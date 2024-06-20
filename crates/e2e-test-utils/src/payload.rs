@@ -6,7 +6,7 @@ use tokio_stream::wrappers::BroadcastStream;
 /// Helper for payload operations
 pub struct PayloadTestContext<E: EngineTypes + 'static> {
     pub payload_event_stream: BroadcastStream<Events<E>>,
-    payload_builder: PayloadBuilderHandle<E>,
+    pub payload_builder: PayloadBuilderHandle<E>,
     pub timestamp: u64,
 }
 
@@ -47,12 +47,30 @@ impl<E: EngineTypes + 'static> PayloadTestContext<E> {
     /// Wait until the best built payload is ready
     pub async fn wait_for_built_payload(&self, payload_id: PayloadId) {
         loop {
-            let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
-            if payload.block().body.is_empty() {
-                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-                continue
+            // let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
+            match self.payload_builder.best_payload(payload_id).await {
+                Some(v) => match v {
+                    Ok(v) => {
+                        if v.block().body.is_empty() {
+                            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                },
+                None => {
+                    dbg!("no payload :c");
+                }
             }
-            break
+            // if payload.block().body.is_empty() {
+            //     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            //     continue;
+            // }
+            // break;
         }
     }
 

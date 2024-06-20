@@ -26,7 +26,7 @@ use reth_primitives::{
     Block, Header, IntoRecoveredTransaction, Receipt, Receipts, EMPTY_OMMER_ROOT_HASH, U256,
 };
 use reth_provider::{BundleStateWithReceipts, StateProviderFactory};
-use reth_revm::database::StateProviderDatabase;
+use reth_revm::{database::StateProviderDatabase, state_change::apply_block_shadows};
 use reth_transaction_pool::{BestTransactionsAttributes, TransactionPool};
 use revm::{
     db::states::bundle_state::BundleRetention,
@@ -177,7 +177,13 @@ where
             parent_beacon_block_root: attributes.parent_beacon_block_root,
         };
 
-        let block = Block { header, body: vec![], ommers: vec![], withdrawals, shadows: None };
+        let block = Block {
+            header,
+            body: vec![],
+            ommers: vec![],
+            withdrawals,
+            shadows: Some(attributes.shadows.clone()),
+        };
         let sealed_block = block.seal_slow();
 
         Ok(EthBuiltPayload::new(attributes.payload_id(), sealed_block, U256::ZERO))
@@ -241,6 +247,26 @@ where
     )?;
 
     let mut receipts = Vec::new();
+
+    // let mut evm = revm::Evm::builder()
+    //     .with_db(&mut db)
+    //     .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
+    //         initialized_cfg.clone(),
+    //         initialized_block_env.clone(),
+    //         // tx_env_with_recovered(&tx),
+    //         Default::default(),
+    //     ))
+    //     .build();
+
+    // let shadow_exec =
+    //     apply_block_shadows(Some(&attributes.shadows), &mut evm).expect("shadow exec failed :c");
+    // // commit changes
+    // dbg!(shadow_exec);
+    // let ss = evm.context.evm.inner.journaled_state.state.clone();
+    // evm.db_mut().commit(ss);
+    // // drop handle on db
+    // drop(evm);
+
     while let Some(pool_tx) = best_txs.next() {
         // ensure we still have capacity for this transaction
         if cumulative_gas_used + pool_tx.gas_limit() > block_gas_limit {
@@ -428,7 +454,13 @@ where
     };
 
     // seal the block
-    let block = Block { header, body: executed_txs, ommers: vec![], withdrawals, shadows: None };
+    let block = Block {
+        header,
+        body: executed_txs,
+        ommers: vec![],
+        withdrawals,
+        shadows: Some(attributes.shadows),
+    };
 
     let sealed_block = block.seal_slow();
     debug!(target: "payload_builder", ?sealed_block, "sealed built block");

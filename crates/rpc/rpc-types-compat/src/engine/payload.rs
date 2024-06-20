@@ -3,13 +3,14 @@
 
 use reth_primitives::{
     constants::{EMPTY_OMMER_ROOT_HASH, MAXIMUM_EXTRA_DATA_SIZE, MIN_PROTOCOL_BASE_FEE_U256},
-    proofs::{self},
+    proofs,
+    revm_primitives::shadow::Shadows,
     Block, Header, SealedBlock, TransactionSigned, UintTryTo, Withdrawals, B256, U256,
 };
-use reth_rpc_types::engine::{
-    payload::{ExecutionPayloadBodyV1, ExecutionPayloadFieldV2, ExecutionPayloadInputV2},
-    ExecutionPayload, ExecutionPayloadV1, ExecutionPayloadV2, ExecutionPayloadV3,
-    ExecutionPayloadV4, PayloadError,
+use reth_rpc_types::{
+    irys_payload::ExecutionPayloadV1Irys, ExecutionPayload, ExecutionPayloadBodyV1,
+    ExecutionPayloadFieldV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV2,
+    ExecutionPayloadV3, ExecutionPayloadV4, PayloadError,
 };
 
 /// Converts [ExecutionPayloadV1] to [Block]
@@ -94,6 +95,20 @@ pub fn try_payload_v3_to_block(payload: ExecutionPayloadV3) -> Result<Block, Pay
     Ok(base_block)
 }
 
+pub fn try_payload_v1_irys_to_block(
+    payload: ExecutionPayloadV1Irys,
+) -> Result<Block, PayloadError> {
+    // this performs the same conversion as the underlying V2 payload, but inserts the blob gas
+    // used and excess blob gas
+    let mut base_block = try_payload_v3_to_block(payload.payload_inner)?;
+
+    // base_block.header.blob_gas_used = Some(payload.blob_gas_used);
+    // base_block.header.excess_blob_gas = Some(payload.excess_blob_gas);
+    base_block.shadows = Some(payload.shadows);
+
+    Ok(base_block)
+}
+
 /// Converts [ExecutionPayloadV4] to [Block]
 pub fn try_payload_v4_to_block(payload: ExecutionPayloadV4) -> Result<Block, PayloadError> {
     // this performs the same conversion as the underlying V3 payload.
@@ -107,17 +122,19 @@ pub fn try_payload_v4_to_block(payload: ExecutionPayloadV4) -> Result<Block, Pay
 /// root) if the block is a V3 payload
 pub fn block_to_payload(value: SealedBlock) -> (ExecutionPayload, Option<B256>) {
     // todo(onbjerg): check for requests_root here and return payload v4
-    if value.header.parent_beacon_block_root.is_some() {
-        // block with parent beacon block root: V3
-        let (payload, beacon_block_root) = block_to_payload_v3(value);
-        (ExecutionPayload::V3(payload), beacon_block_root)
-    } else if value.withdrawals.is_some() {
-        // block with withdrawals: V2
-        (ExecutionPayload::V2(block_to_payload_v2(value)), None)
-    } else {
-        // otherwise V1
-        (ExecutionPayload::V1(block_to_payload_v1(value)), None)
-    }
+
+    // if value.header.parent_beacon_block_root.is_some() {
+    //     // block with parent beacon block root: V3
+    //     let (payload, beacon_block_root) = block_to_payload_v3(value);
+    //     (ExecutionPayload::V3(payload), beacon_block_root)
+    // } else if value.withdrawals.is_some() {
+    //     // block with withdrawals: V2
+    //     (ExecutionPayload::V2(block_to_payload_v2(value)), None)
+    // } else {
+    //     // otherwise V1
+    //     (ExecutionPayload::V1(block_to_payload_v1(value)), None)
+    // }
+    (ExecutionPayload::V1Irys(block_to_payload_v1_irys(value)), None)
 }
 
 /// Converts [SealedBlock] to [ExecutionPayloadV1]
@@ -198,6 +215,44 @@ pub fn block_to_payload_v3(value: SealedBlock) -> (ExecutionPayloadV3, Option<B2
     (payload, parent_beacon_block_root)
 }
 
+/// Converts [SealedBlock] to [ExecutionPayloadV3], and returns the parent beacon block root.
+pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
+    let transactions = value.raw_transactions();
+
+    let parent_beacon_block_root = value.header.parent_beacon_block_root;
+    let payload = ExecutionPayloadV1Irys {
+        payload_inner: ExecutionPayloadV3 {
+            blob_gas_used: value.blob_gas_used.unwrap_or_default(),
+            excess_blob_gas: value.excess_blob_gas.unwrap_or_default(),
+            payload_inner: ExecutionPayloadV2 {
+                payload_inner: ExecutionPayloadV1 {
+                    parent_hash: value.parent_hash,
+                    fee_recipient: value.beneficiary,
+                    state_root: value.state_root,
+                    receipts_root: value.receipts_root,
+                    logs_bloom: value.logs_bloom,
+                    prev_randao: value.mix_hash,
+                    block_number: value.number,
+                    gas_limit: value.gas_limit,
+                    gas_used: value.gas_used,
+                    timestamp: value.timestamp,
+                    extra_data: value.extra_data.clone(),
+                    base_fee_per_gas: U256::from(value.base_fee_per_gas.unwrap_or_default()),
+                    block_hash: value.hash(),
+                    transactions,
+                },
+                withdrawals: value.withdrawals.unwrap_or_default().into_inner(),
+            },
+        },
+        shadows: value.shadows.unwrap_or(Shadows::new(vec![])),
+    };
+
+    // let (payload, parent_beacon_block_root) =
+
+    // (payload, parent_beacon_block_root)
+    payload
+}
+
 /// Converts [SealedBlock] to [ExecutionPayloadFieldV2]
 pub fn convert_block_to_payload_field_v2(value: SealedBlock) -> ExecutionPayloadFieldV2 {
     // if there are withdrawals, return V2
@@ -208,24 +263,24 @@ pub fn convert_block_to_payload_field_v2(value: SealedBlock) -> ExecutionPayload
     }
 }
 
-/// Converts [ExecutionPayloadFieldV2] to [ExecutionPayload]
-pub fn convert_payload_field_v2_to_payload(value: ExecutionPayloadFieldV2) -> ExecutionPayload {
-    match value {
-        ExecutionPayloadFieldV2::V1(payload) => ExecutionPayload::V1(payload),
-        ExecutionPayloadFieldV2::V2(payload) => ExecutionPayload::V2(payload),
-    }
-}
+// /// Converts [ExecutionPayloadFieldV2] to [ExecutionPayload]
+// pub fn convert_payload_field_v2_to_payload(value: ExecutionPayloadFieldV2) -> ExecutionPayload {
+//     match value {
+//         ExecutionPayloadFieldV2::V1(payload) => ExecutionPayload::V1(payload),
+//         ExecutionPayloadFieldV2::V2(payload) => ExecutionPayload::V2(payload),
+//     }
+// }
 
-/// Converts [ExecutionPayloadInputV2] to [ExecutionPayload]
-pub fn convert_payload_input_v2_to_payload(value: ExecutionPayloadInputV2) -> ExecutionPayload {
-    match value.withdrawals {
-        Some(withdrawals) => ExecutionPayload::V2(ExecutionPayloadV2 {
-            payload_inner: value.execution_payload,
-            withdrawals,
-        }),
-        None => ExecutionPayload::V1(value.execution_payload),
-    }
-}
+// /// Converts [ExecutionPayloadInputV2] to [ExecutionPayload]
+// pub fn convert_payload_input_v2_to_payload(value: ExecutionPayloadInputV2) -> ExecutionPayload {
+//     match value.withdrawals {
+//         Some(withdrawals) => ExecutionPayload::V2(ExecutionPayloadV2 {
+//             payload_inner: value.execution_payload,
+//             withdrawals,
+//         }),
+//         None => ExecutionPayload::V1(value.execution_payload),
+//     }
+// }
 
 /// Converts [SealedBlock] to [ExecutionPayloadInputV2]
 pub fn convert_block_to_payload_input_v2(value: SealedBlock) -> ExecutionPayloadInputV2 {
@@ -247,10 +302,11 @@ pub fn try_into_block(
     parent_beacon_block_root: Option<B256>,
 ) -> Result<Block, PayloadError> {
     let mut base_payload = match value {
-        ExecutionPayload::V1(payload) => try_payload_v1_to_block(payload)?,
-        ExecutionPayload::V2(payload) => try_payload_v2_to_block(payload)?,
-        ExecutionPayload::V3(payload) => try_payload_v3_to_block(payload)?,
-        ExecutionPayload::V4(payload) => try_payload_v4_to_block(payload)?,
+        // ExecutionPayload::V1(payload) => try_payload_v1_to_block(payload)?,
+        // ExecutionPayload::V2(payload) => try_payload_v2_to_block(payload)?,
+        // ExecutionPayload::V3(payload) => try_payload_v3_to_block(payload)?,
+        // ExecutionPayload::V4(payload) => try_payload_v4_to_block(payload)?,
+        ExecutionPayload::V1Irys(payload) => try_payload_v1_irys_to_block(payload)?,
     };
 
     base_payload.header.parent_beacon_block_root = parent_beacon_block_root;

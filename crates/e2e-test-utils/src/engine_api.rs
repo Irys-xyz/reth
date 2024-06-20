@@ -28,8 +28,8 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
     pub async fn get_payload_v3(
         &self,
         payload_id: PayloadId,
-    ) -> eyre::Result<E::ExecutionPayloadV3> {
-        Ok(EngineApiClient::<E>::get_payload_v3(&self.engine_api_client, payload_id).await?)
+    ) -> eyre::Result<E::ExecutionPayloadV1Irys> {
+        Ok(EngineApiClient::<E>::get_payload_v1_irys(&self.engine_api_client, payload_id).await?)
     }
 
     /// Retrieves a v3 payload from the engine api as serde value
@@ -49,13 +49,13 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
         versioned_hashes: Vec<B256>,
     ) -> eyre::Result<B256>
     where
-        E::ExecutionPayloadV3: From<E::BuiltPayload> + PayloadEnvelopeExt,
+        E::ExecutionPayloadV1Irys: From<E::BuiltPayload> + PayloadEnvelopeExt,
     {
         // setup payload for submission
-        let envelope_v3: <E as EngineTypes>::ExecutionPayloadV3 = payload.into();
+        let envelope_v3: <E as EngineTypes>::ExecutionPayloadV1Irys = payload.into();
 
         // submit payload to engine api
-        let submission = EngineApiClient::<E>::new_payload_v3(
+        let submission = EngineApiClient::<E>::new_payload_irys(
             &self.engine_api_client,
             envelope_v3.execution_payload(),
             versioned_hashes,
@@ -70,7 +70,7 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
 
     /// Sends forkchoice update to the engine api
     pub async fn update_forkchoice(&self, current_head: B256, new_head: B256) -> eyre::Result<()> {
-        EngineApiClient::<E>::fork_choice_updated_v2(
+        EngineApiClient::<E>::fork_choice_updated_v1_irys(
             &self.engine_api_client,
             ForkchoiceState {
                 head_block_hash: new_head,
@@ -85,7 +85,7 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
 
     /// Sends forkchoice update to the engine api with a zero finalized hash
     pub async fn update_optimistic_forkchoice(&self, hash: B256) -> eyre::Result<()> {
-        EngineApiClient::<E>::fork_choice_updated_v2(
+        EngineApiClient::<E>::fork_choice_updated_v1_irys(
             &self.engine_api_client,
             ForkchoiceState {
                 head_block_hash: hash,

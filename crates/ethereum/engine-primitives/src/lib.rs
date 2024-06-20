@@ -18,6 +18,7 @@ use reth_engine_primitives::{
 use reth_primitives::{ChainSpec, PayloadAttributes as EthPayloadAttributes};
 use reth_rpc_types::{
     engine::{ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3},
+    irys_payload::ExecutionPayloadEnvelopeV1Irys,
     ExecutionPayloadV1,
 };
 
@@ -30,9 +31,10 @@ impl EngineTypes for EthEngineTypes {
     type PayloadAttributes = EthPayloadAttributes;
     type PayloadBuilderAttributes = EthPayloadBuilderAttributes;
     type BuiltPayload = EthBuiltPayload;
-    type ExecutionPayloadV1 = ExecutionPayloadV1;
-    type ExecutionPayloadV2 = ExecutionPayloadEnvelopeV2;
-    type ExecutionPayloadV3 = ExecutionPayloadEnvelopeV3;
+    // type ExecutionPayloadV1 = ExecutionPayloadV1;
+    // type ExecutionPayloadV2 = ExecutionPayloadEnvelopeV2;
+    // type ExecutionPayloadV3 = ExecutionPayloadEnvelopeV3;
+    type ExecutionPayloadV1Irys = ExecutionPayloadEnvelopeV1Irys;
 
     fn validate_version_specific_fields(
         chain_spec: &ChainSpec,

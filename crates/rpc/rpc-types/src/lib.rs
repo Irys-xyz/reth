@@ -11,6 +11,7 @@
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
 mod eth;
+pub mod irys_payload;
 mod mev;
 mod net;
 mod peer;
@@ -37,11 +38,15 @@ pub use alloy_rpc_types_beacon as beacon;
 pub use eth::{
     engine,
     engine::{
-        ExecutionPayload, ExecutionPayloadV1, ExecutionPayloadV2, ExecutionPayloadV3, PayloadError,
+        BlobsBundleV1, ExecutionPayloadBodyV1, ExecutionPayloadFieldV2, ExecutionPayloadInputV2,
+        /* ExecutionPayload */ ExecutionPayloadV1, ExecutionPayloadV2, ExecutionPayloadV3,
+        ExecutionPayloadV4, PayloadError,
     },
     error::ToRpcError,
     transaction::{self, TransactionRequest, TypedTransactionRequest},
 };
+pub mod exec_payload;
+pub use exec_payload::*;
 
 pub use mev::*;
 pub use net::*;

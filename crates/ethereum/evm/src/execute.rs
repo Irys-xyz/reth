@@ -13,13 +13,15 @@ use reth_evm::{
     ConfigureEvm,
 };
 use reth_primitives::{
-    BlockNumber, BlockWithSenders, ChainSpec, Hardfork, Header, PruneModes, Receipt, Withdrawals,
-    MAINNET, U256,
+    BlockNumber, BlockWithSenders, ChainSpec, Hardfork, Header, PruneModes, Receipt, ShadowReceipt,
+    Withdrawals, MAINNET, U256,
 };
 use reth_revm::{
     batch::{BlockBatchRecord, BlockExecutorStats},
     db::states::bundle_state::BundleRetention,
-    state_change::{apply_beacon_root_contract_call, post_block_balance_increments},
+    state_change::{
+        apply_beacon_root_contract_call, apply_block_shadows, post_block_balance_increments,
+    },
     Evm, State,
 };
 use revm_primitives::{
@@ -122,11 +124,11 @@ where
         &self,
         block: &BlockWithSenders,
         mut evm: Evm<'_, Ext, &mut State<DB>>,
-    ) -> Result<(Vec<Receipt>, u64), BlockExecutionError>
+    ) -> Result<(Vec<Receipt>, u64, Vec<ShadowReceipt>), BlockExecutionError>
     where
         DB: Database<Error = ProviderError>,
     {
-        // apply pre execution changes
+        // // apply pre execution changes
         apply_beacon_root_contract_call(
             &self.chain_spec,
             block.timestamp,
@@ -136,6 +138,13 @@ where
         )?;
 
         // execute block shadows
+        let shadow_receipts = match apply_block_shadows(block.shadows.as_ref(), &mut evm) {
+            Ok(v) => match v {
+                Some(v2) => v2, // todo: figure out nicer way to do this
+                None => vec![],
+            },
+            Err(e) => return Err(BlockExecutionError::other(e)),
+        };
 
         // execute transactions
         let mut cumulative_gas_used = 0;
@@ -184,7 +193,7 @@ where
         }
         drop(evm);
 
-        Ok((receipts, cumulative_gas_used))
+        Ok((receipts, cumulative_gas_used, shadow_receipts))
     }
 }
 
@@ -259,7 +268,7 @@ where
         // 2. configure the evm and execute
         let env = self.evm_env_for_block(&block.header, total_difficulty);
 
-        let (receipts, gas_used) = {
+        let (receipts, gas_used, shadow_receipts) = {
             let evm = self.executor.evm_config.evm_with_env(&mut self.state, env);
             self.executor.execute_pre_and_transactions(block, evm)
         }?;
@@ -477,6 +486,7 @@ mod tests {
                             body: vec![],
                             ommers: vec![],
                             withdrawals: None,
+                            shadows: None,
                         },
                         senders: vec![],
                     },
@@ -507,6 +517,7 @@ mod tests {
                         body: vec![],
                         ommers: vec![],
                         withdrawals: None,
+                        shadows: None,
                     },
                     senders: vec![],
                 },
@@ -567,7 +578,13 @@ mod tests {
             .execute(
                 (
                     &BlockWithSenders {
-                        block: Block { header, body: vec![], ommers: vec![], withdrawals: None },
+                        block: Block {
+                            header,
+                            body: vec![],
+                            ommers: vec![],
+                            withdrawals: None,
+                            shadows: None,
+                        },
                         senders: vec![],
                     },
                     U256::ZERO,
@@ -613,7 +630,13 @@ mod tests {
         executor
             .execute_without_verification(
                 &BlockWithSenders {
-                    block: Block { header, body: vec![], ommers: vec![], withdrawals: None },
+                    block: Block {
+                        header,
+                        body: vec![],
+                        ommers: vec![],
+                        withdrawals: None,
+                        shadows: None,
+                    },
                     senders: vec![],
                 },
                 U256::ZERO,
@@ -657,6 +680,7 @@ mod tests {
                             body: vec![],
                             ommers: vec![],
                             withdrawals: None,
+                            shadows: None,
                         },
                         senders: vec![],
                     },
@@ -678,7 +702,13 @@ mod tests {
             .execute_and_verify_one(
                 (
                     &BlockWithSenders {
-                        block: Block { header, body: vec![], ommers: vec![], withdrawals: None },
+                        block: Block {
+                            header,
+                            body: vec![],
+                            ommers: vec![],
+                            withdrawals: None,
+                            shadows: None,
+                        },
                         senders: vec![],
                     },
                     U256::ZERO,
@@ -737,6 +767,7 @@ mod tests {
                             body: vec![],
                             ommers: vec![],
                             withdrawals: None,
+                            shadows: None,
                         },
                         senders: vec![],
                     },

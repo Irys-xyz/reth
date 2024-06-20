@@ -9,13 +9,17 @@ use reth_primitives::{
 use reth_rpc_types::engine::{
     ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3, ExecutionPayloadV1, PayloadId,
 };
+use reth_rpc_types::irys_payload::ExecutionPayloadEnvelopeV1Irys;
+use reth_rpc_types::{engine::BlobsBundleV1, ExecutionPayloadV3};
 use reth_rpc_types_compat::engine::payload::{
-    block_to_payload_v1, block_to_payload_v3, convert_block_to_payload_field_v2,
+    block_to_payload_v1, block_to_payload_v1_irys, block_to_payload_v3,
+    convert_block_to_payload_field_v2,
 };
 use revm_primitives::{
     payload::PayloadAttributes, shadow::Shadows, BlobExcessGasAndPrice, BlockEnv, CfgEnv,
     CfgEnvWithHandlerCfg, SpecId,
 };
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::Infallible;
 
 /// Contains the built payload.
@@ -126,6 +130,27 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV3 {
             // <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#specification-2>
             should_override_builder: false,
             blobs_bundle: sidecars.into_iter().map(Into::into).collect::<Vec<_>>().into(),
+        }
+    }
+}
+
+impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
+    fn from(value: EthBuiltPayload) -> Self {
+        let EthBuiltPayload { block, fees, sidecars, .. } = value;
+        ExecutionPayloadEnvelopeV1Irys {
+            execution_payload: block_to_payload_v1_irys(block.clone()),
+            block_value: fees,
+            // From the engine API spec:
+            //
+            // > Client software **MAY** use any heuristics to decide whether to set
+            // `shouldOverrideBuilder` flag or not. If client software does not implement any
+            // heuristic this flag **SHOULD** be set to `false`.
+            //
+            // Spec:
+            // <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#specification-2>
+            should_override_builder: false,
+            blobs_bundle: sidecars.clone().into_iter().map(Into::into).collect::<Vec<_>>().into(),
+            shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
         }
     }
 }

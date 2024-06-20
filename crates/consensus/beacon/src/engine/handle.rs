@@ -7,8 +7,9 @@ use crate::{
 use futures::TryFutureExt;
 use reth_engine_primitives::EngineTypes;
 use reth_interfaces::RethResult;
-use reth_rpc_types::engine::{
-    CancunPayloadFields, ExecutionPayload, ForkchoiceState, ForkchoiceUpdated, PayloadStatus,
+use reth_rpc_types::{
+    engine::{CancunPayloadFields, ForkchoiceState, ForkchoiceUpdated, PayloadStatus},
+    ExecutionPayload,
 };
 use reth_tokio_util::{EventSender, EventStream};
 use tokio::sync::{mpsc::UnboundedSender, oneshot};

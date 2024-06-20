@@ -9,6 +9,7 @@ use proptest::strategy::Strategy;
 #[cfg(feature = "zstd-codec")]
 use reth_codecs::CompactZstd;
 use reth_codecs::{add_arbitrary_tests, main_codec, Compact};
+use revm_primitives::{pledge::TxId, shadow::ShadowTxType};
 use std::{
     cmp::Ordering,
     ops::{Deref, DerefMut},
@@ -42,6 +43,37 @@ pub struct Receipt {
     /// ensures this is only set for post-Canyon deposit transactions.
     #[cfg(feature = "optimism")]
     pub deposit_receipt_version: Option<u64>,
+}
+
+// #[cfg_attr(feature = "zstd-codec", main_codec(no_arbitrary, zstd))]
+// #[cfg_attr(not(feature = "zstd-codec"), main_codec(no_arbitrary))]
+// #[add_arbitrary_tests]
+// #[derive(Clone, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
+// #[rlp(trailing)]
+// pub struct ShadowReceipt {
+//     pub tx_type: ShadowTxType,
+//     pub success: bool,
+// }
+
+#[add_arbitrary_tests]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+// #[rlp(trailing)]
+pub struct ShadowReceipt {
+    pub tx_id: TxId,
+    pub tx_type: ShadowTxType,
+    pub result: ShadowResult,
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Default)]
+pub enum ShadowResult {
+    #[default]
+    Success,
+    OutOfFunds,
+    OverflowPayment,
+    Failure,
+    AlreadyStaked,
+    NoPledges,
+    NoMatchingPledge,
 }
 
 impl Receipt {

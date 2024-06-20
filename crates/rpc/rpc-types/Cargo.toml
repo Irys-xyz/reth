@@ -1,43 +1,49 @@
 [package]
-name = "reth-rpc-types"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-homepage.workspace = true
-repository.workspace = true
 description = "Reth RPC types"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+name = "reth-rpc-types"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
 
+revm-primitives.workspace = true
+
 # ethereum
 alloy-primitives = { workspace = true, features = ["rand", "rlp", "serde"] }
 alloy-rpc-types = { workspace = true, features = ["jsonrpsee-types"] }
 alloy-rpc-types-anvil.workspace = true
-alloy-rpc-types-trace.workspace = true
 alloy-rpc-types-beacon.workspace = true
 alloy-rpc-types-engine = { workspace = true, features = ["jsonrpsee-types"] }
+alloy-rpc-types-trace.workspace = true
 
 # misc
+jsonrpsee-types = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-jsonrpsee-types = { workspace = true, optional = true }
 
 [features]
-default = ["jsonrpsee-types"]
 arbitrary = ["alloy-primitives/arbitrary", "alloy-rpc-types/arbitrary"]
+default = ["jsonrpsee-types"]
 
 
 [dev-dependencies]
 # misc
-alloy-primitives = { workspace = true, features = ["rand", "rlp", "serde", "arbitrary"] }
+alloy-primitives = { workspace = true, features = [
+    "arbitrary",
+    "rand",
+    "rlp",
+    "serde",
+] }
 arbitrary = { workspace = true, features = ["derive"] }
-proptest.workspace = true
+bytes.workspace = true
 proptest-derive.workspace = true
+proptest.workspace = true
 rand.workspace = true
 similar-asserts.workspace = true
-bytes.workspace = true
-

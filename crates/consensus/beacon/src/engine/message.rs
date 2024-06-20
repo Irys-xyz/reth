@@ -3,9 +3,12 @@ use futures::{future::Either, FutureExt};
 use reth_engine_primitives::EngineTypes;
 use reth_interfaces::RethResult;
 use reth_payload_builder::error::PayloadBuilderError;
-use reth_rpc_types::engine::{
-    CancunPayloadFields, ExecutionPayload, ForkChoiceUpdateResult, ForkchoiceState,
-    ForkchoiceUpdateError, ForkchoiceUpdated, PayloadId, PayloadStatus, PayloadStatusEnum,
+use reth_rpc_types::{
+    engine::{
+        CancunPayloadFields, ForkChoiceUpdateResult, ForkchoiceState, ForkchoiceUpdateError,
+        ForkchoiceUpdated, PayloadId, PayloadStatus, PayloadStatusEnum,
+    },
+    ExecutionPayload,
 };
 use std::{
     future::Future,

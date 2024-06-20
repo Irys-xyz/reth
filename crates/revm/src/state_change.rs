@@ -1,11 +1,23 @@
 use reth_consensus_common::calc;
 use reth_execution_errors::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
-    revm::env::fill_tx_env_with_beacon_root_contract_call, Address, ChainSpec, Header, Withdrawal,
-    B256, U256,
+    revm::env::fill_tx_env_with_beacon_root_contract_call, Address, BlockWithSenders, ChainSpec,
+    Header, ShadowReceipt, ShadowResult, Withdrawal, B256, U256,
 };
-use revm::{interpreter::Host, Database, DatabaseCommit, Evm};
-use std::collections::HashMap;
+use revm::{
+    interpreter::{Host, InstructionResult},
+    primitives::{
+        pledge::{Pledge, Stake, TxId},
+        shadow::{ShadowTxType, Shadows},
+        Account, EVMError, State,
+    },
+    Database, DatabaseCommit, Evm,
+};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    fmt::Error,
+    ops::DerefMut,
+};
 
 /// Collect all balance changes at the end of the block.
 ///
@@ -68,7 +80,7 @@ where
     DB::Error: std::fmt::Display,
 {
     if !chain_spec.is_cancun_active_at_timestamp(block_timestamp) {
-        return Ok(())
+        return Ok(());
     }
 
     let parent_beacon_block_root =
@@ -81,9 +93,9 @@ where
             return Err(BlockValidationError::CancunGenesisParentBeaconBlockRootNotZero {
                 parent_beacon_block_root,
             }
-            .into())
+            .into());
         }
-        return Ok(())
+        return Ok(());
     }
 
     // get previous env
@@ -100,7 +112,7 @@ where
                 parent_beacon_block_root: Box::new(parent_beacon_block_root),
                 message: e.to_string(),
             }
-            .into())
+            .into());
         }
     };
 
@@ -114,6 +126,184 @@ where
 
     Ok(())
 }
+
+// Applies the pre-block Irys transaction shadows, using the given block,
+/// [ChainSpec], EVM.
+///
+
+#[inline]
+pub fn apply_block_shadows<EXT, DB: Database + DatabaseCommit>(
+    // _chain_spec: &ChainSpec,
+    // block: &BlockWithSenders,
+    shadows: Option<&Shadows>,
+    evm: &mut Evm<'_, EXT, DB>,
+) -> Result<Option<Vec<ShadowReceipt>>, EVMError<DB::Error>>
+where
+    DB::Error: std::fmt::Display + std::fmt::Debug,
+{
+    // skip if the are no shadows
+    let Some(shadows) = shadows else { return Ok(None) };
+    let mut receipts = Vec::with_capacity(shadows.len());
+
+    // TODO: fix this
+    for shadow in <Shadows as Clone>::clone(&shadows).into_iter() {
+        // adapted from revm/src/journaled_state:load_account
+        let (primary_account, _) = evm
+            .context
+            .evm
+            .inner
+            .journaled_state
+            .load_account(shadow.address, &mut evm.context.evm.inner.db)?;
+
+        let res = match shadow.tx {
+            ShadowTxType::Null => ShadowResult::Success,
+            ShadowTxType::Data(data_shadow) => {
+                let res = match primary_account.info.balance.checked_sub(data_shadow.fee) {
+                    Some(_) => ShadowResult::Success,
+                    None => ShadowResult::OutOfFunds,
+                };
+                // let Some(_) = primary_account.info.balance.checked_sub(data_shadow.fee) else {};
+                evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                res
+            }
+
+            ShadowTxType::Transfer(transfer) => {
+                // let sender = state.get_mut(&shadow.address).or_insert(
+                //     evm.db_mut()
+                //         .basic(shadow.address)
+                //         .expect("unable to get account from DB")
+                //         .map(|i| i.into())
+                //         .unwrap_or(Account::new_not_existing()),
+                // );
+                // let receiver = state.get_mut(transfer.to).or_insert(
+                //     evm.db_mut()
+                //         .basic(transfer.to)
+                //         .expect("unable to get account from DB")
+                //         .map(|i| i.into())
+                //         .unwrap_or(Account::new_not_existing()),
+                // );
+                // let Some(bal) = sender.info
+
+                // ugly nested matches, prob a better way to do this
+                match evm.context.evm.inner.journaled_state.transfer(
+                    &shadow.address,
+                    &transfer.to,
+                    transfer.amount,
+                    &mut evm.context.evm.inner.db,
+                ) {
+                    Ok(v) => match v {
+                        Some(v2) => match v2 {
+                            // match only the known possible instruction results
+                            InstructionResult::OutOfFunds => ShadowResult::OutOfFunds,
+                            InstructionResult::OverflowPayment => ShadowResult::OverflowPayment,
+                            _ => ShadowResult::Failure,
+                        },
+                        None => ShadowResult::Failure,
+                    },
+                    Err(_) => ShadowResult::Failure,
+                }
+            }
+
+            ShadowTxType::MiningAddressStake(stake) => match primary_account.info.stake {
+                Some(_) => ShadowResult::AlreadyStaked,
+                None => {
+                    primary_account.info.stake = Some(Stake {
+                        tx_id: shadow.tx_id,
+                        quantity: stake.value,
+                        height: stake.height,
+                    });
+                    evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                    ShadowResult::Success
+                }
+            },
+
+            ShadowTxType::PartitionPledge(pledge_shadow) => {
+                // assume validation of pledge is done on erlang side
+                let pledge = Pledge {
+                    tx_id: shadow.tx_id,
+                    quantity: pledge_shadow.quantity,
+                    dest_hash: pledge_shadow.part_hash,
+                    height: pledge_shadow.height,
+                };
+                match &mut primary_account.info.pledges {
+                    Some(pledges) => pledges.push(pledge),
+                    None => primary_account.info.pledges = Some(vec![pledge]),
+                };
+                evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                ShadowResult::Success
+            }
+            ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
+                match &mut primary_account.info.pledges {
+                    None => ShadowResult::NoPledges,
+                    Some(pledges) => {
+                        // find relevant pledge
+                        let Some(target_pledge_idx) =
+                            pledges.iter().position(|p| p.dest_hash == unpledge.part_hash)
+                        else {
+                            // break from the match
+                            break 'partition_unpledge ShadowResult::NoMatchingPledge;
+                        };
+                        // infallible
+                        let target_pledge = pledges.get(target_pledge_idx).unwrap();
+                        // refund the account for the value of the pledge
+                        let Some(_) =
+                            primary_account.info.balance.checked_add(target_pledge.quantity)
+                        else {
+                            break 'partition_unpledge ShadowResult::OverflowPayment;
+                        };
+
+                        pledges.remove(target_pledge_idx);
+                        evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                        ShadowResult::Success
+                    }
+                }
+            }
+            ShadowTxType::UnpledgeAll(_unpledge_shadow) => 'unpledge_all: {
+                // remove/refund all pledges
+                match &mut primary_account.info.pledges {
+                    None => (),
+                    Some(pledges) => {
+                        for pledge in pledges.iter() {
+                            match primary_account.info.balance.checked_add(pledge.quantity) {
+                                None => break 'unpledge_all ShadowResult::OverflowPayment,
+                                _ => (),
+                            }
+                        }
+                        pledges.clear();
+                        // we can skip touching here as an account can only have pledges if it has a stake
+                        // evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                    }
+                }
+                // remove/refund account stake
+                match &mut primary_account.info.stake {
+                    None => (),
+                    Some(stake) => {
+                        match primary_account.info.balance.checked_add(stake.quantity) {
+                            None => break 'unpledge_all ShadowResult::OverflowPayment,
+                            _ => (),
+                        }
+
+                        primary_account.info.stake = None;
+                        evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                    }
+                }
+                ShadowResult::Success
+            }
+            ShadowTxType::Slash(_slash_shadow) => {
+                todo!()
+                // ShadowResult::Success
+            }
+        };
+        receipts.push(ShadowReceipt { tx_id: shadow.tx_id, result: res, tx_type: shadow.tx });
+    }
+
+    // evm.context.evm.inner.journaled_state.checkpoint();
+    // evm.context.evm.db.commit(state);
+
+    Ok(Some(receipts))
+}
+
+//
 
 /// Returns a map of addresses to their balance increments if the Shanghai hardfork is active at the
 /// given timestamp.

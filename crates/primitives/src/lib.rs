@@ -84,6 +84,7 @@ pub use prune::{
 };
 pub use receipt::{
     gas_spent_by_transactions, Receipt, ReceiptWithBloom, ReceiptWithBloomRef, Receipts,
+    ShadowReceipt, ShadowResult,
 };
 pub use static_file::StaticFileSegment;
 pub use storage::StorageEntry;

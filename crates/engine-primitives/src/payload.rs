@@ -1,6 +1,7 @@
-use crate::PayloadAttributes;
 use reth_primitives::B256;
-use reth_rpc_types::engine::ExecutionPayload;
+use reth_rpc_types::ExecutionPayload;
+
+use crate::PayloadAttributes;
 
 use super::MessageValidationKind;
 

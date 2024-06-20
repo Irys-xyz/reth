@@ -9,9 +9,10 @@ use reth_primitives::{Address, BlockHash, BlockId, BlockNumberOrTag, Bytes, B256
 use reth_rpc_types::{
     engine::{
         ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadInputV2, ExecutionPayloadV1,
-        ExecutionPayloadV3, ForkchoiceState, ForkchoiceUpdated, PayloadId, PayloadStatus,
-        TransitionConfiguration,
+        ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId,
+        PayloadStatus, TransitionConfiguration,
     },
+    irys_payload::ExecutionPayloadV1Irys,
     state::StateOverride,
     BlockOverrides, Filter, Log, RichBlock, SyncStatus, TransactionRequest,
 };
@@ -26,22 +27,30 @@ use reth_rpc_types::{
 #[cfg_attr(not(feature = "client"), rpc(server, namespace = "engine"), server_bounds(Engine::PayloadAttributes: jsonrpsee::core::DeserializeOwned))]
 #[cfg_attr(feature = "client", rpc(server, client, namespace = "engine", client_bounds(Engine::PayloadAttributes: jsonrpsee::core::Serialize + Clone), server_bounds(Engine::PayloadAttributes: jsonrpsee::core::DeserializeOwned)))]
 pub trait EngineApi<Engine: EngineTypes> {
-    /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_newpayloadv1>
-    /// Caution: This should not accept the `withdrawals` field
-    #[method(name = "newPayloadV1")]
-    async fn new_payload_v1(&self, payload: ExecutionPayloadV1) -> RpcResult<PayloadStatus>;
+    // /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_newpayloadv1>
+    // /// Caution: This should not accept the `withdrawals` field
+    // #[method(name = "newPayloadV1")]
+    // async fn new_payload_v1(&self, payload: ExecutionPayloadV1) -> RpcResult<PayloadStatus>;
 
-    /// See also <https://github.com/ethereum/execution-apis/blob/584905270d8ad665718058060267061ecfd79ca5/src/engine/shanghai.md#engine_newpayloadv2>
-    #[method(name = "newPayloadV2")]
-    async fn new_payload_v2(&self, payload: ExecutionPayloadInputV2) -> RpcResult<PayloadStatus>;
+    // /// See also <https://github.com/ethereum/execution-apis/blob/584905270d8ad665718058060267061ecfd79ca5/src/engine/shanghai.md#engine_newpayloadv2>
+    // #[method(name = "newPayloadV2")]
+    // async fn new_payload_v2(&self, payload: ExecutionPayloadInputV2) -> RpcResult<PayloadStatus>;
 
-    /// Post Cancun payload handler
-    ///
-    /// See also <https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_newpayloadv3>
-    #[method(name = "newPayloadV3")]
-    async fn new_payload_v3(
+    // /// Post Cancun payload handler
+    // ///
+    // /// See also <https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_newpayloadv3>
+    // #[method(name = "newPayloadV3")]
+    // async fn new_payload_v3(
+    //     &self,
+    //     payload: ExecutionPayloadV3,
+    //     versioned_hashes: Vec<B256>,
+    //     parent_beacon_block_root: B256,
+    // ) -> RpcResult<PayloadStatus>;
+
+    #[method(name = "newPayloadV1Irys")]
+    async fn new_payload_irys(
         &self,
-        payload: ExecutionPayloadV3,
+        payload: ExecutionPayloadV1Irys,
         versioned_hashes: Vec<B256>,
         parent_beacon_block_root: B256,
     ) -> RpcResult<PayloadStatus>;
@@ -49,12 +58,12 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_forkchoiceupdatedv1>
     ///
     /// Caution: This should not accept the `withdrawals` field in the payload attributes.
-    #[method(name = "forkchoiceUpdatedV1")]
-    async fn fork_choice_updated_v1(
-        &self,
-        fork_choice_state: ForkchoiceState,
-        payload_attributes: Option<Engine::PayloadAttributes>,
-    ) -> RpcResult<ForkchoiceUpdated>;
+    // #[method(name = "forkchoiceUpdatedV1")]
+    // async fn fork_choice_updated_v1(
+    //     &self,
+    //     fork_choice_state: ForkchoiceState,
+    //     payload_attributes: Option<Engine::PayloadAttributes>,
+    // ) -> RpcResult<ForkchoiceUpdated>;
 
     /// Post Shanghai forkchoice update handler
     ///
@@ -65,22 +74,29 @@ pub trait EngineApi<Engine: EngineTypes> {
     ///
     /// Caution: This should not accept the `parentBeaconBlockRoot` field in the payload
     /// attributes.
-    #[method(name = "forkchoiceUpdatedV2")]
-    async fn fork_choice_updated_v2(
-        &self,
-        fork_choice_state: ForkchoiceState,
-        payload_attributes: Option<Engine::PayloadAttributes>,
-    ) -> RpcResult<ForkchoiceUpdated>;
+    // #[method(name = "forkchoiceUpdatedV2")]
+    // async fn fork_choice_updated_v2(
+    //     &self,
+    //     fork_choice_state: ForkchoiceState,
+    //     payload_attributes: Option<Engine::PayloadAttributes>,
+    // ) -> RpcResult<ForkchoiceUpdated>;
 
-    /// Post Cancun forkchoice update handler
-    ///
-    /// This is the same as `forkchoiceUpdatedV2`, but expects an additional
-    /// `parentBeaconBlockRoot` field in the `payloadAttributes`, if payload attributes
-    /// are provided.
-    ///
-    /// See also <https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_forkchoiceupdatedv3>
-    #[method(name = "forkchoiceUpdatedV3")]
-    async fn fork_choice_updated_v3(
+    // /// Post Cancun forkchoice update handler
+    // ///
+    // /// This is the same as `forkchoiceUpdatedV2`, but expects an additional
+    // /// `parentBeaconBlockRoot` field in the `payloadAttributes`, if payload attributes
+    // /// are provided.
+    // ///
+    // /// See also <https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_forkchoiceupdatedv3>
+    // #[method(name = "forkchoiceUpdatedV3")]
+    // async fn fork_choice_updated_v3(
+    //     &self,
+    //     fork_choice_state: ForkchoiceState,
+    //     payload_attributes: Option<Engine::PayloadAttributes>,
+    // ) -> RpcResult<ForkchoiceUpdated>;
+
+    #[method(name = "forkchoiceUpdatedV1Irys")]
+    async fn fork_choice_updated_v1_irys(
         &self,
         fork_choice_state: ForkchoiceState,
         payload_attributes: Option<Engine::PayloadAttributes>,
@@ -95,16 +111,16 @@ pub trait EngineApi<Engine: EngineTypes> {
     ///
     /// Note:
     /// > Provider software MAY stop the corresponding build process after serving this call.
-    #[method(name = "getPayloadV1")]
-    async fn get_payload_v1(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV1>;
+    // #[method(name = "getPayloadV1")]
+    // async fn get_payload_v1(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV1>;
 
-    /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/shanghai.md#engine_getpayloadv2>
-    ///
-    /// Returns the most recent version of the payload that is available in the corresponding
-    /// payload build process at the time of receiving this call. Note:
-    /// > Provider software MAY stop the corresponding build process after serving this call.
-    #[method(name = "getPayloadV2")]
-    async fn get_payload_v2(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV2>;
+    // /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/shanghai.md#engine_getpayloadv2>
+    // ///
+    // /// Returns the most recent version of the payload that is available in the corresponding
+    // /// payload build process at the time of receiving this call. Note:
+    // /// > Provider software MAY stop the corresponding build process after serving this call.
+    // #[method(name = "getPayloadV2")]
+    // async fn get_payload_v2(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV2>;
 
     /// Post Cancun payload handler which also returns a blobs bundle.
     ///
@@ -113,12 +129,24 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// Returns the most recent version of the payload that is available in the corresponding
     /// payload build process at the time of receiving this call. Note:
     /// > Provider software MAY stop the corresponding build process after serving this call.
-    #[method(name = "getPayloadV3")]
-    async fn get_payload_v3(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV3>;
+    // #[method(name = "getPayloadV3")]
+    // async fn get_payload_v3(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV3>;
+
+    #[method(name = "getPayloadV1Irys")]
+    async fn get_payload_v1_irys(
+        &self,
+        payload_id: PayloadId,
+    ) -> RpcResult<Engine::ExecutionPayloadV1Irys>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6452a6b194d7db269bf1dbd087a267251d3cc7f8/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1>
-    #[method(name = "getPayloadBodiesByHashV1")]
-    async fn get_payload_bodies_by_hash_v1(
+    // #[method(name = "getPayloadBodiesByHashV1")]
+    // async fn get_payload_bodies_by_hash_v1(
+    //     &self,
+    //     block_hashes: Vec<BlockHash>,
+    // ) -> RpcResult<ExecutionPayloadBodiesV1>;
+
+    #[method(name = "getPayloadBodiesByHashV1Irys")]
+    async fn get_payload_bodies_by_hash_v1_irys(
         &self,
         block_hashes: Vec<BlockHash>,
     ) -> RpcResult<ExecutionPayloadBodiesV1>;
@@ -135,8 +163,15 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// Implementers should take care when acting on the input to this method, specifically
     /// ensuring that the range is limited properly, and that the range boundaries are computed
     /// correctly and without panics.
-    #[method(name = "getPayloadBodiesByRangeV1")]
-    async fn get_payload_bodies_by_range_v1(
+    // #[method(name = "getPayloadBodiesByRangeV1")]
+    // async fn get_payload_bodies_by_range_v1(
+    // &self,
+    // start: U64,
+    // count: U64,
+    // ) -> RpcResult<ExecutionPayloadBodiesV1>;
+
+    #[method(name = "getPayloadBodiesByRangeV1Irys")]
+    async fn get_payload_bodies_by_range_v1_irys(
         &self,
         start: U64,
         count: U64,
@@ -149,11 +184,11 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// > Consensus and execution layer clients MAY remove support of this method after Cancun. If
     /// > no longer supported, this method MUST be removed from the engine_exchangeCapabilities
     /// > request or response list depending on whether it is consensus or execution layer client.
-    #[method(name = "exchangeTransitionConfigurationV1")]
-    async fn exchange_transition_configuration(
-        &self,
-        transition_configuration: TransitionConfiguration,
-    ) -> RpcResult<TransitionConfiguration>;
+    // #[method(name = "exchangeTransitionConfigurationV1")]
+    // async fn exchange_transition_configuration(
+    //     &self,
+    //     transition_configuration: TransitionConfiguration,
+    // ) -> RpcResult<TransitionConfiguration>;
 
     /// This function will return the ClientVersionV1 object.
     /// See also:
@@ -165,8 +200,8 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// - When connected to multiple execution clients via a multiplexer, the multiplexer **MUST**
     ///   concatenate the responses from each execution client into a single,
     /// flat array before returning the response to the consensus client.
-    #[method(name = "getClientVersionV1")]
-    async fn get_client_version_v1(
+    #[method(name = "getClientVersionV1Irys")]
+    async fn get_client_version_v1_irys(
         &self,
         client_version: ClientVersionV1,
     ) -> RpcResult<Vec<ClientVersionV1>>;

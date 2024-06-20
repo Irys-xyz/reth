@@ -2,7 +2,6 @@
 default-members = ["bin/reth"]
 members = [
     "bin/reth/",
-    "crates/acyc",
     "crates/blockchain-tree-api/",
     "crates/blockchain-tree/",
     "crates/cli/runner/",
@@ -314,7 +313,29 @@ revm-primitives = { version = "4.0.0", features = [
 
 revm-inspectors = { git = "https://github.com/paradigmxyz/evm-inspectors", rev = "5a4fd5e" }
 
-# eth
+# alloy-eips = { path = "../alloy/crates/eips", default-features = false }
+# # eth
+# alloy-chains = "0.1.15"
+# alloy-consensus = { path = "../alloy/crates/consensus" }
+# alloy-dyn-abi = "0.7.2"
+# alloy-genesis = { path = "../alloy/crates/genesis" }
+# alloy-network = { path = "../alloy/crates/network" }
+# alloy-node-bindings = { path = "../alloy/crates/node-bindings" }
+# alloy-primitives = "0.7.2"
+# alloy-provider = { path = "../alloy/crates/provider", default-features = false, features = [
+#     "reqwest",
+# ] }
+# alloy-rlp = "0.3.4"
+# alloy-rpc-types = { path = "../alloy/crates/rpc-types" }
+# alloy-rpc-types-anvil = { path = "../alloy/crates/rpc-types-anvil" }
+# alloy-rpc-types-beacon = { path = "../alloy/crates/rpc-types-beacon" }
+# alloy-rpc-types-engine = { path = "../alloy/crates/rpc-types-engine" }
+# alloy-rpc-types-trace = { path = "../alloy/crates/rpc-types-trace" }
+# alloy-serde = { path = "../alloy/crates/serde" }
+# alloy-signer = { path = "../alloy/crates/signer" }
+# alloy-signer-wallet = { path = "../alloy/crates/signer-wallet" }
+
+
 alloy-chains = "0.1.15"
 alloy-consensus = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-dyn-abi = "0.7.2"
@@ -332,9 +353,9 @@ alloy-rpc-types-anvil = { git = "https://github.com/alloy-rs/alloy", rev = "64fe
 alloy-rpc-types-beacon = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-rpc-types-engine = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-rpc-types-trace = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
-alloy-serde = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
+
 alloy-sol-types = "0.7.2"
 alloy-trie = "0.4"
 

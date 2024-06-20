@@ -1,11 +1,11 @@
 [package]
-name = "reth-engine-primitives"
-version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
 homepage.workspace = true
+license.workspace = true
+name = "reth-engine-primitives"
 repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
