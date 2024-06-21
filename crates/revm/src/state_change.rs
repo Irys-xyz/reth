@@ -8,7 +8,7 @@ use revm::{
     interpreter::{Host, InstructionResult},
     primitives::{
         pledge::{Pledge, Stake, TxId},
-        shadow::{ShadowTxType, Shadows},
+        shadow::{ShadowTx, ShadowTxType, Shadows},
         Account, EVMError, State,
     },
     Database, DatabaseCommit, Evm,
@@ -145,162 +145,179 @@ where
     let Some(shadows) = shadows else { return Ok(None) };
     let mut receipts = Vec::with_capacity(shadows.len());
 
-    // TODO: fix this
-    for shadow in <Shadows as Clone>::clone(&shadows).into_iter() {
-        // adapted from revm/src/journaled_state:load_account
-        let (primary_account, _) = evm
-            .context
-            .evm
-            .inner
-            .journaled_state
-            .load_account(shadow.address, &mut evm.context.evm.inner.db)?;
-
-        let res = match shadow.tx {
-            ShadowTxType::Null => ShadowResult::Success,
-            ShadowTxType::Data(data_shadow) => {
-                let res = match primary_account.info.balance.checked_sub(data_shadow.fee) {
-                    Some(_) => ShadowResult::Success,
-                    None => ShadowResult::OutOfFunds,
-                };
-                // let Some(_) = primary_account.info.balance.checked_sub(data_shadow.fee) else {};
-                evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                res
-            }
-
-            ShadowTxType::Transfer(transfer) => {
-                // let sender = state.get_mut(&shadow.address).or_insert(
-                //     evm.db_mut()
-                //         .basic(shadow.address)
-                //         .expect("unable to get account from DB")
-                //         .map(|i| i.into())
-                //         .unwrap_or(Account::new_not_existing()),
-                // );
-                // let receiver = state.get_mut(transfer.to).or_insert(
-                //     evm.db_mut()
-                //         .basic(transfer.to)
-                //         .expect("unable to get account from DB")
-                //         .map(|i| i.into())
-                //         .unwrap_or(Account::new_not_existing()),
-                // );
-                // let Some(bal) = sender.info
-
-                // ugly nested matches, prob a better way to do this
-                match evm.context.evm.inner.journaled_state.transfer(
-                    &shadow.address,
-                    &transfer.to,
-                    transfer.amount,
-                    &mut evm.context.evm.inner.db,
-                ) {
-                    Ok(v) => match v {
-                        Some(v2) => match v2 {
-                            // match only the known possible instruction results
-                            InstructionResult::OutOfFunds => ShadowResult::OutOfFunds,
-                            InstructionResult::OverflowPayment => ShadowResult::OverflowPayment,
-                            _ => ShadowResult::Failure,
-                        },
-                        None => ShadowResult::Failure,
-                    },
-                    Err(_) => ShadowResult::Failure,
-                }
-            }
-
-            ShadowTxType::MiningAddressStake(stake) => match primary_account.info.stake {
-                Some(_) => ShadowResult::AlreadyStaked,
-                None => {
-                    primary_account.info.stake = Some(Stake {
-                        tx_id: shadow.tx_id,
-                        quantity: stake.value,
-                        height: stake.height,
-                    });
-                    evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                    ShadowResult::Success
-                }
-            },
-
-            ShadowTxType::PartitionPledge(pledge_shadow) => {
-                // assume validation of pledge is done on erlang side
-                let pledge = Pledge {
-                    tx_id: shadow.tx_id,
-                    quantity: pledge_shadow.quantity,
-                    dest_hash: pledge_shadow.part_hash,
-                    height: pledge_shadow.height,
-                };
-                match &mut primary_account.info.pledges {
-                    Some(pledges) => pledges.push(pledge),
-                    None => primary_account.info.pledges = Some(vec![pledge]),
-                };
-                evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                ShadowResult::Success
-            }
-            ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
-                match &mut primary_account.info.pledges {
-                    None => ShadowResult::NoPledges,
-                    Some(pledges) => {
-                        // find relevant pledge
-                        let Some(target_pledge_idx) =
-                            pledges.iter().position(|p| p.dest_hash == unpledge.part_hash)
-                        else {
-                            // break from the match
-                            break 'partition_unpledge ShadowResult::NoMatchingPledge;
-                        };
-                        // infallible
-                        let target_pledge = pledges.get(target_pledge_idx).unwrap();
-                        // refund the account for the value of the pledge
-                        let Some(_) =
-                            primary_account.info.balance.checked_add(target_pledge.quantity)
-                        else {
-                            break 'partition_unpledge ShadowResult::OverflowPayment;
-                        };
-
-                        pledges.remove(target_pledge_idx);
-                        evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                        ShadowResult::Success
-                    }
-                }
-            }
-            ShadowTxType::UnpledgeAll(_unpledge_shadow) => 'unpledge_all: {
-                // remove/refund all pledges
-                match &mut primary_account.info.pledges {
-                    None => (),
-                    Some(pledges) => {
-                        for pledge in pledges.iter() {
-                            match primary_account.info.balance.checked_add(pledge.quantity) {
-                                None => break 'unpledge_all ShadowResult::OverflowPayment,
-                                _ => (),
-                            }
-                        }
-                        pledges.clear();
-                        // we can skip touching here as an account can only have pledges if it has a stake
-                        // evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                    }
-                }
-                // remove/refund account stake
-                match &mut primary_account.info.stake {
-                    None => (),
-                    Some(stake) => {
-                        match primary_account.info.balance.checked_add(stake.quantity) {
-                            None => break 'unpledge_all ShadowResult::OverflowPayment,
-                            _ => (),
-                        }
-
-                        primary_account.info.stake = None;
-                        evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                    }
-                }
-                ShadowResult::Success
-            }
-            ShadowTxType::Slash(_slash_shadow) => {
-                todo!()
-                // ShadowResult::Success
-            }
-        };
-        receipts.push(ShadowReceipt { tx_id: shadow.tx_id, result: res, tx_type: shadow.tx });
+    // TODO: fix this clone
+    for shadow in shadows.clone().into_iter() {
+        receipts.push(apply_shadow(shadow, evm)?);
     }
 
     // evm.context.evm.inner.journaled_state.checkpoint();
     // evm.context.evm.db.commit(state);
 
     Ok(Some(receipts))
+}
+
+pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
+    shadow: ShadowTx,
+    evm: &mut Evm<'_, EXT, DB>,
+) -> Result<ShadowReceipt, EVMError<DB::Error>> {
+    // create a checkpoint, try to apply the shadow, and always revert
+    let checkpoint = evm.context.evm.inner.journaled_state.checkpoint();
+    let result = apply_shadow(shadow, evm);
+    evm.context.evm.inner.journaled_state.checkpoint_revert(checkpoint);
+    return result;
+}
+
+pub fn apply_shadow<EXT, DB: Database + DatabaseCommit>(
+    shadow: ShadowTx,
+    evm: &mut Evm<'_, EXT, DB>,
+) -> Result<ShadowReceipt, EVMError<DB::Error>> {
+    // adapted from revm/src/journaled_state:load_account
+    let (primary_account, _) = evm
+        .context
+        .evm
+        .inner
+        .journaled_state
+        .load_account(shadow.address, &mut evm.context.evm.inner.db)?;
+
+    let res = match shadow.tx {
+        ShadowTxType::Null => ShadowResult::Success,
+        ShadowTxType::Data(data_shadow) => {
+            let res = match primary_account.info.balance.checked_sub(data_shadow.fee) {
+                Some(_) => ShadowResult::Success,
+                None => ShadowResult::OutOfFunds,
+            };
+            // let Some(_) = primary_account.info.balance.checked_sub(data_shadow.fee) else {};
+            evm.context.evm.inner.journaled_state.touch(&shadow.address);
+            res
+        }
+
+        ShadowTxType::Transfer(transfer) => {
+            // let sender = state.get_mut(&shadow.address).or_insert(
+            //     evm.db_mut()
+            //         .basic(shadow.address)
+            //         .expect("unable to get account from DB")
+            //         .map(|i| i.into())
+            //         .unwrap_or(Account::new_not_existing()),
+            // );
+            // let receiver = state.get_mut(transfer.to).or_insert(
+            //     evm.db_mut()
+            //         .basic(transfer.to)
+            //         .expect("unable to get account from DB")
+            //         .map(|i| i.into())
+            //         .unwrap_or(Account::new_not_existing()),
+            // );
+            // let Some(bal) = sender.info
+
+            // ugly nested matches, prob a better way to do this
+            match evm.context.evm.inner.journaled_state.transfer(
+                &shadow.address,
+                &transfer.to,
+                transfer.amount,
+                &mut evm.context.evm.inner.db,
+            ) {
+                Ok(v) => match v {
+                    Some(v2) => match v2 {
+                        // match only the known possible instruction results
+                        InstructionResult::OutOfFunds => ShadowResult::OutOfFunds,
+                        InstructionResult::OverflowPayment => ShadowResult::OverflowPayment,
+                        _ => ShadowResult::Failure,
+                    },
+                    None => ShadowResult::Failure,
+                },
+                Err(_) => ShadowResult::Failure,
+            }
+        }
+
+        ShadowTxType::MiningAddressStake(stake) => match primary_account.info.stake {
+            Some(_) => ShadowResult::AlreadyStaked,
+            None => {
+                primary_account.info.stake = Some(Stake {
+                    tx_id: shadow.tx_id,
+                    quantity: stake.value,
+                    height: stake.height,
+                });
+                evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                ShadowResult::Success
+            }
+        },
+
+        ShadowTxType::PartitionPledge(pledge_shadow) => {
+            // assume validation of pledge is done on erlang side
+            let pledge = Pledge {
+                tx_id: shadow.tx_id,
+                quantity: pledge_shadow.quantity,
+                dest_hash: pledge_shadow.part_hash,
+                height: pledge_shadow.height,
+            };
+            match &mut primary_account.info.pledges {
+                Some(pledges) => pledges.push(pledge),
+                None => primary_account.info.pledges = Some(vec![pledge]),
+            };
+            evm.context.evm.inner.journaled_state.touch(&shadow.address);
+            ShadowResult::Success
+        }
+        ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
+            match &mut primary_account.info.pledges {
+                None => ShadowResult::NoPledges,
+                Some(pledges) => {
+                    // find relevant pledge
+                    let Some(target_pledge_idx) =
+                        pledges.iter().position(|p| p.dest_hash == unpledge.part_hash)
+                    else {
+                        // break from the match
+                        break 'partition_unpledge ShadowResult::NoMatchingPledge;
+                    };
+                    // infallible
+                    let target_pledge = pledges.get(target_pledge_idx).unwrap();
+                    // refund the account for the value of the pledge
+                    let Some(_) = primary_account.info.balance.checked_add(target_pledge.quantity)
+                    else {
+                        break 'partition_unpledge ShadowResult::OverflowPayment;
+                    };
+
+                    pledges.remove(target_pledge_idx);
+                    evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                    ShadowResult::Success
+                }
+            }
+        }
+        ShadowTxType::UnpledgeAll(_unpledge_shadow) => 'unpledge_all: {
+            // remove/refund all pledges
+            match &mut primary_account.info.pledges {
+                None => (),
+                Some(pledges) => {
+                    for pledge in pledges.iter() {
+                        match primary_account.info.balance.checked_add(pledge.quantity) {
+                            None => break 'unpledge_all ShadowResult::OverflowPayment,
+                            _ => (),
+                        }
+                    }
+                    pledges.clear();
+                    // we can skip touching here as an account can only have pledges if it has a stake
+                    // evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                }
+            }
+            // remove/refund account stake
+            match &mut primary_account.info.stake {
+                None => (),
+                Some(stake) => {
+                    match primary_account.info.balance.checked_add(stake.quantity) {
+                        None => break 'unpledge_all ShadowResult::OverflowPayment,
+                        _ => (),
+                    }
+
+                    primary_account.info.stake = None;
+                    evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                }
+            }
+            ShadowResult::Success
+        }
+        ShadowTxType::Slash(_slash_shadow) => {
+            todo!()
+            // ShadowResult::Success
+        }
+    };
+    Ok(ShadowReceipt { tx_id: shadow.tx_id, result: res, tx_type: shadow.tx })
 }
 
 //
