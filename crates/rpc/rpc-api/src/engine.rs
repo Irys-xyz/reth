@@ -5,16 +5,20 @@
 
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use reth_engine_primitives::EngineTypes;
-use reth_primitives::{Address, BlockHash, BlockId, BlockNumberOrTag, Bytes, B256, U256, U64};
+use reth_primitives::{
+    revm_primitives::shadow::Shadows, Address, BlockHash, BlockId, BlockNumberOrTag, Bytes,
+    SealedBlock, B256, U256, U64,
+};
 use reth_rpc_types::{
     engine::{
         ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadInputV2, ExecutionPayloadV1,
         ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId,
         PayloadStatus, TransitionConfiguration,
     },
+    irys::ShadowSubmission,
     irys_payload::ExecutionPayloadV1Irys,
     state::StateOverride,
-    BlockOverrides, Filter, Log, RichBlock, SyncStatus, TransactionRequest,
+    Block, BlockOverrides, Filter, Log, RichBlock, SyncStatus, TransactionRequest,
 };
 
 // NOTE: We can't use associated types in the `EngineApi` trait because of jsonrpsee, so we use a
@@ -54,6 +58,21 @@ pub trait EngineApi<Engine: EngineTypes> {
         versioned_hashes: Vec<B256>,
         parent_beacon_block_root: B256,
     ) -> RpcResult<PayloadStatus>;
+
+    // #[method(name = "addShadowsV1")]
+    // async fn add_shadows_v1(&self, block_id: B256, shadows: Shadows)
+    //     -> RpcResult<ShadowSubmission>;
+
+    #[method(name = "buildNewPayloadV1Irys")]
+    async fn build_new_payload_irys(
+        &self,
+        // payload: ExecutionPayloadV1Irys,
+        // versioned_hashes: Vec<B256>,
+        // parent_beacon_block_root: B256,
+        parent: B256,
+        payload_attributes: Engine::PayloadAttributes,
+        /* RpcResult<Engine::ExecutionPayloadV1Irys> */
+    ) -> RpcResult<(SealedBlock, Engine::ExecutionPayloadV1Irys)>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_forkchoiceupdatedv1>
     ///
@@ -100,6 +119,13 @@ pub trait EngineApi<Engine: EngineTypes> {
         &self,
         fork_choice_state: ForkchoiceState,
         payload_attributes: Option<Engine::PayloadAttributes>,
+    ) -> RpcResult<ForkchoiceUpdated>;
+
+    #[method(name = "submitEvmBlockV1Irys")]
+    async fn submit_evm_block_v1_irys(
+        &self,
+        block: Block, // fork_choice_state: ForkchoiceState,
+                      // payload_attributes: Option<Engine::PayloadAttributes>,
     ) -> RpcResult<ForkchoiceUpdated>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_getpayloadv1>

@@ -270,6 +270,9 @@ tables! {
 
     table BlockShadows<Key = BlockNumber, Value = StoredBlockShadows>;
 
+    /// Stores block shadows for blocks pending execution
+    // table PendingBlockShadows<Key = BlockHash, Value = StoredBlockShadows>;
+
     /// Canonical only Stores the transaction body for canonical transactions.
     table Transactions<Key = TxNumber, Value = TransactionSignedNoHash>;
 

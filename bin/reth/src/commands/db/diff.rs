@@ -156,7 +156,9 @@ impl Command {
                 }
                 Tables::BlockShadows => {
                     find_diffs::<BlockShadows>(primary_tx, secondary_tx, output_dir)?
-                }
+                } // Tables::PendingBlockShadows => {
+                  //     find_diffs::<PendingBlockShadows>(primary_tx, secondary_tx, output_dir)?
+                  // }
             };
         }
 

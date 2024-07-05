@@ -1727,6 +1727,7 @@ where
             }
 
             BlockchainTreeAction::InsertDownloadedPayload { block } => {
+                // need to get shadows here somehow
                 let downloaded_num_hash = block.num_hash();
                 match self.blockchain.insert_block_without_senders(
                     block,

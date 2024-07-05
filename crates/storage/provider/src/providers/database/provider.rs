@@ -19,7 +19,8 @@ use reth_db::{
     database::Database,
     models::{
         sharded_key, storage_sharded_key::StorageShardedKey, AccountBeforeTx, BlockNumberAddress,
-        ShardedKey, StoredBlockBodyIndices, StoredBlockOmmers, StoredBlockWithdrawals,
+        ShardedKey, StoredBlockBodyIndices, StoredBlockOmmers, StoredBlockShadows,
+        StoredBlockWithdrawals,
     },
     table::{Table, TableRow},
     tables,
@@ -39,6 +40,7 @@ use reth_primitives::{
     StorageEntry, TransactionMeta, TransactionSigned, TransactionSignedEcRecovered,
     TransactionSignedNoHash, TxHash, TxNumber, Withdrawal, Withdrawals, B256, U256,
 };
+use reth_rpc_types::irys::ShadowSubmission;
 use reth_storage_errors::provider::{ProviderResult, RootMismatch};
 use reth_trie::{
     prefix_set::{PrefixSet, PrefixSetMut, TriePrefixSets},
@@ -724,6 +726,7 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
         let block_ommers = self.get_or_take::<tables::BlockOmmers, TAKE>(range.clone())?;
         let block_withdrawals =
             self.get_or_take::<tables::BlockWithdrawals, TAKE>(range.clone())?;
+
         let block_shadows = self.get_or_take::<tables::BlockShadows, TAKE>(range.clone())?;
 
         let block_tx = self.get_take_block_transaction_range::<TAKE>(range.clone())?;
@@ -787,6 +790,15 @@ impl<TX: DbTxMut + DbTx> DatabaseProvider<TX> {
 
             let mut shadows: Option<Shadows> = None;
             if let Some((block_number, _)) = block_shadows.as_ref() {
+                // match self.block_number(*block_hash)? {
+                //     Some(v) => {
+                //         if v == main_block_number {
+                //             shadows = Some(block_shadows.take().unwrap().1.shadows);
+                //             block_shadows = block_shadows_iter.next();
+                //         }
+                //     }
+                //     None => {}
+                // }
                 if *block_number == main_block_number {
                     shadows = Some(block_shadows.take().unwrap().1.shadows);
                     block_shadows = block_shadows_iter.next();
@@ -1360,6 +1372,7 @@ impl<Tx: DbTx> DatabaseProvider<Tx> {
                             .map(|(_, o)| o.ommers)
                             .unwrap_or_default()
                     };
+                // let block_hash = self.block_hash(header.number)?.expect("cannot find block");
                 let shadows = shadows_cursor.seek_exact(header.number)?.map(|(_, s)| s.shadows);
 
                 if let Ok(b) = assemble_block(tx_range, header, ommers, withdrawals, shadows) {
@@ -1446,6 +1459,18 @@ impl<TX: DbTx> BlockReader for DatabaseProvider<TX> {
         }
         Ok(None)
     }
+
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     let s = self.convert_number(id)?;
+    //     if let Some(number) = s {
+    //         let r = self.tx.get::<tables::PendingBlockShadows>(number)?.map(|s2| {
+    //             dbg!(&s2);
+    //             s2.shadows
+    //         });
+    //         return Ok(r);
+    //     }
+    //     Ok(None)
+    // }
 
     fn block_body_indices(&self, num: u64) -> ProviderResult<Option<StoredBlockBodyIndices>> {
         Ok(self.tx.get::<tables::BlockBodyIndices>(num)?)
@@ -1868,6 +1893,44 @@ impl<TX: DbTx> WithdrawalsProvider for DatabaseProvider<TX> {
             .and_then(|(_, mut block_withdrawal)| block_withdrawal.withdrawals.pop()))
     }
 }
+
+// impl<TX: DbTxMut + DbTx> ShadowsProvider for DatabaseProvider<TX> {
+//     fn add_pending_shadows(
+//         self,
+//         block_hash: B256,
+//         shadows: Shadows,
+//     ) -> ProviderResult<ShadowSubmission> {
+//         // let block_number = self.block_number(block_hash)?
+//         // match block_number {
+//         //     Some() =>
+//         // }
+//         let tx = self.tx;
+
+//         // writes to block hash indexed special purpose table PendingBlockShadows, which is pulled from for initial block verification
+//         tx.put::<tables::PendingBlockShadows>(block_hash, StoredBlockShadows { shadows })?;
+//         tx.commit();
+//         // match self.pending_shadows(BlockHashOrNumber::Hash(block_hash)) {
+//         //     Ok(v) => {
+//         //         dbg!(v);
+//         //     }
+//         //     Err(e) => {
+//         //         dbg!(e);
+//         //     }
+//         // }
+
+//         // self.tx.co
+
+//         // match self.tx.put::<tables::BlockShadows>(block_hash, StoredBlockShadows { shadows }) {
+//         //     Ok(_) => {
+//         //         Ok(ShadowSubmission::new())
+//         //     },
+//         //     Err(e) => {
+
+//         //     }
+//         // }
+//         Ok(ShadowSubmission::new())
+//     }
+// }
 
 impl<TX: DbTx> EvmEnvProvider for DatabaseProvider<TX> {
     fn fill_env_at<EvmConfig>(
@@ -2617,6 +2680,14 @@ impl<TX: DbTxMut + DbTx> BlockWriter for DatabaseProvider<TX> {
                     block_number,
                     StoredBlockWithdrawals { withdrawals },
                 )?;
+                durations_recorder.record_relative(metrics::Action::InsertBlockWithdrawals);
+            }
+        }
+
+        if let Some(shadows) = block.block.shadows {
+            if !shadows.is_empty() {
+                self.tx
+                    .put::<tables::BlockShadows>(block_number, StoredBlockShadows { shadows })?;
                 durations_recorder.record_relative(metrics::Action::InsertBlockWithdrawals);
             }
         }

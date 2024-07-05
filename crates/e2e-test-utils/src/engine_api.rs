@@ -5,6 +5,7 @@ use jsonrpsee::{
 };
 use reth::{
     api::{EngineTypes, PayloadBuilderAttributes},
+    payload,
     providers::CanonStateNotificationStream,
     rpc::{
         api::EngineApiClient,
@@ -12,7 +13,7 @@ use reth::{
     },
 };
 use reth_payload_builder::PayloadId;
-use reth_primitives::B256;
+use reth_primitives::{revm_primitives::shadow::Shadows, B256};
 use reth_rpc_layer::AuthClientService;
 use std::marker::PhantomData;
 
@@ -82,6 +83,24 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
         .await?;
         Ok(())
     }
+    pub async fn update_forkchoice_payload_attr(
+        &self,
+        current_head: B256,
+        new_head: B256,
+        payload_attributes: Option<E::PayloadAttributes>,
+    ) -> eyre::Result<()> {
+        EngineApiClient::<E>::fork_choice_updated_v1_irys(
+            &self.engine_api_client,
+            ForkchoiceState {
+                head_block_hash: new_head,
+                safe_block_hash: current_head,
+                finalized_block_hash: current_head,
+            },
+            payload_attributes,
+        )
+        .await?;
+        Ok(())
+    }
 
     /// Sends forkchoice update to the engine api with a zero finalized hash
     pub async fn update_optimistic_forkchoice(&self, hash: B256) -> eyre::Result<()> {
@@ -98,4 +117,9 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
 
         Ok(())
     }
+
+    // pub async fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> eyre::Result<()> {
+    //     EngineApiClient::<E>::add_shadows_v1(&self.engine_api_client, block_hash, shadows).await?;
+    //     Ok(())
+    // }
 }

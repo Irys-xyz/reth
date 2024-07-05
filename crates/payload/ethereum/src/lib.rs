@@ -248,24 +248,25 @@ where
 
     let mut receipts = Vec::new();
 
-    // let mut evm = revm::Evm::builder()
-    //     .with_db(&mut db)
-    //     .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
-    //         initialized_cfg.clone(),
-    //         initialized_block_env.clone(),
-    //         // tx_env_with_recovered(&tx),
-    //         Default::default(),
-    //     ))
-    //     .build();
+    let mut evm = revm::Evm::builder()
+        .with_db(&mut db)
+        .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
+            initialized_cfg.clone(),
+            initialized_block_env.clone(),
+            // tx_env_with_recovered(&tx),
+            Default::default(),
+        ))
+        .build();
 
-    // let shadow_exec =
-    //     apply_block_shadows(Some(&attributes.shadows), &mut evm).expect("shadow exec failed :c");
-    // // commit changes
-    // dbg!(shadow_exec);
-    // let ss = evm.context.evm.inner.journaled_state.state.clone();
+    let shadow_exec =
+        apply_block_shadows(Some(&attributes.shadows), &mut evm).expect("shadow exec failed :c");
+    // commit changes
+    dbg!(shadow_exec);
+    let ss = evm.context.evm.inner.journaled_state.state.clone();
     // evm.db_mut().commit(ss);
-    // // drop handle on db
-    // drop(evm);
+    // drop handle on db
+    drop(evm);
+    db.commit(ss);
 
     while let Some(pool_tx) = best_txs.next() {
         // ensure we still have capacity for this transaction
@@ -463,6 +464,7 @@ where
     };
 
     let sealed_block = block.seal_slow();
+    debug!(target: "payload_builder", ?state_root, "sealed build block - state root");
     debug!(target: "payload_builder", ?sealed_block, "sealed built block");
 
     let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees);

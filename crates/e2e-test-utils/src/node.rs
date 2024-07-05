@@ -113,7 +113,8 @@ where
         // trigger resolve payload via engine api
         self.engine_api.get_payload_v1_irys_value(eth_attr.payload_id()).await?;
         // ensure we're also receiving the built payload as event
-        Ok((self.payload.expect_built_payload().await?, eth_attr))
+        let built_payload = self.payload.expect_built_payload().await?;
+        Ok((built_payload, eth_attr))
     }
 
     /// Advances the node forward one block

@@ -1112,9 +1112,12 @@ impl BlockReader for StaticFileProvider {
         Err(ProviderError::UnsupportedProvider)
     }
 
-    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
         Err(ProviderError::UnsupportedProvider)
     }
+    // fn pending_shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     Err(ProviderError::UnsupportedProvider)
+    // }
 }
 
 impl WithdrawalsProvider for StaticFileProvider {

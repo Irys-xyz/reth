@@ -361,6 +361,9 @@ impl Command {
                 Tables::Transactions => viewer.get_checksum::<Transactions>().unwrap(),
                 Tables::VersionHistory => viewer.get_checksum::<VersionHistory>().unwrap(),
                 Tables::BlockShadows => viewer.get_checksum::<BlockShadows>().unwrap(),
+                // Tables::PendingBlockShadows => {
+                //     viewer.get_checksum::<PendingBlockShadows>().unwrap()
+                // }
             };
 
             // increment duration for final report

@@ -3,21 +3,23 @@ use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
 use reth_beacon_consensus::BeaconConsensusEngineHandle;
 use reth_engine_primitives::{
-    validate_payload_timestamp, EngineApiMessageVersion, EngineTypes, PayloadAttributes,
-    PayloadBuilderAttributes, PayloadOrAttributes,
+    validate_payload_timestamp, BuiltPayload as _, EngineApiMessageVersion, EngineTypes,
+    PayloadAttributes, PayloadBuilderAttributes, PayloadOrAttributes,
 };
-use reth_payload_builder::PayloadStore;
-use reth_primitives::{BlockHash, BlockHashOrNumber, BlockNumber, ChainSpec, Hardfork, B256, U64};
+use reth_payload_builder::{EthPayloadBuilderAttributes, PayloadStore};
+use reth_primitives::{
+    BlockHash, BlockHashOrNumber, BlockNumber, ChainSpec, Hardfork, SealedBlock, B256, U64,
+};
 use reth_provider::{BlockReader, EvmEnvProvider, HeaderProvider, StateProviderFactory};
 use reth_rpc_api::EngineApiServer;
 use reth_rpc_types::{
     engine::{
-        CancunPayloadFields, ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadInputV2,
-        ExecutionPayloadV1, ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState,
-        ForkchoiceUpdated, PayloadId, PayloadStatus, TransitionConfiguration, CAPABILITIES,
+        CancunPayloadFields, ClientVersionV1, ExecutionPayloadBodiesV1, ForkchoiceState,
+        ForkchoiceUpdated, PayloadId, PayloadStatus, PayloadStatusEnum, TransitionConfiguration,
+        CAPABILITIES,
     },
     irys_payload::ExecutionPayloadV1Irys,
-    ExecutionPayload,
+    Block, ExecutionPayload,
 };
 use reth_rpc_types_compat::engine::payload::{
     /* convert_payload_input_v2_to_payload, */ convert_to_payload_body_v1,
@@ -58,7 +60,12 @@ struct EngineApiInner<Provider, EngineT: EngineTypes> {
 
 impl<Provider, EngineT> EngineApi<Provider, EngineT>
 where
-    Provider: HeaderProvider + BlockReader + StateProviderFactory + EvmEnvProvider + 'static,
+    Provider: HeaderProvider
+        + BlockReader
+        + StateProviderFactory
+        + EvmEnvProvider
+        // + ShadowsProvider
+        + 'static,
     EngineT: EngineTypes + 'static,
 {
     /// Create new instance of [EngineApi].
@@ -260,6 +267,124 @@ where
             .await
     }
 
+    async fn build_new_payload_irys(
+        &self,
+        parent: B256,
+        payload_attributes: EngineT::PayloadAttributes,
+    ) -> EngineApiResult<(SealedBlock, EngineT::ExecutionPayloadV1Irys)> /* EngineApiResult<EngineT::ExecutionPayloadV1Irys> */ /* RpcResult<ForkchoiceUpdated> */
+    {
+        let payload_builder_attributes =
+            <EngineT as EngineTypes>::PayloadBuilderAttributes::try_new(parent, payload_attributes)
+                // TODO: fix
+                .expect("unable to build PayloadBuilderAttributes");
+
+        // EthPayloadBuilderAttributes::new();
+        let payload_id = self
+            .inner
+            .payload_store
+            .inner
+            .new_payload(payload_builder_attributes)
+            .await
+            .expect("unable to build payload");
+
+        // busypoll
+        // loop {
+        //     let payload =
+        //         self.inner.payload_store.inner.best_payload(payload_id).await.unwrap().unwrap();
+        //     if payload.block().body.is_empty() {
+        //         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        //         continue;
+        //     }
+        //     break;
+        // }
+        // let payload_event_stream = self
+        //     .inner
+        //     .payload_store
+        //     .inner
+        //     .subscribe()
+        //     .await
+        //     .expect("unable to subscribe to events");
+
+        //  {
+        let b = loop {
+            // let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
+            match self.inner.payload_store.inner.best_payload(payload_id).await {
+                Some(v) => match v {
+                    Ok(v) => {
+                        if v.block().body.is_empty() && v.block().shadows.is_none() {
+                            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                            continue;
+                        } else {
+                            dbg!("got built payload");
+                            break v.block().clone();
+                            // break;
+                        }
+                    }
+                    Err(e) => {
+                        dbg!(e);
+                    }
+                },
+                None => {
+                    dbg!("no payload :c");
+                }
+            }
+            // if payload.block().body.is_empty() {
+            //     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            //     continue;
+            // }
+            // break;
+            // }
+        };
+
+        dbg!(&b);
+
+        // Ok(b)
+
+        let payload = self
+            .get_payload_v1_irys(payload_id)
+            .await
+            .expect("unable to get payload from payload store");
+
+        // let payload = self
+        //     .inner
+        //     .payload_store
+        //     .resolve(payload_id)
+        //     .await
+        //     .ok_or(EngineApiError::UnknownPayload)?
+        //     .map_err(|_| EngineApiError::UnknownPayload)?
+        //     .try_into()
+        //     .map_err(|_| {
+        //         warn!("could not transform built payload into ExecutionPayloadV3");
+        //         EngineApiError::UnknownPayload
+        //     });
+
+        // return payload;
+
+        Ok((b, payload))
+
+        // Ok(ForkchoiceUpdated::new(PayloadStatus::new(PayloadStatusEnum::Valid, None))
+        //     .with_payload_id(payload_id))
+    }
+
+    // pub async fn add_shadows_v1(
+    //     &self,
+    //     block_id: B256,
+    //     shadows: Shadows,
+    // ) -> EngineApiResult<ShadowSubmission> {
+    //     // self.validate_and_execute_forkchoice(EngineApiMessageVersion::V1Irys, state, payload_attrs)
+    //     //     .await
+    //     // self.inner.provider.insert_block(block, prune_modes)
+    //     // todo!();
+    //     // Ok(?)
+    //     match self.inner.provider.add_pending_shadows(block_id, shadows) {
+    //         Ok(v) => Ok(v),
+    //         Err(e) => {
+    //             // dbg!(e)
+    //             Err(EngineApiError::Internal(Box::new(e)))
+    //         }
+    //     }
+    // }
+
     /// Returns the most recent version of the payload that is available in the corresponding
     /// payload build process at the time of receiving this call.
     ///
@@ -395,6 +520,7 @@ where
         &self,
         payload_id: PayloadId,
     ) -> EngineApiResult<EngineT::ExecutionPayloadV1Irys> {
+        dbg!(&payload_id);
         // First we fetch the payload attributes to check the timestamp
         let attributes = self.get_payload_attributes(payload_id).await?;
 
@@ -406,7 +532,8 @@ where
         )?;
 
         // Now resolve the payload
-        self.inner
+        let res = self
+            .inner
             .payload_store
             .resolve(payload_id)
             .await
@@ -416,7 +543,8 @@ where
             .map_err(|_| {
                 warn!("could not transform built payload into ExecutionPayloadV3");
                 EngineApiError::UnknownPayload
-            })
+            });
+        res
     }
 
     /// Returns the execution payload bodies by the range starting at `start`, containing `count`
@@ -614,7 +742,12 @@ where
 #[async_trait]
 impl<Provider, EngineT> EngineApiServer<EngineT> for EngineApi<Provider, EngineT>
 where
-    Provider: HeaderProvider + BlockReader + StateProviderFactory + EvmEnvProvider + 'static,
+    Provider: HeaderProvider
+        + BlockReader
+        + StateProviderFactory
+        + EvmEnvProvider
+        // + ShadowsProvider
+        + 'static,
     EngineT: EngineTypes + 'static,
 {
     // /// Handler for `engine_newPayloadV1`
@@ -672,6 +805,19 @@ where
         self.inner.metrics.latency.new_payload_v3.record(start.elapsed());
         self.inner.metrics.new_payload_response.update_response_metrics(&res);
         Ok(res?)
+    }
+
+    async fn submit_evm_block_v1_irys(&self, block: Block) -> RpcResult<ForkchoiceUpdated> {
+        todo!()
+    }
+
+    async fn build_new_payload_irys(
+        &self,
+        parent: B256,
+        payload_attributes: EngineT::PayloadAttributes,
+        /* RpcResult<EngineT::ExecutionPayloadV1Irys> */
+    ) -> RpcResult<(SealedBlock, EngineT::ExecutionPayloadV1Irys)> {
+        Ok(EngineApi::build_new_payload_irys(&self, parent, payload_attributes).await?)
     }
 
     // /// Handler for `engine_forkchoiceUpdatedV1`
@@ -739,6 +885,23 @@ where
         self.inner.metrics.fcu_response.update_response_metrics(&res);
         Ok(res?)
     }
+
+    // async fn add_shadows_v1(
+    //     &self,
+    //     block_id: B256,
+    //     shadows: Shadows,
+    // ) -> RpcResult<ShadowSubmission> {
+    //     trace!(target: "rpc::engine", "Serving engine_addShadowsV1Irys");
+    //     // let start = Instant::now();
+    //     let res = EngineApi::add_shadows_v1(&self, block_id, shadows).await;
+    //     Ok(res?)
+    //     // let res =
+    //     //     EngineApi::fork_choice_updated_v1_irys(self, fork_choice_state, payload_attributes)
+    //     //         .await;
+    //     // self.inner.metrics.latency.fork_choice_updated_v3.record(start.elapsed());
+    //     // self.inner.metrics.fcu_response.update_response_metrics(&res);
+    //     // Ok(res?)
+    // }
 
     // /// Handler for `engine_getPayloadV1`
     // ///

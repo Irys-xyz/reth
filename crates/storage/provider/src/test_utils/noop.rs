@@ -127,6 +127,10 @@ impl BlockReader for NoopProvider {
     fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
         Ok(None)
     }
+
+    // fn pending_shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     Ok(None)
+    // }
 }
 
 impl BlockReaderIdExt for NoopProvider {

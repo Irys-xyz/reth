@@ -102,6 +102,8 @@ pub trait BlockReader:
 
     fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>>;
 
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>>;
+
     /// Returns the block with matching hash from the database.
     ///
     /// Returns `None` if block is not found.

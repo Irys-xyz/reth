@@ -40,7 +40,7 @@ pub use provider::{DatabaseProvider, DatabaseProviderRO, DatabaseProviderRW};
 #[derive(Debug)]
 pub struct ProviderFactory<DB> {
     /// Database
-    db: Arc<DB>,
+    pub db: Arc<DB>,
     /// Chain spec
     chain_spec: Arc<ChainSpec>,
     /// Static File Provider
@@ -347,6 +347,10 @@ impl<DB: Database> BlockReader for ProviderFactory<DB> {
     fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
         self.provider()?.shadows(id)
     }
+
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     self.provider()?.pending_shadows(id)
+    // }
 }
 
 impl<DB: Database> TransactionsProvider for ProviderFactory<DB> {

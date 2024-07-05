@@ -27,6 +27,7 @@ alloy-rpc-types-trace.workspace = true
 jsonrpsee-types = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+thiserror.workspace = true
 
 [features]
 arbitrary = ["alloy-primitives/arbitrary", "alloy-rpc-types/arbitrary"]

@@ -55,6 +55,7 @@ impl<E: EngineTypes + 'static> PayloadTestContext<E> {
                             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
                             continue;
                         } else {
+                            dbg!("got built payload");
                             break;
                         }
                     }

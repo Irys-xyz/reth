@@ -12,6 +12,8 @@ use reth_interfaces::p2p::{
     headers::client::HeadersClient,
 };
 use reth_primitives::{stage::PipelineTarget, BlockNumber, ChainSpec, SealedBlock, B256};
+use reth_provider::{BlockReader, ProviderFactory};
+use reth_rpc_types::BlockHashOrNumber;
 use reth_stages_api::{ControlFlow, Pipeline, PipelineError, PipelineWithResult};
 use reth_tasks::TaskSpawner;
 use reth_tokio_util::EventSender;
@@ -61,6 +63,9 @@ where
     max_block: Option<BlockNumber>,
     /// Engine sync metrics.
     metrics: EngineSyncMetrics,
+    // db: DB,
+    // pipeline: Pipeline<DB>,
+    db: ProviderFactory<DB>,
 }
 
 impl<DB, Client> EngineSyncController<DB, Client>
@@ -78,6 +83,7 @@ where
         chain_spec: Arc<ChainSpec>,
         event_sender: EventSender<BeaconConsensusEngineEvent>,
     ) -> Self {
+        let db = pipeline.provider_factory.clone();
         Self {
             full_block_client: FullBlockClient::new(
                 client,
@@ -93,6 +99,7 @@ where
             event_sender,
             max_block,
             metrics: EngineSyncMetrics::default(),
+            db, // pipeline: pipeline.,
         }
     }
 
@@ -184,7 +191,7 @@ where
     /// given hash.
     pub(crate) fn download_full_block(&mut self, hash: B256) -> bool {
         if self.is_inflight_request(hash) {
-            return false
+            return false;
         }
         trace!(
             target: "consensus::engine::sync",
@@ -218,7 +225,7 @@ where
                 "Pipeline target cannot be zero hash."
             );
             // precaution to never sync to the zero hash
-            return
+            return;
         }
         self.pending_pipeline_target = Some(target);
     }
@@ -275,7 +282,7 @@ where
 
                 if target.is_none() && !self.run_pipeline_continuously {
                     // nothing to sync
-                    return None
+                    return None;
                 }
 
                 let (tx, rx) = oneshot::channel();
@@ -304,14 +311,14 @@ where
     pub(crate) fn poll(&mut self, cx: &mut Context<'_>) -> Poll<EngineSyncEvent> {
         // try to spawn a pipeline if a target is set
         if let Some(event) = self.try_spawn_pipeline() {
-            return Poll::Ready(event)
+            return Poll::Ready(event);
         }
 
         // make sure we poll the pipeline if it's active, and return any ready pipeline events
         if !self.is_pipeline_idle() {
             // advance the pipeline
             if let Poll::Ready(event) = self.poll_pipeline(cx) {
-                return Poll::Ready(event)
+                return Poll::Ready(event);
             }
         }
 
@@ -319,6 +326,24 @@ where
         for idx in (0..self.inflight_full_block_requests.len()).rev() {
             let mut request = self.inflight_full_block_requests.swap_remove(idx);
             if let Poll::Ready(block) = request.poll_unpin(cx) {
+                // let pp = match  self.pipeline_state {
+                //     PipelineState::Idle(p) => todo!(),
+                //     PipelineState::Running(p) =>  {
+                //         p.
+                //     },
+                // }
+                // ideally we want to add shadows here
+                // let pending_shadows = self
+                //     .db
+                //     .pending_shadows(BlockHashOrNumber::Hash(block.hash))
+                //     .expect("missing pending shadows for downloaded block");
+                // match self.db.pending_shadows(BlockHashOrNumber::Hash(block.hash())) {
+                //     Ok(shadows) => {
+
+                //     }
+                //     Err(e) => {}
+                // }
+                // block.shadows = pending_shadows;
                 trace!(target: "consensus::engine", block=?block.num_hash(), "Received single full block, buffering");
                 self.range_buffered_blocks.push(Reverse(OrderedSealedBlock(block)));
             } else {
@@ -349,10 +374,10 @@ where
                 if peek.0 .0.hash() == block.0 .0.hash() {
                     PeekMut::pop(peek);
                 } else {
-                    break
+                    break;
                 }
             }
-            return Poll::Ready(EngineSyncEvent::FetchedFullBlock(block.0 .0))
+            return Poll::Ready(EngineSyncEvent::FetchedFullBlock(block.0 .0));
         }
 
         Poll::Pending

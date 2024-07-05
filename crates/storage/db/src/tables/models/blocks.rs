@@ -86,7 +86,7 @@ pub struct StoredBlockWithdrawals {
 #[main_codec]
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct StoredBlockShadows {
-    /// The block withdrawals.
+    /// The block shadows.
     pub shadows: Shadows,
 }
 

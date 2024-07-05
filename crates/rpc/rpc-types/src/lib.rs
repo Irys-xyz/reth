@@ -11,6 +11,7 @@
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
 mod eth;
+pub mod irys;
 pub mod irys_payload;
 mod mev;
 mod net;

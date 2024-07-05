@@ -7,6 +7,7 @@ use crate::{
     StateProviderBox, StateProviderFactory, StaticFileProviderFactory, TransactionVariant,
     TransactionsProvider, TreeViewer, WithdrawalsProvider,
 };
+use alloy_rlp::BufMut;
 use reth_blockchain_tree_api::{
     error::{CanonicalError, InsertBlockError},
     BlockValidationKind, BlockchainTreeEngine, BlockchainTreeViewer, CanonicalOutcome,
@@ -25,6 +26,7 @@ use reth_primitives::{
     TransactionSigned, TransactionSignedNoHash, TxHash, TxNumber, Withdrawal, Withdrawals, B256,
     U256,
 };
+use reth_rpc_types::irys::ShadowSubmission;
 use reth_storage_errors::provider::ProviderResult;
 use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
@@ -343,6 +345,9 @@ where
     fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
         self.database.shadows(id)
     }
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     self.database.pending_shadows(id)
+    // }
 }
 
 impl<DB> TransactionsProvider for BlockchainProvider<DB>
@@ -920,3 +925,39 @@ where
         self.database.provider()?.basic_account(address)
     }
 }
+
+// impl<DB> ShadowsProvider for BlockchainProvider<DB>
+// where
+//     DB: Database + Sync + Send,
+// {
+//     fn add_pending_shadows(
+//         self,
+//         block_id: B256,
+//         shadows: Shadows,
+//     ) -> ProviderResult<ShadowSubmission> {
+//         let provider = self.database.provider_rw();
+//         provider.unwrap().add_pending_shadows(block_id, shadows)
+//     }
+// }
+
+// impl<DB> ShadowsProvider for BlockchainProvider<DB>
+// where
+//     DB: Database,
+// {
+//     fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> ProviderResult<ShadowSubmission> {
+//         self.tx.put::<tables::BlockShadows>(
+//             self.block_number(block_hash)?.unwrap(),
+//             StoredBlockShadows { shadows },
+//         )?;
+
+//         // match self.tx.put::<tables::BlockShadows>(block_hash, StoredBlockShadows { shadows }) {
+//         //     Ok(_) => {
+//         //         Ok(ShadowSubmission::new())
+//         //     },
+//         //     Err(e) => {
+
+//         //     }
+//         // }
+//         Ok(ShadowSubmission::new())
+//     }
+// }

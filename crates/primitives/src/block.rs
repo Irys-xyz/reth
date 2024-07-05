@@ -46,6 +46,11 @@ pub struct Block {
         proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Withdrawals>())")
     )]
     pub withdrawals: Option<Withdrawals>,
+    /// Block shadows.
+    #[cfg_attr(
+        any(test, feature = "arbitrary"),
+        proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Shadows>())")
+    )]
     pub shadows: Option<Shadows>,
 }
 
@@ -140,7 +145,8 @@ impl Block {
             // take into account capacity
             self.body.iter().map(TransactionSigned::size).sum::<usize>() + self.body.capacity() * std::mem::size_of::<TransactionSigned>() +
             self.ommers.iter().map(Header::size).sum::<usize>() + self.ommers.capacity() * std::mem::size_of::<Header>() +
-            self.withdrawals.as_ref().map_or(std::mem::size_of::<Option<Withdrawals>>(), Withdrawals::total_size)
+            self.withdrawals.as_ref().map_or(std::mem::size_of::<Option<Withdrawals>>(), Withdrawals::total_size) +
+            self.shadows.as_ref().map_or(std::mem::size_of::<Option<Shadows>>(), Shadows::total_size)
     }
 }
 
@@ -361,6 +367,10 @@ impl SealedBlock {
             self.body.iter().map(TransactionSigned::size).sum::<usize>() + self.body.capacity() * std::mem::size_of::<TransactionSigned>() +
             self.ommers.iter().map(Header::size).sum::<usize>() + self.ommers.capacity() * std::mem::size_of::<Header>() +
             self.withdrawals.as_ref().map_or(std::mem::size_of::<Option<Withdrawals>>(), Withdrawals::total_size)
+            + self
+            .shadows
+            .as_ref()
+            .map_or(std::mem::size_of::<Option<Shadows>>(), Shadows::total_size)
     }
 
     /// Calculates the total gas used by blob transactions in the sealed block.
@@ -521,6 +531,7 @@ pub struct BlockBody {
     pub ommers: Vec<Header>,
     /// Withdrawals in the block.
     pub withdrawals: Option<Withdrawals>,
+    /// Block shadows.
     pub shadows: Option<Shadows>,
 }
 
@@ -563,6 +574,10 @@ impl BlockBody {
                 .withdrawals
                 .as_ref()
                 .map_or(std::mem::size_of::<Option<Withdrawals>>(), Withdrawals::total_size)
+            + self
+                .shadows
+                .as_ref()
+                .map_or(std::mem::size_of::<Option<Shadows>>(), Shadows::total_size)
     }
 }
 

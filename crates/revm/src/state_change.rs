@@ -18,6 +18,7 @@ use std::{
     fmt::Error,
     ops::DerefMut,
 };
+use tracing::trace;
 
 /// Collect all balance changes at the end of the block.
 ///
@@ -147,11 +148,30 @@ where
 
     // TODO: fix this clone
     for shadow in shadows.clone().into_iter() {
-        receipts.push(apply_shadow(shadow, evm)?);
-    }
+        let checkpoint = evm.context.evm.inner.journaled_state.checkpoint();
 
-    // evm.context.evm.inner.journaled_state.checkpoint();
-    // evm.context.evm.db.commit(state);
+        match apply_shadow(shadow, evm) {
+            Ok(res) => {
+                trace!(target: "shadows", tx_id = ?shadow.tx_id, "shadow execution successful");
+                match res.result {
+                    ShadowResult::Success => {
+                        trace!(target: "shadows", tx_id = ?shadow.tx_id, "shadow execution successful")
+                    }
+                    _ => {
+                        trace!(target: "shadows", tx_id = ?shadow.tx_id, "shadow execution succeeded, with error {:?}", res.result )
+                    }
+                }
+                evm.context.evm.inner.journaled_state.checkpoint_commit();
+                receipts.push(res);
+            }
+            Err(e) => {
+                trace!(target: "shadows", tx_id = ?shadow.tx_id, "shadow execution errored");
+
+                evm.context.evm.inner.journaled_state.checkpoint_revert(checkpoint);
+                return Err(e);
+            }
+        }
+    }
 
     Ok(Some(receipts))
 }
@@ -222,7 +242,7 @@ pub fn apply_shadow<EXT, DB: Database + DatabaseCommit>(
                         InstructionResult::OverflowPayment => ShadowResult::OverflowPayment,
                         _ => ShadowResult::Failure,
                     },
-                    None => ShadowResult::Failure,
+                    None => ShadowResult::Success,
                 },
                 Err(_) => ShadowResult::Failure,
             }
