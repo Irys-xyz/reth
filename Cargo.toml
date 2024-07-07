@@ -353,6 +353,7 @@ alloy-rpc-types-anvil = { git = "https://github.com/alloy-rs/alloy", rev = "64fe
 alloy-rpc-types-beacon = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-rpc-types-engine = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-rpc-types-trace = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
+alloy-serde = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy", rev = "64feb9b" }
 

@@ -30,7 +30,6 @@ pub mod constants;
 pub mod eip4844;
 mod error;
 mod exex;
-pub mod genesis;
 mod header;
 mod integer_list;
 mod log;
@@ -68,7 +67,6 @@ pub use constants::{
 };
 pub use error::{GotExpected, GotExpectedBoxed};
 pub use exex::FinishedExExHeight;
-pub use genesis::{ChainConfig, Genesis, GenesisAccount};
 pub use header::{Header, HeaderValidationError, HeadersDirection, SealedHeader};
 pub use integer_list::IntegerList;
 pub use log::{logs_bloom, Log};
@@ -119,7 +117,7 @@ pub use alloy_primitives::{
     StorageValue, TxHash, TxIndex, TxKind, TxNumber, B128, B256, B512, B64, U128, U256, U64, U8,
 };
 pub use reth_ethereum_forks::*;
-pub use revm_primitives::{self, payload::PayloadAttributes, JumpTable};
+pub use revm_primitives::{self, payload::PayloadAttributes, Genesis, GenesisAccount, JumpTable};
 
 #[doc(hidden)]
 #[deprecated = "use B64 instead"]

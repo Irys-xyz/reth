@@ -5,6 +5,7 @@ use crate::{
 };
 use reth_codecs::{main_codec, Compact};
 use reth_primitives::{stage::StageCheckpoint, trie::*, *};
+use revm_primitives::GenesisAccount;
 
 /// Implements compression for Compact type.
 macro_rules! impl_compression_for_compact {

@@ -1,7 +1,7 @@
 use crate::{
     keccak256,
-    revm_primitives::{Bytecode as RevmBytecode, Bytes},
-    GenesisAccount, B256, KECCAK_EMPTY, U256,
+    revm_primitives::{Bytecode as RevmBytecode, Bytes, GenesisAccount},
+    B256, KECCAK_EMPTY, U256,
 };
 use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;

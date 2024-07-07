@@ -1,9 +1,7 @@
-use crate::{
-    constants::EMPTY_ROOT_HASH, proofs, Account, GenesisAccount, B256, KECCAK_EMPTY, U256,
-};
+use crate::{constants::EMPTY_ROOT_HASH, proofs, Account, B256, KECCAK_EMPTY, U256};
 use alloy_primitives::keccak256;
 use alloy_rlp::{RlpDecodable, RlpEncodable};
-use revm_primitives::AccountInfo;
+use revm_primitives::{AccountInfo, GenesisAccount};
 
 /// An Ethereum account as represented in the trie.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]

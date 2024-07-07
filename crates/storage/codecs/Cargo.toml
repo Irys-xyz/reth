@@ -1,22 +1,22 @@
 [package]
-name = "reth-codecs"
-version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
 homepage.workspace = true
+license.workspace = true
+name = "reth-codecs"
 repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
 # reth
+# reth-acyc-primitives.workspace = true
 reth-codecs-derive = { path = "./derive", default-features = false }
-
 # eth
 alloy-eips = { workspace = true, optional = true }
-alloy-genesis = { workspace = true, optional = true } 
+alloy-genesis = { workspace = true, optional = true }
 alloy-primitives.workspace = true
 
 # misc
@@ -25,17 +25,20 @@ modular-bitfield = { workspace = true, optional = true }
 serde.workspace = true
 
 [dev-dependencies]
-alloy-eips = { workspace = true, default-features = false, features = ["arbitrary", "serde"] }
+alloy-eips = { workspace = true, default-features = false, features = [
+    "arbitrary",
+    "serde",
+] }
 alloy-primitives = { workspace = true, features = ["arbitrary", "serde"] }
-test-fuzz.workspace = true
 serde_json.workspace = true
+test-fuzz.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"] }
-proptest.workspace = true
 proptest-derive.workspace = true
+proptest.workspace = true
 
 [features]
-default = ["std", "alloy"]
-std = ["alloy-primitives/std", "bytes/std"]
 alloy = ["dep:alloy-eips", "dep:alloy-genesis", "dep:modular-bitfield"]
+default = ["alloy", "std"]
 optimism = ["reth-codecs-derive/optimism"]
+std = ["alloy-primitives/std", "bytes/std"]

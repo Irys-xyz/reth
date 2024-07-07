@@ -301,7 +301,7 @@ pub fn apply_shadow<EXT, DB: Database + DatabaseCommit>(
                 }
             }
         }
-        ShadowTxType::UnpledgeAll(_unpledge_shadow) => 'unpledge_all: {
+        ShadowTxType::Unstake(_unpledge_shadow) => 'unpledge_all: {
             // remove/refund all pledges
             match &mut primary_account.info.pledges {
                 None => (),

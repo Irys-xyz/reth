@@ -1,8 +1,8 @@
 //! Helps create a custom genesis alloc by making it easy to add funded accounts with known
 //! signers to the genesis block.
 
-use alloy_genesis::GenesisAccount;
-use reth_primitives::{public_key_to_address, Address, Bytes, B256, U256};
+// use alloy_genesis::GenesisAccount;
+use reth_primitives::{public_key_to_address, Address, Bytes, GenesisAccount, B256, U256};
 use secp256k1::{
     rand::{thread_rng, RngCore},
     Keypair, Secp256k1,
