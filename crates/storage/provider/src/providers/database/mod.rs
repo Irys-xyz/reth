@@ -157,6 +157,9 @@ impl<DB: Database> DatabaseProviderFactory<DB> for ProviderFactory<DB> {
     fn database_provider_ro(&self) -> ProviderResult<DatabaseProviderRO<DB>> {
         self.provider()
     }
+    fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
+        self.provider_rw()
+    }
 }
 
 impl<DB> StaticFileProviderFactory for ProviderFactory<DB> {
