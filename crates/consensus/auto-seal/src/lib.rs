@@ -20,11 +20,11 @@ use reth_consensus::{Consensus, ConsensusError};
 use reth_engine_primitives::EngineTypes;
 use reth_interfaces::executor::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
-    constants::{EMPTY_TRANSACTIONS, ETHEREUM_BLOCK_GAS_LIMIT},
+    constants::{EMPTY_SHADOWS_ROOT, EMPTY_TRANSACTIONS, ETHEREUM_BLOCK_GAS_LIMIT},
     eip4844::calculate_excess_blob_gas,
     proofs, Block, BlockBody, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders,
     ChainSpec, Header, Receipt, Receipts, SealedBlock, SealedHeader, TransactionSigned,
-    Withdrawals, B256, U256,
+    Withdrawals, B256, EMPTY_OMMER_ROOT_HASH, U256,
 };
 use reth_provider::{
     BlockReaderIdExt, BundleStateWithReceipts, CanonStateNotificationSender, StateProviderFactory,
@@ -301,6 +301,7 @@ impl StorageInner {
         let mut header = Header {
             parent_hash: self.best_hash,
             ommers_hash: proofs::calculate_ommers_root(ommers),
+            shadows_root: EMPTY_SHADOWS_ROOT,
             beneficiary: Default::default(),
             state_root: Default::default(),
             transactions_root: Default::default(),

@@ -2,7 +2,7 @@
 
 use crate::eth::error::{EthApiError, EthResult};
 use reth_primitives::{
-    constants::{eip4844::MAX_DATA_GAS_PER_BLOCK, BEACON_NONCE},
+    constants::{eip4844::MAX_DATA_GAS_PER_BLOCK, BEACON_NONCE, EMPTY_SHADOWS_ROOT},
     proofs,
     revm::env::tx_env_with_recovered,
     revm_primitives::{
@@ -243,6 +243,7 @@ impl PendingBlockEnv {
         let header = Header {
             parent_hash,
             ommers_hash: EMPTY_OMMER_ROOT_HASH,
+            shadows_root: EMPTY_SHADOWS_ROOT,
             beneficiary: block_env.coinbase,
             state_root,
             transactions_root,

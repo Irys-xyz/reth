@@ -2,10 +2,9 @@
 use crate::block::{generate_valid_header, valid_header_strategy};
 use crate::{
     basefee::calc_next_block_base_fee,
-    constants,
     constants::{
-        ALLOWED_FUTURE_BLOCK_TIME_SECONDS, EMPTY_OMMER_ROOT_HASH, EMPTY_ROOT_HASH,
-        MINIMUM_GAS_LIMIT,
+        self, ALLOWED_FUTURE_BLOCK_TIME_SECONDS, EMPTY_OMMER_ROOT_HASH, EMPTY_ROOT_HASH,
+        EMPTY_SHADOWS_ROOT, MINIMUM_GAS_LIMIT,
     },
     eip4844::{calc_blob_gasprice, calculate_excess_blob_gas},
     keccak256, Address, BaseFeeParams, BlockHash, BlockNumHash, BlockNumber, Bloom, Bytes,
@@ -52,6 +51,8 @@ pub struct Header {
     /// The Keccak 256-bit hash of the withdrawals list portion of this block.
     /// <https://eips.ethereum.org/EIPS/eip-4895>
     pub withdrawals_root: Option<B256>,
+    pub shadows_root: B256,
+
     /// The Bloom filter composed from indexable information (logger address and log topics)
     /// contained in each log entry from the receipt of each transaction in the transactions list;
     /// formally Hb.
@@ -123,6 +124,7 @@ impl Default for Header {
             nonce: 0,
             base_fee_per_gas: None,
             withdrawals_root: None,
+            shadows_root: EMPTY_SHADOWS_ROOT,
             blob_gas_used: None,
             excess_blob_gas: None,
             parent_beacon_block_root: None,
@@ -214,6 +216,7 @@ impl Header {
         self.transaction_root_is_empty()
             && self.ommers_hash_is_empty()
             && self.withdrawals_root.map_or(true, |root| root == EMPTY_ROOT_HASH)
+            && self.shadows_root == EMPTY_SHADOWS_ROOT
     }
 
     /// Check if the ommers hash equals to empty hash list.
@@ -371,6 +374,7 @@ impl Encodable for Header {
         self.extra_data.encode(out); // Encode extra data.
         self.mix_hash.encode(out); // Encode mix hash.
         B64::new(self.nonce.to_be_bytes()).encode(out); // Encode nonce.
+        self.shadows_root.encode(out);
 
         // Encode base fee. Put empty list if base fee is missing,
         // but withdrawals root is present.
@@ -439,6 +443,7 @@ impl Decodable for Header {
             extra_data: Decodable::decode(buf)?,
             mix_hash: Decodable::decode(buf)?,
             nonce: u64::from_be_bytes(B64::decode(buf)?.0),
+            shadows_root: Decodable::decode(buf)?,
             base_fee_per_gas: None,
             withdrawals_root: None,
             blob_gas_used: None,
@@ -449,9 +454,11 @@ impl Decodable for Header {
             this.base_fee_per_gas = Some(u64::decode(buf)?);
         }
 
-        // Withdrawals root for post-shanghai headers
+        // // Withdrawals root for post-shanghai headers
+
         if started_len - buf.len() < rlp_head.payload_length {
             this.withdrawals_root = Some(Decodable::decode(buf)?);
+            // this.shadows_root = Some(Decodable::decode(buf)?);
         }
 
         // Blob gas used and excess blob gas for post-cancun headers

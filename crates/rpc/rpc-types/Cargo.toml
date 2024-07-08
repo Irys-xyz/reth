@@ -22,6 +22,7 @@ alloy-rpc-types-anvil.workspace = true
 alloy-rpc-types-beacon.workspace = true
 alloy-rpc-types-engine = { workspace = true, features = ["jsonrpsee-types"] }
 alloy-rpc-types-trace.workspace = true
+alloy-serde.workspace = true
 
 # misc
 jsonrpsee-types = { workspace = true, optional = true }

@@ -2,7 +2,10 @@
 //! Ethereum's Engine
 
 use reth_primitives::{
-    constants::{EMPTY_OMMER_ROOT_HASH, MAXIMUM_EXTRA_DATA_SIZE, MIN_PROTOCOL_BASE_FEE_U256},
+    constants::{
+        EMPTY_OMMER_ROOT_HASH, EMPTY_SHADOWS_ROOT, MAXIMUM_EXTRA_DATA_SIZE,
+        MIN_PROTOCOL_BASE_FEE_U256,
+    },
     proofs,
     revm_primitives::shadow::Shadows,
     Block, Header, SealedBlock, TransactionSigned, UintTryTo, Withdrawals, B256, U256,
@@ -61,6 +64,7 @@ pub fn try_payload_v1_to_block(payload: ExecutionPayloadV1) -> Result<Block, Pay
         ommers_hash: EMPTY_OMMER_ROOT_HASH,
         difficulty: Default::default(),
         nonce: Default::default(),
+        shadows_root: EMPTY_SHADOWS_ROOT,
     };
 
     Ok(Block {

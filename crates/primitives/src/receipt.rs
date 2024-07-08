@@ -9,7 +9,7 @@ use proptest::strategy::Strategy;
 #[cfg(feature = "zstd-codec")]
 use reth_codecs::CompactZstd;
 use reth_codecs::{add_arbitrary_tests, main_codec, Compact};
-use revm_primitives::{pledge::TxId, shadow::ShadowTxType};
+use revm_primitives::{pledge::IrysTxId, shadow::ShadowTxType};
 use std::{
     cmp::Ordering,
     ops::{Deref, DerefMut},
@@ -59,7 +59,7 @@ pub struct Receipt {
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 // #[rlp(trailing)]
 pub struct ShadowReceipt {
-    pub tx_id: TxId,
+    pub tx_id: IrysTxId,
     pub tx_type: ShadowTxType,
     pub result: ShadowResult,
 }

@@ -1,5 +1,8 @@
 use crate::{
-    constants::{EIP1559_INITIAL_BASE_FEE, EMPTY_RECEIPTS, EMPTY_TRANSACTIONS, EMPTY_WITHDRAWALS},
+    constants::{
+        EIP1559_INITIAL_BASE_FEE, EMPTY_RECEIPTS, EMPTY_SHADOWS_ROOT, EMPTY_TRANSACTIONS,
+        EMPTY_WITHDRAWALS,
+    },
     holesky_nodes,
     net::{goerli_nodes, mainnet_nodes, sepolia_nodes},
     proofs::state_root_ref_unhashed,
@@ -629,6 +632,7 @@ impl ChainSpec {
             gas_used: Default::default(),
             base_fee_per_gas,
             withdrawals_root,
+            shadows_root: EMPTY_SHADOWS_ROOT,
             parent_beacon_block_root,
             blob_gas_used,
             excess_blob_gas,

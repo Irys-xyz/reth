@@ -150,7 +150,7 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
             // <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#specification-2>
             should_override_builder: false,
             blobs_bundle: sidecars.clone().into_iter().map(Into::into).collect::<Vec<_>>().into(),
-            shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
+            // shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
         }
     }
 }

@@ -7,7 +7,7 @@ use reth_primitives::{
 use revm::{
     interpreter::{Host, InstructionResult},
     primitives::{
-        pledge::{Pledge, Stake, TxId},
+        pledge::{Pledge, Stake, IrysTxId},
         shadow::{ShadowTx, ShadowTxType, Shadows},
         Account, EVMError, State,
     },

@@ -18,7 +18,8 @@ use reth_payload_builder::{
 };
 use reth_primitives::{
     constants::{
-        eip4844::MAX_DATA_GAS_PER_BLOCK, BEACON_NONCE, EMPTY_RECEIPTS, EMPTY_TRANSACTIONS,
+        eip4844::MAX_DATA_GAS_PER_BLOCK, BEACON_NONCE, EMPTY_RECEIPTS, EMPTY_SHADOWS_ROOT,
+        EMPTY_TRANSACTIONS,
     },
     eip4844::calculate_excess_blob_gas,
     proofs,
@@ -162,6 +163,7 @@ where
             transactions_root: EMPTY_TRANSACTIONS,
             withdrawals_root,
             receipts_root: EMPTY_RECEIPTS,
+            shadows_root: EMPTY_SHADOWS_ROOT,
             logs_bloom: Default::default(),
             timestamp: attributes.timestamp,
             mix_hash: attributes.prev_randao,
@@ -434,6 +436,7 @@ where
     let header = Header {
         parent_hash: parent_block.hash(),
         ommers_hash: EMPTY_OMMER_ROOT_HASH,
+        shadows_root: EMPTY_SHADOWS_ROOT,
         beneficiary: initialized_block_env.coinbase,
         state_root,
         transactions_root,

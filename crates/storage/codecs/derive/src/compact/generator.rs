@@ -53,7 +53,7 @@ pub fn generate_from_to(ident: &Ident, fields: &FieldList, is_zstd: bool) -> Tok
 fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> TokenStream2 {
     let mut lines = vec![];
     let mut known_types =
-        vec!["B256", "Address", "Bloom", "Vec", "TxHash", "BlockHash", "FixedBytes", "TxId"];
+        vec!["B256", "Address", "Bloom", "Vec", "TxHash", "BlockHash", "FixedBytes", "IrysTxId"];
 
     // Only types without `Bytes` should be added here. It's currently manually added, since
     // it's hard to figure out with derive_macro which types have Bytes fields.
@@ -64,7 +64,7 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
         "AccessList",
         "Signature",
         "CheckpointBlockRange",
-        "TxId",
+        "IrysTxId",
     ]);
 
     // let mut handle = FieldListHandler::new(fields);
@@ -95,7 +95,7 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
                     let ident = format_ident!("{name}");
                     return Some(quote! {
                         #ident: #ident,
-                    })
+                    });
                 }
                 None
             });

@@ -145,6 +145,11 @@ pub enum ConsensusError {
     #[error("mismatched block withdrawals root: {0}")]
     BodyWithdrawalsRootDiff(GotExpectedBoxed<B256>),
 
+    /// Error when the shadows root in the block is different from the expected shadows
+    /// root.
+    #[error("mismatched block shadows root: {0}")]
+    BodyShadowsRootDiff(GotExpectedBoxed<B256>),
+
     /// Error when a block with a specific hash and number is already known.
     #[error("block with [hash={hash}, number={number}] is already known")]
     BlockKnown {
@@ -219,6 +224,14 @@ pub enum ConsensusError {
     /// Error when withdrawals are missing.
     #[error("missing withdrawals")]
     BodyWithdrawalsMissing,
+
+    /// Error when shadows are missing.
+    #[error("missing shadows")]
+    BodyShadowsMissing,
+
+    /// Error when the shadows root is missing.
+    #[error("missing shadows root")]
+    ShadowsRootMissing,
 
     /// Error when blob gas used is missing.
     #[error("missing blob gas used")]

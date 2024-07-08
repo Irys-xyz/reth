@@ -552,6 +552,12 @@ impl BlockBody {
         crate::proofs::calculate_transaction_root(&self.transactions)
     }
 
+    pub fn calculate_shadows_root(&self) -> Option<B256> {
+        match &self.shadows {
+            Some(shadows) => Some(crate::proofs::calculate_shadows_root(shadows)),
+            None => None,
+        }
+    }
     /// Calculate the ommers root for the block body.
     pub fn calculate_ommers_root(&self) -> B256 {
         crate::proofs::calculate_ommers_root(&self.ommers)
