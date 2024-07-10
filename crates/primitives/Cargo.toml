@@ -16,10 +16,10 @@ workspace = true
 reth-codecs.workspace = true
 reth-ethereum-forks.workspace = true
 reth-network-types.workspace = true
+reth-rpc-types.workspace = true
 reth-static-file-types.workspace = true
 revm-primitives = { workspace = true, features = ["serde"] }
 revm.workspace = true
-
 # ethereum
 alloy-chains = { workspace = true, features = ["rlp", "serde"] }
 alloy-eips = { workspace = true, features = ["serde"] }

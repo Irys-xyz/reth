@@ -7,7 +7,7 @@ use reth_primitives::{
 use revm::{
     interpreter::{Host, InstructionResult},
     primitives::{
-        pledge::{Pledge, Stake, IrysTxId},
+        pledge::{IrysTxId, Pledge, Stake},
         shadow::{ShadowTx, ShadowTxType, Shadows},
         Account, EVMError, State,
     },
@@ -271,7 +271,7 @@ pub fn apply_shadow<EXT, DB: Database + DatabaseCommit>(
             };
             match &mut primary_account.info.pledges {
                 Some(pledges) => pledges.push(pledge),
-                None => primary_account.info.pledges = Some(vec![pledge]),
+                None => primary_account.info.pledges = Some(vec![pledge].into()),
             };
             evm.context.evm.inner.journaled_state.touch(&shadow.address);
             ShadowResult::Success

@@ -188,7 +188,7 @@ where
         };
         let sealed_block = block.seal_slow();
 
-        Ok(EthBuiltPayload::new(attributes.payload_id(), sealed_block, U256::ZERO))
+        Ok(EthBuiltPayload::new(attributes.payload_id(), sealed_block, U256::ZERO, true))
     }
 }
 
@@ -470,7 +470,7 @@ where
     debug!(target: "payload_builder", ?state_root, "sealed build block - state root");
     debug!(target: "payload_builder", ?sealed_block, "sealed built block");
 
-    let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees);
+    let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees, false);
 
     // extend the payload with the blob sidecars from the executed txs
     payload.extend_sidecars(blob_sidecars);

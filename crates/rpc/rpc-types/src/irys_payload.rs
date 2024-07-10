@@ -1,7 +1,7 @@
 use crate::{BlobsBundleV1, ExecutionPayloadV3};
 
-use revm_primitives::shadow::Shadows;
 use revm_primitives::U256;
+use revm_primitives::{shadow::Shadows, B256};
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +15,7 @@ pub struct ExecutionPayloadEnvelopeV1Irys {
     /// Introduced in V3, this represents a suggestion from the execution layer if the payload
     /// should be used instead of an externally provided one.
     pub should_override_builder: bool,
-    // pub shadows: Shadows,
+    // pub is_empty: bool, // pub shadows: Shadows,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -35,4 +35,6 @@ pub struct ExecutionPayloadV1Irys {
     // pub excess_blob_gas: u64,
     /// shadows
     pub shadows: Shadows,
+    /// RLP proof root for shadows for quick payload validation
+    pub shadows_root: B256,
 }

@@ -73,7 +73,7 @@ where
         )>,
     >
     where
-        <Node::Engine as EngineTypes>::ExecutionPayloadV1Irys:
+        <Node::Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
             From<<Node::Engine as EngineTypes>::BuiltPayload> + PayloadEnvelopeExt,
     {
         let mut chain = Vec::with_capacity(length as usize);
@@ -101,7 +101,7 @@ where
         <<Node as NodeTypes>::Engine as EngineTypes>::PayloadBuilderAttributes,
     )>
     where
-        <Node::Engine as EngineTypes>::ExecutionPayloadV1Irys:
+        <Node::Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
             From<<Node::Engine as EngineTypes>::BuiltPayload> + PayloadEnvelopeExt,
     {
         // trigger new payload building draining the pool
@@ -127,7 +127,7 @@ where
         <<Node as NodeTypes>::Engine as EngineTypes>::PayloadBuilderAttributes,
     )>
     where
-        <Node::Engine as EngineTypes>::ExecutionPayloadV1Irys:
+        <Node::Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
             From<<Node::Engine as EngineTypes>::BuiltPayload> + PayloadEnvelopeExt,
     {
         let (payload, eth_attr) = self.new_payload(attributes_generator).await?;

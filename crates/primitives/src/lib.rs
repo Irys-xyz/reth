@@ -69,6 +69,8 @@ pub use error::{GotExpected, GotExpectedBoxed};
 pub use exex::FinishedExExHeight;
 pub use header::{Header, HeaderValidationError, HeadersDirection, SealedHeader};
 pub use integer_list::IntegerList;
+pub mod irys;
+pub use irys::*;
 pub use log::{logs_bloom, Log};
 pub use net::{
     goerli_nodes, holesky_nodes, mainnet_nodes, parse_nodes, sepolia_nodes, NodeRecord,

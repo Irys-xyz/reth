@@ -1,10 +1,14 @@
 use crate::{constants::EMPTY_ROOT_HASH, proofs, Account, B256, KECCAK_EMPTY, U256};
 use alloy_primitives::keccak256;
 use alloy_rlp::{RlpDecodable, RlpEncodable};
-use revm_primitives::{AccountInfo, GenesisAccount};
+use revm_primitives::{
+    pledge::{Pledge, Pledges, Stake},
+    AccountInfo, GenesisAccount,
+};
 
 /// An Ethereum account as represented in the trie.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
+#[rlp(trailing)]
 pub struct TrieAccount {
     /// Account nonce.
     nonce: u64,
@@ -14,6 +18,8 @@ pub struct TrieAccount {
     storage_root: B256,
     /// Hash of the account's bytecode.
     code_hash: B256,
+    stake: Option<Stake>,
+    pledges: Option<Pledges>,
 }
 
 impl From<(Account, B256)> for TrieAccount {
@@ -23,6 +29,8 @@ impl From<(Account, B256)> for TrieAccount {
             balance: account.balance,
             storage_root,
             code_hash: account.bytecode_hash.unwrap_or(KECCAK_EMPTY),
+            stake: account.stake,
+            pledges: account.pledges,
         }
     }
 }
@@ -34,6 +42,8 @@ impl From<(AccountInfo, B256)> for TrieAccount {
             balance: account.balance,
             storage_root,
             code_hash: account.code_hash,
+            stake: account.stake,
+            pledges: account.pledges,
         }
     }
 }
@@ -57,6 +67,8 @@ impl From<GenesisAccount> for TrieAccount {
             balance: account.balance,
             storage_root,
             code_hash: account.code.map_or(KECCAK_EMPTY, keccak256),
+            stake: account.stake,
+            pledges: account.pledges,
         }
     }
 }

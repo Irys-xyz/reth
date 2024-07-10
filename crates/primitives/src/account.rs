@@ -7,7 +7,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
 use revm_primitives::{
-    pledge::{Pledge, Stake},
+    pledge::{Pledges, Stake},
     JumpTable,
 };
 use serde::{Deserialize, Serialize};
@@ -25,8 +25,8 @@ pub struct Account {
     pub balance: U256,
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
-    pub pledges: Option<Vec<Pledge>>,
     pub stake: Option<Stake>,
+    pub pledges: Option<Pledges>,
 }
 
 impl Account {
@@ -50,8 +50,8 @@ impl Account {
             nonce: value.nonce.unwrap_or_default(),
             balance: value.balance,
             bytecode_hash: value.code.as_ref().map(keccak256),
-            pledges: None, // TODO: should we allow genesis accounts to have pledges?
-            stake: None,
+            pledges: value.pledges.clone(),
+            stake: value.stake,
         }
     }
 

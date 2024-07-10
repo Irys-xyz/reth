@@ -15,6 +15,7 @@ use reth_primitives::ChainSpec;
 /// [PayloadAttributes] trait for ethereum mainnet and optimism types.
 pub mod traits;
 use serde::{de::DeserializeOwned, ser::Serialize};
+use traits::PayloadEnvelopeExt;
 pub use traits::{BuiltPayload, PayloadAttributes, PayloadBuilderAttributes};
 
 /// Contains error types used in the traits defined in this crate.
@@ -44,7 +45,7 @@ pub trait EngineTypes:
         // + TryInto<Self::ExecutionPayloadV1>
         // + TryInto<Self::ExecutionPayloadV2>
         // + TryInto<Self::ExecutionPayloadV3>
-        + TryInto<Self::ExecutionPayloadV1Irys>;
+        + TryInto<Self::ExecutionPayloadEnvelopeV1Irys>;
 
     // /// Execution Payload V1 type.
     // type ExecutionPayloadV1: DeserializeOwned + Serialize + Clone + Unpin + Send + Sync + 'static;
@@ -53,7 +54,8 @@ pub trait EngineTypes:
     // /// Execution Payload V3 type.
     // type ExecutionPayloadV3: DeserializeOwned + Serialize + Clone + Unpin + Send + Sync + 'static;
     /// Execution Payload Irys type.
-    type ExecutionPayloadV1Irys: DeserializeOwned
+    type ExecutionPayloadEnvelopeV1Irys: DeserializeOwned
+        + PayloadEnvelopeExt
         + Serialize
         + Clone
         + Unpin

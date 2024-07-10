@@ -38,14 +38,15 @@ pub struct EthBuiltPayload {
     /// The blobs, proofs, and commitments in the block. If the block is pre-cancun, this will be
     /// empty.
     pub(crate) sidecars: Vec<BlobTransactionSidecar>,
+    pub(crate) is_empty: bool,
 }
 
 // === impl BuiltPayload ===
 
 impl EthBuiltPayload {
     /// Initializes the payload with the given initial block.
-    pub fn new(id: PayloadId, block: SealedBlock, fees: U256) -> Self {
-        Self { id, block, fees, sidecars: Vec::new() }
+    pub fn new(id: PayloadId, block: SealedBlock, fees: U256, is_empty: bool) -> Self {
+        Self { id, block, fees, sidecars: Vec::new(), is_empty }
     }
 
     /// Returns the identifier of the payload.
@@ -82,6 +83,9 @@ impl BuiltPayload for EthBuiltPayload {
     fn fees(&self) -> U256 {
         self.fees
     }
+    fn is_empty(&self) -> bool {
+        self.is_empty
+    }
 }
 
 impl<'a> BuiltPayload for &'a EthBuiltPayload {
@@ -91,6 +95,10 @@ impl<'a> BuiltPayload for &'a EthBuiltPayload {
 
     fn fees(&self) -> U256 {
         (**self).fees()
+    }
+
+    fn is_empty(&self) -> bool {
+        (**self).is_empty()
     }
 }
 
@@ -136,7 +144,7 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV3 {
 
 impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
     fn from(value: EthBuiltPayload) -> Self {
-        let EthBuiltPayload { block, fees, sidecars, .. } = value;
+        let EthBuiltPayload { block, fees, sidecars /*  is_empty, */, .. } = value;
         ExecutionPayloadEnvelopeV1Irys {
             execution_payload: block_to_payload_v1_irys(block.clone()),
             block_value: fees,
@@ -150,7 +158,7 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
             // <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#specification-2>
             should_override_builder: false,
             blobs_bundle: sidecars.clone().into_iter().map(Into::into).collect::<Vec<_>>().into(),
-            // shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
+            // is_empty, // shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
         }
     }
 }

@@ -72,7 +72,7 @@ pub trait EngineApi<Engine: EngineTypes> {
         parent: B256,
         payload_attributes: Engine::PayloadAttributes,
         /* RpcResult<Engine::ExecutionPayloadV1Irys> */
-    ) -> RpcResult<(SealedBlock, Engine::ExecutionPayloadV1Irys)>;
+    ) -> RpcResult<Engine::ExecutionPayloadEnvelopeV1Irys>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_forkchoiceupdatedv1>
     ///
@@ -162,7 +162,7 @@ pub trait EngineApi<Engine: EngineTypes> {
     async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
-    ) -> RpcResult<Engine::ExecutionPayloadV1Irys>;
+    ) -> RpcResult<Engine::ExecutionPayloadEnvelopeV1Irys>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6452a6b194d7db269bf1dbd087a267251d3cc7f8/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1>
     // #[method(name = "getPayloadBodiesByHashV1")]
@@ -176,6 +176,18 @@ pub trait EngineApi<Engine: EngineTypes> {
         &self,
         block_hashes: Vec<BlockHash>,
     ) -> RpcResult<ExecutionPayloadBodiesV1>;
+
+    #[method(name = "getFullPayloadByHashV1Irys")]
+    async fn get_full_payload_by_hash_v1_irys(
+        &self,
+        block_hash: BlockHash,
+    ) -> RpcResult<Option<ExecutionPayloadV1Irys>>;
+
+    #[method(name = "getFullPayloadByHeightV1Irys")]
+    async fn get_full_payload_by_height_v1_irys(
+        &self,
+        block_height: u64,
+    ) -> RpcResult<Option<ExecutionPayloadV1Irys>>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6452a6b194d7db269bf1dbd087a267251d3cc7f8/src/engine/shanghai.md#engine_getpayloadbodiesbyrangev1>
     ///

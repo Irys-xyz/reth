@@ -223,7 +223,7 @@ pub fn block_to_payload_v3(value: SealedBlock) -> (ExecutionPayloadV3, Option<B2
 pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
     let transactions = value.raw_transactions();
 
-    let parent_beacon_block_root = value.header.parent_beacon_block_root;
+    // let parent_beacon_block_root = value.header.parent_beacon_block_root;
     let payload = ExecutionPayloadV1Irys {
         payload_inner: ExecutionPayloadV3 {
             blob_gas_used: value.blob_gas_used.unwrap_or_default(),
@@ -245,10 +245,11 @@ pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
                     block_hash: value.hash(),
                     transactions,
                 },
-                withdrawals: value.withdrawals.unwrap_or_default().into_inner(),
+                withdrawals: value.withdrawals.clone().unwrap_or_default().into_inner(),
             },
         },
-        shadows: value.shadows.unwrap_or(Shadows::new(vec![])),
+        shadows: value.shadows.clone().unwrap_or(Shadows::new(vec![])),
+        shadows_root: value.shadows_root.clone(),
     };
 
     // let (payload, parent_beacon_block_root) =

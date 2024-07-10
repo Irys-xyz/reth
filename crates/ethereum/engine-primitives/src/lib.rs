@@ -34,7 +34,7 @@ impl EngineTypes for EthEngineTypes {
     // type ExecutionPayloadV1 = ExecutionPayloadV1;
     // type ExecutionPayloadV2 = ExecutionPayloadEnvelopeV2;
     // type ExecutionPayloadV3 = ExecutionPayloadEnvelopeV3;
-    type ExecutionPayloadV1Irys = ExecutionPayloadEnvelopeV1Irys;
+    type ExecutionPayloadEnvelopeV1Irys = ExecutionPayloadEnvelopeV1Irys;
 
     fn validate_version_specific_fields(
         chain_spec: &ChainSpec,

@@ -3,12 +3,14 @@ use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
 use reth_beacon_consensus::BeaconConsensusEngineHandle;
 use reth_engine_primitives::{
-    validate_payload_timestamp, BuiltPayload as _, EngineApiMessageVersion, EngineTypes,
-    PayloadAttributes, PayloadBuilderAttributes, PayloadOrAttributes,
+    traits::PayloadEnvelopeExt, validate_payload_timestamp, BuiltPayload as _,
+    EngineApiMessageVersion, EngineTypes, PayloadAttributes, PayloadBuilderAttributes,
+    PayloadOrAttributes,
 };
 use reth_payload_builder::{EthPayloadBuilderAttributes, PayloadStore};
 use reth_primitives::{
-    BlockHash, BlockHashOrNumber, BlockNumber, ChainSpec, Hardfork, SealedBlock, B256, U64,
+    BlobsBundleV1Wrapper, BlockHash, BlockHashOrNumber, BlockNumber, ChainSpec, Hardfork,
+    SealedBlock, B256, U64,
 };
 use reth_provider::{BlockReader, EvmEnvProvider, HeaderProvider, StateProviderFactory};
 use reth_rpc_api::EngineApiServer;
@@ -18,16 +20,18 @@ use reth_rpc_types::{
         ForkchoiceUpdated, PayloadId, PayloadStatus, PayloadStatusEnum, TransitionConfiguration,
         CAPABILITIES,
     },
-    irys_payload::ExecutionPayloadV1Irys,
+    irys_payload::{ExecutionPayloadEnvelopeV1Irys, ExecutionPayloadV1Irys},
     Block, ExecutionPayload,
 };
 use reth_rpc_types_compat::engine::payload::{
-    /* convert_payload_input_v2_to_payload, */ convert_to_payload_body_v1,
+    /* convert_payload_input_v2_to_payload, */ block_to_payload_v1_irys,
+    convert_to_payload_body_v1,
 };
 use reth_tasks::TaskSpawner;
+use serde_json;
 use std::{sync::Arc, time::Instant};
 use tokio::sync::oneshot;
-use tracing::{trace, warn};
+use tracing::{debug, trace, warn};
 
 /// The Engine API response sender.
 pub type EngineApiSender<Ok> = oneshot::Sender<EngineApiResult<Ok>>;
@@ -271,7 +275,7 @@ where
         &self,
         parent: B256,
         payload_attributes: EngineT::PayloadAttributes,
-    ) -> EngineApiResult<(SealedBlock, EngineT::ExecutionPayloadV1Irys)> /* EngineApiResult<EngineT::ExecutionPayloadV1Irys> */ /* RpcResult<ForkchoiceUpdated> */
+    ) -> EngineApiResult<EngineT::ExecutionPayloadEnvelopeV1Irys> /* EngineApiResult<EngineT::ExecutionPayloadV1Irys> */ /* RpcResult<ForkchoiceUpdated> */
     {
         let payload_builder_attributes =
             <EngineT as EngineTypes>::PayloadBuilderAttributes::try_new(parent, payload_attributes)
@@ -311,13 +315,14 @@ where
             match self.inner.payload_store.inner.best_payload(payload_id).await {
                 Some(v) => match v {
                     Ok(v) => {
-                        if v.block().body.is_empty() && v.block().shadows.is_none() {
+                        if v.is_empty() && v.block().is_empty()
+                        /* && v.block().shadows.is_none() */
+                        {
                             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
                             continue;
                         } else {
                             dbg!("got built payload");
                             break v.block().clone();
-                            // break;
                         }
                     }
                     Err(e) => {
@@ -360,7 +365,32 @@ where
 
         // return payload;
 
-        Ok((b, payload))
+        // Ok((b, payload))
+        match serde_json::to_string(&payload.clone()) {
+            Ok(v) => {
+                // println!("PAYLOAD {}", v);
+                warn!(target: "payload_builder", ?v, "payload");
+                // trace!("{}", &v);
+                ()
+            }
+            Err(e) => {
+                // trace!("{}", &e);
+                // println!("ERROR {}", e);
+                warn!(target: "payload_builder", ?e, "payload");
+
+                ()
+            }
+        }
+        // let exec = payload.execution_payload();
+        // let encoded_blobs = BlobsBundleV1Wrapper { inner: payload.blobs_bundle() };
+        // let opaque = OpaquePayload {
+        //     body: exec.payload_inner.payload_inner.payload_inner.transactions,
+        //     blobs_bundle: BlobsBundleV1Wrapper {inner: payload.blobs_bundle()}
+        // }
+        // serialize `transactions` into an opaque bin?
+        // serialize the bits we `don't` need access to.
+        // dbg!(pj);
+        Ok(payload)
 
         // Ok(ForkchoiceUpdated::new(PayloadStatus::new(PayloadStatusEnum::Valid, None))
         //     .with_payload_id(payload_id))
@@ -519,7 +549,7 @@ where
     pub async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
-    ) -> EngineApiResult<EngineT::ExecutionPayloadV1Irys> {
+    ) -> EngineApiResult<EngineT::ExecutionPayloadEnvelopeV1Irys> {
         dbg!(&payload_id);
         // First we fetch the payload attributes to check the timestamp
         let attributes = self.get_payload_attributes(payload_id).await?;
@@ -544,6 +574,7 @@ where
                 warn!("could not transform built payload into ExecutionPayloadV3");
                 EngineApiError::UnknownPayload
             });
+
         res
     }
 
@@ -628,6 +659,48 @@ where
         }
 
         Ok(result)
+    }
+
+    pub fn get_full_payload_by_hash(
+        &self,
+        hash: BlockHash,
+    ) -> EngineApiResult<Option<ExecutionPayloadV1Irys>> {
+        let res = self
+            .inner
+            .provider
+            .block(BlockHashOrNumber::Hash(hash))
+            .map_err(|err| EngineApiError::Internal(Box::new(err)))?;
+        let r2 = res.map(|b| block_to_payload_v1_irys(b.seal_slow()));
+        // self.inner.provider
+        Ok(r2)
+        // let len = hashes.len() as u64;
+        // if len > MAX_PAYLOAD_BODIES_LIMIT {
+        //     return Err(EngineApiError::PayloadRequestTooLarge { len });
+        // }
+
+        // let mut result = Vec::with_capacity(hashes.len());
+        // for hash in hashes {
+        //     let block = self
+        //         .inner
+        //         .provider
+        //         .block(BlockHashOrNumber::Hash(hash))
+        //         .map_err(|err| EngineApiError::Internal(Box::new(err)))?;
+        //     result.push(block.map(convert_to_payload_body_v1));
+        // }
+
+        // Ok(result)
+    }
+    pub fn get_full_payload_by_height(
+        &self,
+        height: u64,
+    ) -> EngineApiResult<Option<ExecutionPayloadV1Irys>> {
+        let res = self
+            .inner
+            .provider
+            .block(BlockHashOrNumber::Number(height))
+            .map_err(|err| EngineApiError::Internal(Box::new(err)))?;
+        let r2 = res.map(|b| block_to_payload_v1_irys(b.seal_slow()));
+        Ok(r2)
     }
 
     /// Called to verify network configuration parameters and ensure that Consensus and Execution
@@ -816,7 +889,7 @@ where
         parent: B256,
         payload_attributes: EngineT::PayloadAttributes,
         /* RpcResult<EngineT::ExecutionPayloadV1Irys> */
-    ) -> RpcResult<(SealedBlock, EngineT::ExecutionPayloadV1Irys)> {
+    ) -> RpcResult<EngineT::ExecutionPayloadEnvelopeV1Irys> {
         Ok(EngineApi::build_new_payload_irys(&self, parent, payload_attributes).await?)
     }
 
@@ -968,7 +1041,7 @@ where
     async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
-    ) -> RpcResult<EngineT::ExecutionPayloadV1Irys> {
+    ) -> RpcResult<EngineT::ExecutionPayloadEnvelopeV1Irys> {
         trace!(target: "rpc::engine", "Serving engine_getPayloadV3");
         let start = Instant::now();
         let res = EngineApi::get_payload_v1_irys(self, payload_id).await;
@@ -997,6 +1070,30 @@ where
         let start = Instant::now();
         let res = EngineApi::get_payload_bodies_by_hash(self, block_hashes);
         self.inner.metrics.latency.get_payload_bodies_by_hash_v1.record(start.elapsed());
+        Ok(res?)
+    }
+
+    async fn get_full_payload_by_hash_v1_irys(
+        &self,
+        block_hash: BlockHash,
+    ) -> RpcResult<Option<ExecutionPayloadV1Irys>> {
+        // trace!(target: "rpc::engine", "Serving engine_getPayloadBodiesByHashV1");
+        // let start = Instant::now();
+        let res = EngineApi::get_full_payload_by_hash(self, block_hash);
+        // self.inner.metrics.latency.get_payload_bodies_by_hash_v1.record(start.elapsed());
+        // Ok(res?)
+        Ok(res?)
+    }
+
+    async fn get_full_payload_by_height_v1_irys(
+        &self,
+        height: u64,
+    ) -> RpcResult<Option<ExecutionPayloadV1Irys>> {
+        // trace!(target: "rpc::engine", "Serving engine_getPayloadBodiesByHashV1");
+        // let start = Instant::now();
+        let res = EngineApi::get_full_payload_by_height(self, height);
+        // self.inner.metrics.latency.get_payload_bodies_by_hash_v1.record(start.elapsed());
+        // Ok(res?)
         Ok(res?)
     }
 
@@ -1052,6 +1149,7 @@ where
 
     //     Ok(res?)
     // }
+    //
 
     async fn get_client_version_v1_irys(
         &self,

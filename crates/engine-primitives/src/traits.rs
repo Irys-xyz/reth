@@ -3,13 +3,15 @@ use crate::{
 };
 use reth_primitives::{
     revm_primitives::{BlockEnv, CfgEnvWithHandlerCfg},
-    Address, ChainSpec, Header, PayloadAttributes as EthPayloadAttributes, SealedBlock,
-    Withdrawals, B256, U256,
+    Address, BlobsBundleV1Wrapper, ChainSpec, Header, PayloadAttributes as EthPayloadAttributes,
+    SealedBlock, Withdrawals, B256, U256,
 };
 use reth_rpc_types::{
     engine::{OptimismPayloadAttributes, PayloadId},
-    Withdrawal,
+    irys_payload::{ExecutionPayloadEnvelopeV1Irys, ExecutionPayloadV1Irys},
+    BlobsBundleV1, Withdrawal,
 };
+use serde::{Deserialize, Serialize};
 
 /// Represents a built payload type that contains a built [SealedBlock] and can be converted into
 /// engine API execution payloads.
@@ -19,6 +21,42 @@ pub trait BuiltPayload: Send + Sync + std::fmt::Debug {
 
     /// Returns the fees collected for the built block
     fn fees(&self) -> U256;
+
+    fn is_empty(&self) -> bool;
+}
+
+/// The execution payload envelope type.
+pub trait PayloadEnvelopeExt: Send + Sync + std::fmt::Debug {
+    /// Returns the execution payload V3 from the payload
+    fn execution_payload(&self) -> ExecutionPayloadV1Irys;
+
+    fn blobs_bundle(&self) -> BlobsBundleV1;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq /* Serialize, Deserialize */)]
+// #[serde(rename_all = "camelCase")]
+pub struct BlobEncodedPayloadEnvelope {
+    /// Execution payload V3
+    pub execution_payload: ExecutionPayloadV1Irys,
+    /// The expected value to be received by the feeRecipient in wei
+    pub block_value: U256,
+    /// The blobs, commitments, and proofs associated with the executed payload.
+    pub blobs_bundle: BlobsBundleV1Wrapper,
+}
+
+// impl PayloadEnvelopeExt for OptimismExecutionPayloadEnvelopeV3 {
+//     fn execution_payload(&self) -> ExecutionPayloadV1Irys {
+//         self.execution_payload.clone()
+//     }
+// }
+
+impl PayloadEnvelopeExt for ExecutionPayloadEnvelopeV1Irys {
+    fn execution_payload(&self) -> ExecutionPayloadV1Irys {
+        self.execution_payload.clone()
+    }
+    fn blobs_bundle(&self) -> BlobsBundleV1 {
+        self.blobs_bundle.clone()
+    }
 }
 
 /// This can be implemented by types that describe a currently running payload job.
