@@ -27,6 +27,7 @@ pub struct Account {
     pub bytecode_hash: Option<B256>,
     pub stake: Option<Stake>,
     pub pledges: Option<Pledges>,
+    pub slashed: bool,
 }
 
 impl Account {
@@ -52,6 +53,7 @@ impl Account {
             bytecode_hash: value.code.as_ref().map(keccak256),
             pledges: value.pledges.clone(),
             stake: value.stake,
+            slashed: value.slashed,
         }
     }
 

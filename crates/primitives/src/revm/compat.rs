@@ -12,6 +12,7 @@ pub fn into_reth_acc(revm_acc: AccountInfo) -> Account {
         bytecode_hash: (code_hash != KECCAK_EMPTY).then_some(code_hash),
         pledges: revm_acc.pledges,
         stake: revm_acc.stake,
+        slashed: revm_acc.slashed,
     }
 }
 
@@ -26,6 +27,7 @@ pub fn into_revm_acc(reth_acc: Account) -> AccountInfo {
         code: None,
         pledges: reth_acc.pledges,
         stake: reth_acc.stake,
+        slashed: reth_acc.slashed,
     }
 }
 

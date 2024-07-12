@@ -187,6 +187,7 @@ pub fn insert_state<'a, 'b, DB: Database>(
                     bytecode_hash,
                     pledges: account.pledges.clone(),
                     stake: account.stake.clone(),
+                    slashed: account.slashed,
                 }),
                 storage,
             ),

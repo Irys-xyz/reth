@@ -63,7 +63,14 @@ impl ExtendedAccount {
     /// Create new instance of extended account
     pub fn new(nonce: u64, balance: U256) -> Self {
         Self {
-            account: Account { nonce, balance, bytecode_hash: None, pledges: None, stake: None },
+            account: Account {
+                nonce,
+                balance,
+                bytecode_hash: None,
+                pledges: None,
+                stake: None,
+                slashed: false,
+            },
             bytecode: None,
             storage: Default::default(),
         }
