@@ -18,6 +18,7 @@ use clap::{value_parser, Parser, Subcommand};
 use reth_cli_runner::CliRunner;
 use reth_db::DatabaseEnv;
 use reth_node_builder::{NodeBuilder, WithLaunchContext};
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_primitives::ChainSpec;
 use reth_tracing::FileWorkerGuard;
 use std::{ffi::OsString, fmt, future::Future, sync::Arc};
@@ -131,7 +132,7 @@ impl<Ext: clap::Args + fmt::Debug> Cli<Ext> {
     ///     })
     ///     .unwrap();
     /// ````
-    pub fn run<L, Fut>(mut self, launcher: L) -> eyre::Result<()>
+    pub fn run<L, Fut>(mut self, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>>>, Ext) -> Fut,
         Fut: Future<Output = eyre::Result<()>>,
@@ -163,7 +164,8 @@ impl<Ext: clap::Args + fmt::Debug> Cli<Ext> {
             Commands::Config(command) => runner.run_until_ctrl_c(command.execute()),
             Commands::Debug(command) => runner.run_command_until_exit(|ctx| command.execute(ctx)),
             Commands::Recover(command) => runner.run_command_until_exit(|ctx| command.execute(ctx)),
-        }
+        }?;
+        Ok(NodeExitReason::Normal)
     }
 
     /// Initializes tracing with the configured options.

@@ -1,6 +1,7 @@
 //! Command that dumps genesis block JSON configuration to stdout
 use crate::args::utils::{chain_help, genesis_value_parser, SUPPORTED_CHAINS};
 use clap::Parser;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_primitives::ChainSpec;
 use std::sync::Arc;
 
@@ -22,9 +23,9 @@ pub struct DumpGenesisCommand {
 
 impl DumpGenesisCommand {
     /// Execute the `dump-genesis` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         println!("{}", serde_json::to_string_pretty(self.chain.genesis())?);
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

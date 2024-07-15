@@ -16,6 +16,7 @@ use reth_config::Config;
 use reth_db::create_db;
 use reth_interfaces::p2p::bodies::client::BodiesClient;
 use reth_network::NetworkConfigBuilder;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_primitives::{BlockHashOrNumber, ChainSpec};
 use reth_provider::ProviderFactory;
 use std::{
@@ -86,7 +87,7 @@ pub enum Subcommands {
 }
 impl Command {
     /// Execute `p2p` command
-    pub async fn execute(&self) -> eyre::Result<()> {
+    pub async fn execute(&self) -> eyre::Result<NodeExitReason> {
         let tempdir = tempfile::TempDir::new()?;
         let noop_db = Arc::new(create_db(tempdir.into_path(), self.db.database_args())?);
 
@@ -214,6 +215,6 @@ impl Command {
             }
         }
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

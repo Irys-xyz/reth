@@ -15,6 +15,7 @@ pub use payload::*;
 pub use pool::*;
 use reth_evm::execute::BlockExecutorProvider;
 use reth_network::NetworkHandle;
+use reth_node_core::irys_ext::IrysExtWrapped;
 use reth_payload_builder::PayloadBuilderHandle;
 use reth_transaction_pool::TransactionPool;
 
@@ -53,6 +54,8 @@ pub trait NodeComponents<NodeTypes: FullNodeTypes>: Clone + Send + Sync + 'stati
 
     /// Returns the handle to the payload builder service.
     fn payload_builder(&self) -> &PayloadBuilderHandle<NodeTypes::Engine>;
+
+    fn irys_ext(&self) -> IrysExtWrapped;
 }
 
 /// All the components of the node.
@@ -70,6 +73,8 @@ pub struct Components<Node: FullNodeTypes, Pool, EVM, Executor> {
     pub network: NetworkHandle,
     /// The handle to the payload builder service.
     pub payload_builder: PayloadBuilderHandle<Node::Engine>,
+
+    pub irys_ext: IrysExtWrapped,
 }
 
 impl<Node, Pool, EVM, Executor> NodeComponents<Node> for Components<Node, Pool, EVM, Executor>
@@ -102,6 +107,10 @@ where
     fn payload_builder(&self) -> &PayloadBuilderHandle<Node::Engine> {
         &self.payload_builder
     }
+
+    fn irys_ext(&self) -> IrysExtWrapped {
+        self.irys_ext.clone()
+    }
 }
 
 impl<Node, Pool, EVM, Executor> Clone for Components<Node, Pool, EVM, Executor>
@@ -118,6 +127,7 @@ where
             executor: self.executor.clone(),
             network: self.network.clone(),
             payload_builder: self.payload_builder.clone(),
+            irys_ext: self.irys_ext.clone(),
         }
     }
 }

@@ -1,17 +1,18 @@
 [package]
-name = "reth-cli-runner"
-version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
 homepage.workspace = true
+license.workspace = true
+name = "reth-cli-runner"
 repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
 # reth
+reth-node-core.workspace = true
 reth-tasks.workspace = true
 
 # async

@@ -13,7 +13,7 @@ use reth_downloaders::{
     file_client::{ChunkedFileReader, DEFAULT_BYTE_LEN_CHUNK_CHAIN_FILE},
     receipt_file_client::ReceiptFileClient,
 };
-use reth_node_core::version::SHORT_VERSION;
+use reth_node_core::{irys_ext::NodeExitReason, version::SHORT_VERSION};
 use reth_primitives::{stage::StageId, ChainSpec, StaticFileSegment};
 use reth_provider::{
     BundleStateWithReceipts, OriginalValuesKnown, ProviderFactory, StageCheckpointReader,
@@ -65,7 +65,7 @@ pub struct ImportReceiptsCommand {
 
 impl ImportReceiptsCommand {
     /// Execute `import` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         info!(target: "reth::cli", "reth {} starting", SHORT_VERSION);
 
         debug!(target: "reth::cli",
@@ -141,7 +141,7 @@ impl ImportReceiptsCommand {
 
         if total_decoded_receipts == 0 {
             error!(target: "reth::cli", "No receipts were imported, ensure the receipt file is valid and not empty");
-            return Ok(())
+            return Ok(NodeExitReason::Normal);
         }
 
         // compare the highest static file block to the number of receipts we decoded
@@ -163,6 +163,6 @@ impl ImportReceiptsCommand {
 
         info!(target: "reth::cli", total_imported_receipts, "Receipt file imported");
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

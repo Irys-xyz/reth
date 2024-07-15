@@ -11,6 +11,7 @@ use clap::Parser;
 use reth_config::config::EtlConfig;
 use reth_db::{database::Database, init_db};
 use reth_db_common::init::init_from_state_dump;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_primitives::{ChainSpec, B256};
 use reth_provider::ProviderFactory;
 
@@ -68,7 +69,7 @@ pub struct InitStateCommand {
 
 impl InitStateCommand {
     /// Execute the `init` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         info!(target: "reth::cli", "Reth init-state starting");
 
         // add network name to data dir
@@ -89,7 +90,7 @@ impl InitStateCommand {
         let hash = init_at_state(self.state, provider_factory, etl_config)?;
 
         info!(target: "reth::cli", hash = ?hash, "Genesis block written");
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

@@ -8,4 +8,5 @@ pub trait DatabaseProviderFactory<DB: Database> {
     fn database_provider_ro(&self) -> ProviderResult<DatabaseProviderRO<DB>>;
     /// Create new read-write database provider.
     fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>>;
+    fn database_ref(&self) -> &DB;
 }

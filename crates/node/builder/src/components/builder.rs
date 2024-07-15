@@ -8,8 +8,13 @@ use crate::{
     BuilderContext, ConfigureEvm, FullNodeTypes,
 };
 use reth_evm::execute::BlockExecutorProvider;
+use reth_node_core::irys_ext::{IrysExt, IrysExtWrapped};
 use reth_transaction_pool::TransactionPool;
-use std::{future::Future, marker::PhantomData};
+use std::{
+    future::Future,
+    marker::PhantomData,
+    sync::{Arc, Mutex},
+};
 
 /// A generic, general purpose and customizable [`NodeComponentsBuilder`] implementation.
 ///
@@ -36,6 +41,7 @@ pub struct ComponentsBuilder<Node, PoolB, PayloadB, NetworkB, ExecB> {
     payload_builder: PayloadB,
     network_builder: NetworkB,
     executor_builder: ExecB,
+    irys_ext: IrysExtWrapped,
     _marker: PhantomData<Node>,
 }
 
@@ -52,6 +58,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB>
             payload_builder,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -59,6 +66,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB>
             pool_builder,
             payload_builder,
             network_builder,
+            irys_ext,
             _marker: Default::default(),
         }
     }
@@ -70,6 +78,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB>
             payload_builder: self.payload_builder,
             network_builder: self.network_builder,
             executor_builder: self.executor_builder,
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -81,6 +90,8 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB>
             payload_builder: f(self.payload_builder),
             network_builder: self.network_builder,
             executor_builder: self.executor_builder,
+            irys_ext: self.irys_ext,
+
             _marker: self._marker,
         }
     }
@@ -92,6 +103,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB>
             payload_builder: self.payload_builder,
             network_builder: f(self.network_builder),
             executor_builder: self.executor_builder,
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -103,6 +115,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB>
             payload_builder: self.payload_builder,
             network_builder: self.network_builder,
             executor_builder: f(self.executor_builder),
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -129,6 +142,8 @@ where
             payload_builder,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext,
+
             _marker,
         } = self;
         ComponentsBuilder {
@@ -136,6 +151,7 @@ where
             payload_builder,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -163,6 +179,7 @@ where
             payload_builder,
             network_builder: _,
             executor_builder: evm_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -170,6 +187,7 @@ where
             payload_builder,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -190,6 +208,7 @@ where
             payload_builder: _,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -197,6 +216,7 @@ where
             payload_builder,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -212,13 +232,20 @@ where
     where
         EB: ExecutorBuilder<Node>,
     {
-        let Self { pool_builder, payload_builder, network_builder, executor_builder: _, _marker } =
-            self;
+        let Self {
+            pool_builder,
+            payload_builder,
+            network_builder,
+            executor_builder: _,
+            _marker,
+            irys_ext,
+        } = self;
         ComponentsBuilder {
             pool_builder,
             payload_builder,
             network_builder,
             executor_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -244,6 +271,7 @@ where
             payload_builder,
             network_builder,
             executor_builder: evm_builder,
+            irys_ext: _,
             _marker,
         } = self;
 
@@ -252,7 +280,14 @@ where
         let network = network_builder.build_network(context, pool.clone()).await?;
         let payload_builder = payload_builder.spawn_payload_service(context, pool.clone()).await?;
 
-        Ok(Components { transaction_pool: pool, evm_config, network, payload_builder, executor })
+        Ok(Components {
+            transaction_pool: pool,
+            evm_config,
+            network,
+            payload_builder,
+            executor,
+            irys_ext: context.irys_ext.clone(),
+        })
     }
 }
 
@@ -263,6 +298,7 @@ impl Default for ComponentsBuilder<(), (), (), (), ()> {
             payload_builder: (),
             network_builder: (),
             executor_builder: (),
+            irys_ext: IrysExtWrapped(Arc::new(Mutex::new(IrysExt { reload: None }))),
             _marker: Default::default(),
         }
     }

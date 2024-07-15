@@ -2,6 +2,7 @@
 
 use clap::{Parser, Subcommand};
 use reth_cli_runner::CliContext;
+use reth_node_core::irys_ext::NodeExitReason;
 
 mod build_block;
 mod execution;
@@ -33,13 +34,14 @@ pub enum Subcommands {
 
 impl Command {
     /// Execute `debug` command
-    pub async fn execute(self, ctx: CliContext) -> eyre::Result<()> {
+    pub async fn execute(self, ctx: CliContext) -> eyre::Result<NodeExitReason> {
         match self.command {
             Subcommands::Execution(command) => command.execute(ctx).await,
             Subcommands::Merkle(command) => command.execute(ctx).await,
             Subcommands::InMemoryMerkle(command) => command.execute(ctx).await,
             Subcommands::BuildBlock(command) => command.execute(ctx).await,
             Subcommands::ReplayEngine(command) => command.execute(ctx).await,
-        }
+        }?;
+        Ok(NodeExitReason::Normal)
     }
 }

@@ -2,6 +2,7 @@
 
 use clap::{Parser, Subcommand};
 use reth_cli_runner::CliContext;
+use reth_node_core::irys_ext::NodeExitReason;
 
 pub mod drop;
 pub mod dump;
@@ -35,12 +36,13 @@ pub enum Subcommands {
 
 impl Command {
     /// Execute `stage` command
-    pub async fn execute(self, ctx: CliContext) -> eyre::Result<()> {
+    pub async fn execute(self, ctx: CliContext) -> eyre::Result<NodeExitReason> {
         match self.command {
             Subcommands::Run(command) => command.execute(ctx).await,
             Subcommands::Drop(command) => command.execute().await,
             Subcommands::Dump(command) => command.execute().await,
             Subcommands::Unwind(command) => command.execute().await,
-        }
+        }?;
+        Ok(NodeExitReason::Normal)
     }
 }

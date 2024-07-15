@@ -10,6 +10,7 @@ use crate::{
 use clap::Parser;
 use reth_db::init_db;
 use reth_db_common::init::init_genesis;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_primitives::ChainSpec;
 use reth_provider::ProviderFactory;
 use std::sync::Arc;
@@ -46,7 +47,7 @@ pub struct InitCommand {
 
 impl InitCommand {
     /// Execute the `init` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         info!(target: "reth::cli", "reth init starting");
 
         // add network name to data dir
@@ -63,6 +64,6 @@ impl InitCommand {
         let hash = init_genesis(provider_factory)?;
 
         info!(target: "reth::cli", hash = ?hash, "Genesis block written");
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

@@ -1,6 +1,7 @@
 //! Command for generating test vectors.
 
 use clap::{Parser, Subcommand};
+use reth_node_core::irys_ext::NodeExitReason;
 
 mod tables;
 
@@ -23,12 +24,12 @@ pub enum Subcommands {
 
 impl Command {
     /// Execute the command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         match self.command {
             Subcommands::Tables { names } => {
                 tables::generate_vectors(names)?;
             }
         }
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

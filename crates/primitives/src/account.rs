@@ -42,6 +42,8 @@ impl Account {
         self.nonce == 0
             && self.balance.is_zero()
             && self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
+            && self.stake.is_none()
+            && self.pledges.is_none()
     }
 
     /// Makes an [Account] from [GenesisAccount] type
@@ -181,6 +183,7 @@ mod tests {
             bytecode_hash: None,
             pledges: None,
             stake: None,
+            slashed: false,
         };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.
         assert!(acc.is_empty());

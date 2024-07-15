@@ -74,6 +74,7 @@ pub enum ShadowResult {
     AlreadyStaked,
     NoPledges,
     NoMatchingPledge,
+    AlreadyPledged,
 }
 
 impl Receipt {

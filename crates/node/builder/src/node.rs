@@ -6,6 +6,7 @@ use reth_network::NetworkHandle;
 use reth_node_api::FullNodeComponents;
 use reth_node_core::{
     dirs::{ChainPath, DataDirPath},
+    irys_ext::IrysExtWrapped,
     node_config::NodeConfig,
     rpc::{
         api::EngineApiClient,
@@ -58,8 +59,10 @@ pub struct FullNode<Node: FullNodeComponents> {
     pub config: NodeConfig,
     /// The data dir of the node.
     pub data_dir: ChainPath<DataDirPath>,
-    // pub adapter: NodeAdapter,
+    /// The top-level database provider for the node
     pub db: BlockchainProvider<Node::DB>,
+    /// custom extension (mainly for debug reloading)
+    pub ext: IrysExtWrapped,
 }
 
 impl<Node: FullNodeComponents> FullNode<Node> {
@@ -115,6 +118,7 @@ impl<Node: FullNodeComponents> Clone for FullNode<Node> {
             config: self.config.clone(),
             data_dir: self.data_dir.clone(),
             db: self.db.clone(),
+            ext: self.ext.clone(),
         }
     }
 }

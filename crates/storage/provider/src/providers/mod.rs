@@ -160,6 +160,9 @@ where
     fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
         self.database.provider_rw()
     }
+    fn database_ref(&self) -> &DB {
+        self.database.db_ref()
+    }
 }
 
 impl<DB> StaticFileProviderFactory for BlockchainProvider<DB> {

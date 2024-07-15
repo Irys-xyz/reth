@@ -25,6 +25,7 @@ use reth_node_core::{
     dirs::{ChainPath, DataDirPath},
     engine::EngineMessageStreamExt,
     exit::NodeExitFuture,
+    irys_ext::{IrysExt, IrysExtWrapped},
     version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA},
 };
 use reth_node_events::{cl::ConsensusLayerHealthEvents, node};
@@ -35,7 +36,10 @@ use reth_rpc_types::engine::ClientVersionV1;
 use reth_tasks::TaskExecutor;
 use reth_tracing::tracing::{debug, info};
 use reth_transaction_pool::TransactionPool;
-use std::{future::Future, sync::Arc};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+};
 use tokio::sync::{mpsc::unbounded_channel, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -142,6 +146,11 @@ where
             )),
         )?;
 
+        let (reload_tx, reload_rx) = unbounded_channel();
+
+        // TODO: fix this.
+        let irys_ext = IrysExtWrapped(Arc::new(Mutex::new(IrysExt { reload: Some(reload_tx) })));
+
         let builder_ctx = BuilderContext::new(
             head,
             blockchain_db.clone(),
@@ -149,6 +158,7 @@ where
             ctx.data_dir().clone(),
             ctx.node_config().clone(),
             ctx.toml_config().clone(),
+            irys_ext.clone(),
         );
 
         debug!(target: "reth::cli", "creating components");
@@ -463,12 +473,13 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
+            ext: irys_ext,
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
 
         let handle = NodeHandle {
-            node_exit_future: NodeExitFuture::new(rx, full_node.config.debug.terminate),
+            node_exit_future: NodeExitFuture::new(rx, reload_rx, full_node.config.debug.terminate),
             node: full_node,
         };
 

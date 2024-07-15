@@ -2,6 +2,7 @@
 
 use clap::{Parser, Subcommand};
 use reth_cli_runner::CliContext;
+use reth_node_core::irys_ext::NodeExitReason;
 
 mod storage_tries;
 
@@ -21,9 +22,10 @@ pub enum Subcommands {
 
 impl Command {
     /// Execute `recover` command
-    pub async fn execute(self, ctx: CliContext) -> eyre::Result<()> {
+    pub async fn execute(self, ctx: CliContext) -> eyre::Result<NodeExitReason> {
         match self.command {
             Subcommands::StorageTries(command) => command.execute(ctx).await,
-        }
+        }?;
+        Ok(NodeExitReason::Normal)
     }
 }

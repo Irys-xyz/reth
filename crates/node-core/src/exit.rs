@@ -7,7 +7,9 @@ use std::{
     pin::Pin,
     task::{ready, Context, Poll},
 };
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc::UnboundedReceiver, oneshot};
+
+use crate::irys_ext::{NodeExitReason, ReloadPayload};
 
 /// A Future which resolves when the node exits
 #[derive(Debug)]
@@ -15,7 +17,8 @@ pub struct NodeExitFuture {
     /// The receiver half of the channel for the consensus engine.
     /// This can be used to wait for the consensus engine to exit.
     consensus_engine_rx: Option<oneshot::Receiver<Result<(), BeaconConsensusEngineError>>>,
-
+    /// reload rx - for
+    reload_rx: UnboundedReceiver<ReloadPayload>,
     /// Flag indicating whether the node should be terminated after the pipeline sync.
     terminate: bool,
 }
@@ -24,24 +27,36 @@ impl NodeExitFuture {
     /// Create a new `NodeExitFuture`.
     pub fn new(
         consensus_engine_rx: oneshot::Receiver<Result<(), BeaconConsensusEngineError>>,
+        reload_rx: UnboundedReceiver<ReloadPayload>,
         terminate: bool,
     ) -> Self {
-        Self { consensus_engine_rx: Some(consensus_engine_rx), terminate }
+        Self { consensus_engine_rx: Some(consensus_engine_rx), reload_rx, terminate }
     }
 }
 
 impl Future for NodeExitFuture {
-    type Output = eyre::Result<()>;
+    type Output = eyre::Result<NodeExitReason>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
+
+        match this.reload_rx.poll_recv(cx) {
+            Poll::Ready(v) => match v {
+                Some(v) => {
+                    return Poll::Ready(Ok(NodeExitReason::Reload(v)));
+                }
+                None => (),
+            },
+            Poll::Pending => (),
+        };
+
         if let Some(rx) = this.consensus_engine_rx.as_mut() {
             match ready!(rx.poll_unpin(cx)) {
                 Ok(res) => {
                     this.consensus_engine_rx.take();
                     res?;
                     if this.terminate {
-                        Poll::Ready(Ok(()))
+                        Poll::Ready(Ok(NodeExitReason::Normal))
                     } else {
                         Poll::Pending
                     }

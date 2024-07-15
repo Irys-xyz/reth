@@ -26,6 +26,7 @@ use reth_interfaces::p2p::{
     bodies::downloader::BodyDownloader,
     headers::downloader::{HeaderDownloader, SyncTarget},
 };
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_node_events::node::NodeEvent;
 use reth_primitives::{stage::StageId, ChainSpec, PruneModes, B256};
 use reth_provider::{
@@ -88,7 +89,7 @@ pub struct ImportCommand {
 
 impl ImportCommand {
     /// Execute `import` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         info!(target: "reth::cli", "reth {} starting", SHORT_VERSION);
 
         if self.no_state {
@@ -187,8 +188,8 @@ impl ImportCommand {
         let total_imported_blocks = provider.tx_ref().entries::<tables::HeaderNumbers>()?;
         let total_imported_txns = provider.tx_ref().entries::<tables::TransactionHashNumbers>()?;
 
-        if total_decoded_blocks != total_imported_blocks ||
-            total_decoded_txns != total_imported_txns
+        if total_decoded_blocks != total_imported_blocks
+            || total_decoded_txns != total_imported_txns
         {
             error!(target: "reth::cli",
                 total_decoded_blocks,
@@ -205,7 +206,7 @@ impl ImportCommand {
             "Chain file imported"
         );
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

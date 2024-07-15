@@ -12,7 +12,7 @@ use clap::{value_parser, Args, Parser};
 use reth_cli_runner::CliContext;
 use reth_db::{init_db, DatabaseEnv};
 use reth_node_builder::{NodeBuilder, WithLaunchContext};
-use reth_node_core::{node_config::NodeConfig, version};
+use reth_node_core::{irys_ext::NodeExitReason, node_config::NodeConfig, version};
 use reth_primitives::ChainSpec;
 use std::{ffi::OsString, fmt, future::Future, net::SocketAddr, path::PathBuf, sync::Arc};
 
@@ -134,7 +134,7 @@ impl<Ext: clap::Args + fmt::Debug> NodeCommand<Ext> {
     ///
     /// This transforms the node command into a node config and launches the node using the given
     /// closure.
-    pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<()>
+    pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>>>, Ext) -> Fut,
         Fut: Future<Output = eyre::Result<()>>,
@@ -193,7 +193,8 @@ impl<Ext: clap::Args + fmt::Debug> NodeCommand<Ext> {
             .with_database(database)
             .with_launch_context(ctx.task_executor, data_dir);
 
-        launcher(builder, ext).await
+        launcher(builder, ext).await?;
+        Ok(NodeExitReason::Normal)
     }
 }
 

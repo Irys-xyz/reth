@@ -15,7 +15,8 @@ pub struct NodeHandle<Node: FullNodeComponents> {
 impl<Node: FullNodeComponents> NodeHandle<Node> {
     /// Waits for the node to exit, if it was configured to exit.
     pub async fn wait_for_node_exit(self) -> eyre::Result<()> {
-        self.node_exit_future.await
+        self.node_exit_future.await?;
+        Ok(())
     }
 }
 

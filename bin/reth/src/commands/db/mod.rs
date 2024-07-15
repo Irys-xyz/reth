@@ -13,6 +13,7 @@ use reth_db::{
     open_db, open_db_read_only,
     version::{get_db_version, DatabaseVersionError, DB_VERSION},
 };
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_primitives::ChainSpec;
 use reth_provider::ProviderFactory;
 use std::{
@@ -105,7 +106,7 @@ macro_rules! db_ro_exec {
 
 impl Command {
     /// Execute `db` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         // add network name to data dir
         let data_dir = self.datadir.unwrap_or_chain_default(self.chain.chain);
         let db_path = data_dir.db();
@@ -151,7 +152,7 @@ impl Command {
 
                     if !input.trim().eq_ignore_ascii_case("y") {
                         println!("Database drop aborted!");
-                        return Ok(())
+                        return Ok(NodeExitReason::Normal);
                     }
                 }
 
@@ -192,7 +193,7 @@ impl Command {
             }
         }
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

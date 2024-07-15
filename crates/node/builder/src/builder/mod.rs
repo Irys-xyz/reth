@@ -21,6 +21,7 @@ use reth_node_api::{FullNodeTypes, FullNodeTypesAdapter, NodeTypes};
 use reth_node_core::{
     cli::config::{PayloadBuilderConfig, RethTransactionPoolConfig},
     dirs::{ChainPath, DataDirPath, MaybePlatformPath},
+    irys_ext::IrysExtWrapped,
     node_config::NodeConfig,
     primitives::{kzg::KzgSettings, Head},
     utils::write_peers_to_file,
@@ -430,6 +431,8 @@ pub struct BuilderContext<Node: FullNodeTypes> {
     pub(crate) config: NodeConfig,
     /// loaded config
     pub(crate) reth_config: reth_config::Config,
+
+    pub(crate) irys_ext: IrysExtWrapped,
 }
 
 impl<Node: FullNodeTypes> BuilderContext<Node> {
@@ -441,8 +444,9 @@ impl<Node: FullNodeTypes> BuilderContext<Node> {
         data_dir: ChainPath<DataDirPath>,
         config: NodeConfig,
         reth_config: reth_config::Config,
+        irys_ext: IrysExtWrapped,
     ) -> Self {
-        Self { head, provider, executor, data_dir, config, reth_config }
+        Self { head, provider, executor, data_dir, config, reth_config, irys_ext }
     }
 
     /// Returns the configured provider to interact with the blockchain.

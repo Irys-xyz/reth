@@ -160,6 +160,9 @@ impl<DB: Database> DatabaseProviderFactory<DB> for ProviderFactory<DB> {
     fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
         self.provider_rw()
     }
+    fn database_ref(&self) -> &DB {
+        &self.db
+    }
 }
 
 impl<DB> StaticFileProviderFactory for ProviderFactory<DB> {

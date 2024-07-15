@@ -48,7 +48,7 @@ enum Subcommands {
     StaticFile { segment: StaticFileSegment },
 }
 
-struct ClearViewer<'a, DB: Database> {
+pub struct ClearViewer<'a, DB: Database> {
     db: &'a DB,
 }
 
