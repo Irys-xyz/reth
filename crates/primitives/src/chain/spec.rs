@@ -5,7 +5,7 @@ use crate::{
     },
     holesky_nodes,
     net::{goerli_nodes, mainnet_nodes, sepolia_nodes},
-    proofs::state_root_ref_unhashed,
+    proofs::{calculate_shadows_root, state_root_ref_unhashed},
     revm_primitives::{address, b256, Genesis, GenesisAccount},
     Address, BlockNumber, Chain, ChainKind, ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork,
     Head, Header, NamedChain, NodeRecord, SealedHeader, B256, EMPTY_OMMER_ROOT_HASH, U256,
@@ -613,7 +613,10 @@ impl ChainSpec {
             } else {
                 (None, None, None)
             };
-
+        let shadows_root = match &self.genesis.shadows {
+            Some(shadows) => calculate_shadows_root(&shadows),
+            None => EMPTY_SHADOWS_ROOT,
+        };
         Header {
             parent_hash: B256::ZERO,
             number: 0,
@@ -632,8 +635,8 @@ impl ChainSpec {
             gas_used: Default::default(),
             base_fee_per_gas,
             withdrawals_root,
-            shadows_root: EMPTY_SHADOWS_ROOT,
-            parent_beacon_block_root,
+            shadows_root,
+            parent_beacon_block_root: None,
             blob_gas_used,
             excess_blob_gas,
         }

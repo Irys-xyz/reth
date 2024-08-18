@@ -81,7 +81,7 @@ impl TransactionTestContext {
 }
 
 /// Creates a type 2 transaction
-fn tx(chain_id: u64, data: Option<Bytes>, nonce: u64) -> TransactionRequest {
+pub fn tx(chain_id: u64, data: Option<Bytes>, nonce: u64) -> TransactionRequest {
     TransactionRequest {
         nonce: Some(nonce),
         value: Some(U256::from(100)),

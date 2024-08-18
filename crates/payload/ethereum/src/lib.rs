@@ -34,7 +34,7 @@ use revm::{
     primitives::{EVMError, EnvWithHandlerCfg, InvalidTransaction, ResultAndState},
     DatabaseCommit, State,
 };
-use tracing::{debug, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 /// Ethereum payload builder
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -90,23 +90,23 @@ where
         let block_number = initialized_block_env.number.to::<u64>();
         let block_gas_limit = initialized_block_env.gas_limit.try_into().unwrap_or(u64::MAX);
 
-        // apply eip-4788 pre block contract call
-        pre_block_beacon_root_contract_call(
-            &mut db,
-            &chain_spec,
-            block_number,
-            &initialized_cfg,
-            &initialized_block_env,
-            &attributes,
-        )
-        .map_err(|err| {
-            warn!(target: "payload_builder",
-                parent_hash=%parent_block.hash(),
-                %err,
-                "failed to apply beacon root contract call for empty payload"
-            );
-            err
-        })?;
+        // // apply eip-4788 pre block contract call
+        // pre_block_beacon_root_contract_call(
+        //     &mut db,
+        //     &chain_spec,
+        //     block_number,
+        //     &initialized_cfg,
+        //     &initialized_block_env,
+        //     &attributes,
+        // )
+        // .map_err(|err| {
+        //     warn!(target: "payload_builder",
+        //         parent_hash=%parent_block.hash(),
+        //         %err,
+        //         "failed to apply beacon root contract call for empty payload"
+        //     );
+        //     err
+        // })?;
 
         let WithdrawalsOutcome { withdrawals_root, withdrawals } = commit_withdrawals(
             &mut db,
@@ -206,7 +206,7 @@ where
     Pool: TransactionPool,
 {
     let BuildArguments { client, pool, mut cached_reads, config, cancel, best_payload } = args;
-
+    debug!("Building new payload with attributes: {:#?}", &config.attributes);
     let state_provider = client.state_by_block_hash(config.parent_block.hash())?;
     let state = StateProviderDatabase::new(state_provider);
     let mut db =
@@ -238,15 +238,15 @@ where
 
     let block_number = initialized_block_env.number.to::<u64>();
 
-    // apply eip-4788 pre block contract call
-    pre_block_beacon_root_contract_call(
-        &mut db,
-        &chain_spec,
-        block_number,
-        &initialized_cfg,
-        &initialized_block_env,
-        &attributes,
-    )?;
+    // // apply eip-4788 pre block contract call
+    // pre_block_beacon_root_contract_call(
+    //     &mut db,
+    //     &chain_spec,
+    //     block_number,
+    //     &initialized_cfg,
+    //     &initialized_block_env,
+    //     &attributes,
+    // )?;
 
     let mut receipts = Vec::new();
 
@@ -263,7 +263,8 @@ where
     let shadow_exec =
         apply_block_shadows(Some(&attributes.shadows), &mut evm).expect("shadow exec failed :c");
     // commit changes
-    dbg!(shadow_exec);
+    info!("shadow exec: {:#?}", &shadow_exec);
+
     let ss = evm.context.evm.inner.journaled_state.state.clone();
     // evm.db_mut().commit(ss);
     // drop handle on db
@@ -383,6 +384,7 @@ where
         // can skip building the block
         return Ok(BuildOutcome::Aborted { fees: total_fees, cached_reads });
     }
+    let shadows_root = proofs::calculate_shadows_root(&attributes.shadows);
 
     let WithdrawalsOutcome { withdrawals_root, withdrawals } =
         commit_withdrawals(&mut db, &chain_spec, attributes.timestamp, attributes.withdrawals)?;
@@ -402,7 +404,8 @@ where
     // calculate the state root
     let state_root = {
         let state_provider = db.database.0.inner.borrow_mut();
-        state_provider.db.state_root(bundle.state())?
+        let bstate = bundle.state();
+        state_provider.db.state_root(bstate)?
     };
 
     // create the block header
@@ -436,7 +439,7 @@ where
     let header = Header {
         parent_hash: parent_block.hash(),
         ommers_hash: EMPTY_OMMER_ROOT_HASH,
-        shadows_root: EMPTY_SHADOWS_ROOT,
+        shadows_root,
         beneficiary: initialized_block_env.coinbase,
         state_root,
         transactions_root,

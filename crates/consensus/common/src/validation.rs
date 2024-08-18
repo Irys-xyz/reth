@@ -134,9 +134,9 @@ pub fn validate_4844_header_standalone(header: &SealedHeader) -> Result<(), Cons
     let blob_gas_used = header.blob_gas_used.ok_or(ConsensusError::BlobGasUsedMissing)?;
     let excess_blob_gas = header.excess_blob_gas.ok_or(ConsensusError::ExcessBlobGasMissing)?;
 
-    if header.parent_beacon_block_root.is_none() {
-        return Err(ConsensusError::ParentBeaconBlockRootMissing);
-    }
+    // if header.parent_beacon_block_root.is_none() {
+    //     return Err(ConsensusError::ParentBeaconBlockRootMissing);
+    // }
 
     if blob_gas_used > MAX_DATA_GAS_PER_BLOCK {
         return Err(ConsensusError::BlobGasUsedExceedsMaxBlobGasPerBlock {

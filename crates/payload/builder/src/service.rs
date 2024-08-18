@@ -284,8 +284,8 @@ where
             .find(|(_, job_id)| *job_id == id)
             .map(|(j, _)| j.best_payload().map(|p| p.into()));
         if let Some(Ok(ref best)) = res {
-            let is_empty = best.block().body.is_empty();
-            dbg!(is_empty);
+            // let is_empty = best.block().body.is_empty();
+            // dbg!(is_empty);
             self.metrics.set_best_revenue(best.block().number, f64::from(best.fees()));
         }
 

@@ -5,13 +5,13 @@ use reth_primitives::{
     Header, ShadowReceipt, ShadowResult, Withdrawal, B256, U256,
 };
 use revm::{
-    interpreter::{Host, InstructionResult},
+    interpreter::{instructions::data, Host, InstructionResult},
     primitives::{
-        pledge::{IrysTxId, Pledge, Stake},
-        shadow::{ShadowTx, ShadowTxType, Shadows},
+        pledge::{IrysTxId, LastTx, Pledge, Pledges, Stake, StakeStatus},
+        shadow::{ShadowTx, ShadowTxType, Shadows, TransferShadow},
         Account, EVMError, State,
     },
-    Database, DatabaseCommit, Evm,
+    Database, DatabaseCommit, Evm, JournalEntry, JournaledState,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -150,7 +150,12 @@ where
     for shadow in shadows.clone().into_iter() {
         let checkpoint = evm.context.evm.inner.journaled_state.checkpoint();
 
-        match apply_shadow(shadow, evm) {
+        // match apply_shadow(shadow, evm) {
+        match apply_shadow(
+            shadow,
+            &mut evm.context.evm.inner.journaled_state,
+            &mut evm.context.evm.inner.db,
+        ) {
             Ok(res) => {
                 trace!(target: "shadows", tx_id = ?shadow.tx_id, "shadow execution successful");
                 match res.result {
@@ -182,161 +187,321 @@ pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
 ) -> Result<ShadowReceipt, EVMError<DB::Error>> {
     // create a checkpoint, try to apply the shadow, and always revert
     let checkpoint = evm.context.evm.inner.journaled_state.checkpoint();
-    let result = apply_shadow(shadow, evm);
+    // let result = apply_shadow(shadow, evm);
+    let result = apply_shadow(
+        shadow,
+        &mut evm.context.evm.inner.journaled_state,
+        &mut evm.context.evm.inner.db,
+    );
     evm.context.evm.inner.journaled_state.checkpoint_revert(checkpoint);
     return result;
 }
 
-pub fn apply_shadow<EXT, DB: Database + DatabaseCommit>(
+pub fn simulate_apply_shadow_thin<DB: Database + DatabaseCommit>(
     shadow: ShadowTx,
-    evm: &mut Evm<'_, EXT, DB>,
+    journaled_state: &mut JournaledState,
+    db: &mut DB,
 ) -> Result<ShadowReceipt, EVMError<DB::Error>> {
-    // adapted from revm/src/journaled_state:load_account
-    let (primary_account, _) = evm
-        .context
-        .evm
-        .inner
-        .journaled_state
-        .load_account(shadow.address, &mut evm.context.evm.inner.db)?;
+    // create a checkpoint, try to apply the shadow, and always revert
+    let checkpoint = journaled_state.checkpoint();
+    let result = apply_shadow(shadow, journaled_state, db);
+    journaled_state.checkpoint_revert(checkpoint);
+    return result;
+}
 
+pub fn apply_shadow<DB: Database + DatabaseCommit>(
+    shadow: ShadowTx,
+    journaled_state: &mut JournaledState,
+    db: &mut DB,
+) -> Result<ShadowReceipt, EVMError<DB::Error>> {
+    let address = shadow.address.clone();
+    // account load procedure: load, then touch/get
+    journaled_state.load_account(address, db)?;
+    // load primary account
+    // accounts need to be marked as `touched` if any state change happens to/from them
+    // if they're purely read-only, they can be left untouched.
+    journaled_state.touch(&address);
+    // we can't use get_mut here due to the `Transfer` function
+    let mut primary_account = journaled_state.state.get(&address).unwrap().clone();
+
+    // tx fee
+    let Some(new_balance) = primary_account.info.balance.checked_sub(shadow.fee) else {
+        return Ok(ShadowReceipt {
+            tx_id: shadow.tx_id,
+            result: ShadowResult::OutOfFunds,
+            tx_type: shadow.tx,
+        });
+    };
+    primary_account.info.balance = new_balance;
+
+    // we use case breaks so we can return early from a case block without returning the entire function
     let res = match shadow.tx {
         ShadowTxType::Null => ShadowResult::Success,
-        ShadowTxType::Data(data_shadow) => {
-            let res = match primary_account.info.balance.checked_sub(data_shadow.fee) {
-                Some(_) => ShadowResult::Success,
-                None => ShadowResult::OutOfFunds,
+        ShadowTxType::Data(data_shadow) => 'data_shadow: {
+            let Some(new_balance) = primary_account.info.balance.checked_sub(data_shadow.fee)
+            else {
+                break 'data_shadow ShadowResult::OutOfFunds;
             };
-            // let Some(_) = primary_account.info.balance.checked_sub(data_shadow.fee) else {};
-            evm.context.evm.inner.journaled_state.touch(&shadow.address);
-            res
+            primary_account.info.balance = new_balance;
+            journaled_state.state.insert(address, primary_account);
+            journaled_state
+                .journal
+                .last_mut()
+                .unwrap()
+                .push(JournalEntry::DataCostChange { address, cost: data_shadow.fee });
+            ShadowResult::Success
         }
 
-        ShadowTxType::Transfer(transfer) => {
-            // let sender = state.get_mut(&shadow.address).or_insert(
-            //     evm.db_mut()
-            //         .basic(shadow.address)
-            //         .expect("unable to get account from DB")
-            //         .map(|i| i.into())
-            //         .unwrap_or(Account::new_not_existing()),
-            // );
-            // let receiver = state.get_mut(transfer.to).or_insert(
-            //     evm.db_mut()
-            //         .basic(transfer.to)
-            //         .expect("unable to get account from DB")
-            //         .map(|i| i.into())
-            //         .unwrap_or(Account::new_not_existing()),
-            // );
-            // let Some(bal) = sender.info
+        ShadowTxType::Transfer(transfer) => 'transfer_shadow: {
+            let TransferShadow { to, amount } = transfer;
+            journaled_state.load_account(to, db)?;
+            let mut to_account = journaled_state.state.get(&to).unwrap().clone();
+            journaled_state.touch(&to);
 
-            // ugly nested matches, prob a better way to do this
-            match evm.context.evm.inner.journaled_state.transfer(
-                &shadow.address,
-                &transfer.to,
-                transfer.amount,
-                &mut evm.context.evm.inner.db,
-            ) {
-                Ok(v) => match v {
-                    Some(v2) => match v2 {
-                        // match only the known possible instruction results
-                        InstructionResult::OutOfFunds => ShadowResult::OutOfFunds,
-                        InstructionResult::OverflowPayment => ShadowResult::OverflowPayment,
-                        _ => ShadowResult::Failure,
-                    },
-                    None => ShadowResult::Success,
-                },
-                Err(_) => ShadowResult::Failure,
+            let Some(new_from_balance) = primary_account.info.balance.checked_sub(amount) else {
+                break 'transfer_shadow ShadowResult::OutOfFunds;
+            };
+
+            let Some(new_to_balance) = to_account.info.balance.checked_add(amount) else {
+                break 'transfer_shadow ShadowResult::OverflowPayment;
+            };
+
+            primary_account.info.balance = new_from_balance;
+            to_account.info.balance = new_to_balance;
+
+            journaled_state.state.insert(address, primary_account);
+            journaled_state.state.insert(to, to_account);
+            journaled_state.journal.last_mut().unwrap().push(JournalEntry::BalanceTransfer {
+                from: address,
+                to,
+                balance: amount,
+            });
+
+            ShadowResult::Success
+        }
+
+        ShadowTxType::MiningAddressStake(stake) => {
+            // check if this account already has a stake
+            match primary_account.info.stake {
+                Some(_) => ShadowResult::AlreadyStaked,
+                None => 'mining_address_stake: {
+                    // check account has the balance required for the stake
+                    let Some(new_balance) = primary_account.info.balance.checked_sub(stake.value)
+                    else {
+                        break 'mining_address_stake ShadowResult::OutOfFunds;
+                    };
+                    primary_account.info.balance = new_balance;
+                    // add active stake to account
+                    primary_account.info.stake = Some(Stake {
+                        tx_id: shadow.tx_id,
+                        quantity: stake.value,
+                        height: stake.height,
+                        status: StakeStatus::Pending,
+                    });
+                    // add revert record to journal
+                    journaled_state.state.insert(address, primary_account);
+                    journaled_state
+                        .journal
+                        .last_mut()
+                        .unwrap()
+                        .push(JournalEntry::AddressStaked { address });
+
+                    ShadowResult::Success
+                }
             }
         }
 
-        ShadowTxType::MiningAddressStake(stake) => match primary_account.info.stake {
-            Some(_) => ShadowResult::AlreadyStaked,
-            None => {
-                primary_account.info.stake = Some(Stake {
-                    tx_id: shadow.tx_id,
-                    quantity: stake.value,
-                    height: stake.height,
-                });
-                evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                ShadowResult::Success
-            }
-        },
+        ShadowTxType::PartitionPledge(pledge_shadow) => 'partition_pledge: {
+            // assume higher-level validation of pledge is done on erlang side
 
-        ShadowTxType::PartitionPledge(pledge_shadow) => {
-            // assume validation of pledge is done on erlang side
+            // make sure the account has enough balance for this stake
+            let Some(new_balance) =
+                primary_account.info.balance.checked_sub(pledge_shadow.quantity)
+            else {
+                break 'partition_pledge ShadowResult::OutOfFunds;
+            };
+            // check a pledge for this target (`dest_hash`) doesn't already exist
+            match &mut primary_account.info.pledges {
+                Some(pledges) => {
+                    if pledges.iter().find(|p| p.dest_hash == pledge_shadow.part_hash).is_some() {
+                        break 'partition_pledge ShadowResult::AlreadyPledged;
+                    }
+                }
+                None => (),
+            }
+
+            primary_account.info.balance = new_balance;
             let pledge = Pledge {
                 tx_id: shadow.tx_id,
                 quantity: pledge_shadow.quantity,
                 dest_hash: pledge_shadow.part_hash,
                 height: pledge_shadow.height,
+                status: StakeStatus::Pending,
             };
             match &mut primary_account.info.pledges {
                 Some(pledges) => pledges.push(pledge),
                 None => primary_account.info.pledges = Some(vec![pledge].into()),
             };
-            evm.context.evm.inner.journaled_state.touch(&shadow.address);
+
+            journaled_state.state.insert(address, primary_account);
+
+            // add revert record to journal
+            journaled_state.journal.last_mut().unwrap().push(JournalEntry::PartitionPledged {
+                address,
+                dest_hash: pledge_shadow.part_hash,
+            });
+
             ShadowResult::Success
         }
         ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
             match &mut primary_account.info.pledges {
                 None => ShadowResult::NoPledges,
                 Some(pledges) => {
-                    // find relevant pledge
-                    let Some(target_pledge_idx) =
-                        pledges.iter().position(|p| p.dest_hash == unpledge.part_hash)
-                    else {
-                        // break from the match
-                        break 'partition_unpledge ShadowResult::NoMatchingPledge;
+                    // find relevant pledge - only refund `Active` pledges
+                    // TODO: should we allow instant refunds for pending pledges?
+                    let pledge = match pledges.iter_mut().find(|p| {
+                        p.dest_hash == unpledge.part_hash && p.status == StakeStatus::Active
+                    }) {
+                        Some(p) => p,
+                        None => break 'partition_unpledge ShadowResult::NoMatchingPledge,
                     };
-                    // infallible
-                    let target_pledge = pledges.get(target_pledge_idx).unwrap();
-                    // refund the account for the value of the pledge
-                    let Some(_) = primary_account.info.balance.checked_add(target_pledge.quantity)
+                    // check we can add refund the account without overflowing
+                    let Some(new_balance) =
+                        primary_account.info.balance.checked_add(pledge.quantity)
                     else {
                         break 'partition_unpledge ShadowResult::OverflowPayment;
                     };
 
-                    pledges.remove(target_pledge_idx);
-                    evm.context.evm.inner.journaled_state.touch(&shadow.address);
+                    primary_account.info.balance = new_balance;
+                    // change this to an unpledge record
+
+                    pledge.update_status(StakeStatus::Active);
+
+                    journaled_state.state.insert(address, primary_account);
+
+                    // add revert record to journal
+                    journaled_state.journal.last_mut().unwrap().push(
+                        JournalEntry::PartitionUnPledge { address, dest_hash: unpledge.part_hash },
+                    );
+
                     ShadowResult::Success
                 }
             }
         }
         ShadowTxType::Unstake(_unpledge_shadow) => 'unpledge_all: {
-            // remove/refund all pledges
-            match &mut primary_account.info.pledges {
-                None => (),
-                Some(pledges) => {
-                    for pledge in pledges.iter() {
-                        match primary_account.info.balance.checked_add(pledge.quantity) {
-                            None => break 'unpledge_all ShadowResult::OverflowPayment,
-                            _ => (),
-                        }
-                    }
-                    pledges.clear();
-                    // we can skip touching here as an account can only have pledges if it has a stake
-                    // evm.context.evm.inner.journaled_state.touch(&shadow.address);
-                }
-            }
             // remove/refund account stake
             match &mut primary_account.info.stake {
                 None => (),
                 Some(stake) => {
-                    match primary_account.info.balance.checked_add(stake.quantity) {
-                        None => break 'unpledge_all ShadowResult::OverflowPayment,
-                        _ => (),
+                    if stake.status == StakeStatus::Active {
+                        let Some(new_balance) =
+                            primary_account.info.balance.checked_add(stake.quantity)
+                        else {
+                            break 'unpledge_all ShadowResult::OverflowPayment;
+                        };
+                        stake.update_status(StakeStatus::Inactive);
+                        primary_account.info.balance = new_balance;
                     }
-
-                    primary_account.info.stake = None;
-                    evm.context.evm.inner.journaled_state.touch(&shadow.address);
                 }
             }
+
+            // remove/refund all `Active` pledges
+            // TODO: handling for other pledge states
+            let original_pledges: Option<Vec<(IrysTxId, StakeStatus)>> =
+                match &mut primary_account.info.pledges {
+                    None => None,
+                    Some(pledges) => {
+                        let mut original_pledges = vec![];
+                        for pledge in pledges.iter_mut().filter(|p| p.status == StakeStatus::Active)
+                        {
+                            original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
+                            let Some(new_balance) =
+                                primary_account.info.balance.checked_add(pledge.quantity)
+                            else {
+                                break 'unpledge_all ShadowResult::OverflowPayment;
+                            };
+                            pledge.update_status(StakeStatus::Active);
+                            primary_account.info.balance = new_balance;
+                        }
+                        Some(original_pledges)
+                    }
+                };
+
+            journaled_state.state.insert(address, primary_account);
+
+            // add revert record to journal
+            journaled_state.journal.last_mut().unwrap().push(JournalEntry::AddressUnstake {
+                address,
+                deactivated_pledges: original_pledges,
+            });
             ShadowResult::Success
         }
-        ShadowTxType::Slash(_slash_shadow) => {
-            todo!()
-            // ShadowResult::Success
+        ShadowTxType::Slash(_slash_shadow) => 'slash: {
+            // remove/refund account stake
+            match &mut primary_account.info.stake {
+                None => (),
+                Some(stake) => {
+                    if stake.status == StakeStatus::Active {
+                        stake.update_status(StakeStatus::Slashed);
+                        // TODO: transfer slashed tokens to slasher(s)
+                    }
+                }
+            }
+
+            // remove all `Active` pledges
+            // TODO: handling for other pledge states
+            let _original_pledges: Option<Vec<(IrysTxId, StakeStatus)>> =
+                match &mut primary_account.info.pledges {
+                    None => None,
+                    Some(pledges) => {
+                        let mut original_pledges = vec![];
+                        for pledge in pledges.iter_mut().filter(|p| p.status == StakeStatus::Active)
+                        {
+                            original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
+                            let Some(_new_balance) =
+                                primary_account.info.balance.checked_add(pledge.quantity)
+                            else {
+                                break 'slash ShadowResult::OverflowPayment;
+                            };
+                            pledge.update_status(StakeStatus::Slashed);
+                            // TODO: transfer slashed tokens to slasher(s)
+
+                            // primary_account.info.balance = new_balance;
+                        }
+                        Some(original_pledges)
+                    }
+                };
+
+            // add revert record to journal
+            journaled_state.state.insert(address, primary_account);
+            journaled_state.journal.last_mut().unwrap().push(JournalEntry::AddressSlashed {});
+            ShadowResult::Success
+        }
+        ShadowTxType::BlockReward(reward) => 'block_reward: {
+            let Some(new_producer_balance) =
+                primary_account.info.balance.checked_add(reward.reward)
+            else {
+                break 'block_reward ShadowResult::OverflowPayment;
+            };
+
+            ShadowResult::Success
         }
     };
+
+    if res == ShadowResult::Success {
+        // update last_tx on successful tx
+        let mut primary_account = journaled_state.state.get(&address).unwrap().clone();
+        let prev_last = primary_account.info.last_tx.clone();
+        primary_account.info.last_tx = Some(LastTx::TxId(shadow.tx_id.clone()));
+
+        journaled_state.state.insert(address, primary_account);
+
+        journaled_state
+            .journal
+            .last_mut()
+            .unwrap()
+            .push(JournalEntry::UpdateLastTx { address, prev_last_tx: prev_last })
+    }
     Ok(ShadowReceipt { tx_id: shadow.tx_id, result: res, tx_type: shadow.tx })
 }
 
@@ -385,3 +550,15 @@ pub fn insert_post_block_withdrawals_balance_increments(
         }
     }
 }
+
+// pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
+//     shadow: ShadowTx,
+//     evm: &mut Evm<'_, EXT, DB>,
+// ) -> Result<ShadowReceipt, EVMError<DB::Error>> {
+//     // create a checkpoint, try to apply the shadow, and always revert
+//     let checkpoint = evm.context.evm.inner.journaled_state.checkpoint();
+//     // let result = apply_shadow(shadow, evm);
+//     let result = apply_shadow(shadow, evm);
+//     evm.context.evm.inner.journaled_state.checkpoint_revert(checkpoint);
+//     return result;
+// }

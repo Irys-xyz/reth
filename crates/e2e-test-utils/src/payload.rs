@@ -2,6 +2,7 @@ use futures_util::StreamExt;
 use reth::api::{BuiltPayload, EngineTypes, PayloadBuilderAttributes};
 use reth_payload_builder::{Events, PayloadBuilderHandle, PayloadId};
 use tokio_stream::wrappers::BroadcastStream;
+use tracing::{error, info, trace};
 
 /// Helper for payload operations
 pub struct PayloadTestContext<E: EngineTypes + 'static> {
@@ -55,23 +56,18 @@ impl<E: EngineTypes + 'static> PayloadTestContext<E> {
                             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
                             continue;
                         } else {
-                            dbg!("got built payload");
+                            trace!("got payload");
                             break;
                         }
                     }
                     Err(e) => {
-                        dbg!(e);
+                        error!("Error building a payload: {}", e);
                     }
                 },
                 None => {
-                    dbg!("no payload :c");
+                    error!("Didn't get a payload from payload builder");
                 }
             }
-            // if payload.block().body.is_empty() {
-            //     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-            //     continue;
-            // }
-            // break;
         }
     }
 

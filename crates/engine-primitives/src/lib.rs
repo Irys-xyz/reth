@@ -182,10 +182,10 @@ pub fn validate_withdrawals_presence(
     //         }
     //     }
     // };
-    if !has_withdrawals {
-        return Err(message_validation_kind
-            .to_error(VersionSpecificValidationError::NoWithdrawalsPostShanghai));
-    }
+    // if !has_withdrawals {
+    //     return Err(message_validation_kind
+    //         .to_error(VersionSpecificValidationError::NoWithdrawalsPostShanghai));
+    // }
 
     Ok(())
 }
@@ -332,6 +332,7 @@ pub fn validate_version_specific_fields<Type>(
 where
     Type: PayloadAttributes,
 {
+    // TODO: add code to check shadows presence
     validate_withdrawals_presence(
         chain_spec,
         version,

@@ -13,6 +13,7 @@ pub fn into_reth_acc(revm_acc: AccountInfo) -> Account {
         pledges: revm_acc.pledges,
         stake: revm_acc.stake,
         slashed: revm_acc.slashed,
+        last_tx: revm_acc.last_tx,
     }
 }
 
@@ -28,6 +29,7 @@ pub fn into_revm_acc(reth_acc: Account) -> AccountInfo {
         pledges: reth_acc.pledges,
         stake: reth_acc.stake,
         slashed: reth_acc.slashed,
+        last_tx: reth_acc.last_tx,
     }
 }
 

@@ -34,7 +34,7 @@ pub struct ExecutionPayloadV1Irys {
     // #[serde(with = "alloy_serde::u64_via_ruint")]
     // pub excess_blob_gas: u64,
     /// shadows
-    pub shadows: Shadows,
+    pub shadows: Option<Shadows>,
     /// RLP proof root for shadows for quick payload validation
     pub shadows_root: B256,
 }

@@ -163,6 +163,8 @@ where
     ///
     /// See also <https://github.com/ethereum/devp2p/blob/master/caps/eth.md>
     pub(crate) fn announce_new_block(&mut self, msg: NewBlockMessage) {
+        // DISABLED
+        return;
         // send a `NewBlock` message to a fraction of the connected peers (square root of the total
         // number of peers)
         let num_propagate = (self.active_peers.len() as f64).sqrt() as u64 + 1;
@@ -177,7 +179,7 @@ where
         for (peer_id, peer) in peers.into_iter() {
             if peer.blocks.contains(&msg.hash) {
                 // skip peers which already reported the block
-                continue
+                continue;
             }
 
             // Queue a `NewBlock` message for the peer
@@ -197,7 +199,7 @@ where
             }
 
             if count >= num_propagate {
-                break
+                break;
             }
         }
     }
@@ -205,12 +207,14 @@ where
     /// Completes the block propagation process started in [`NetworkState::announce_new_block()`]
     /// but sending `NewBlockHash` broadcast to all peers that haven't seen it yet.
     pub(crate) fn announce_new_block_hash(&mut self, msg: NewBlockMessage) {
+        // DISABLED
+        return;
         let number = msg.block.block.header.number;
         let hashes = NewBlockHashes(vec![BlockHashNumber { hash: msg.hash, number }]);
         for (peer_id, peer) in self.active_peers.iter_mut() {
             if peer.blocks.contains(&msg.hash) {
                 // skip peers which already reported the block
-                continue
+                continue;
             }
 
             if self.state_fetcher.update_peer_block(peer_id, msg.hash, number) {
@@ -241,6 +245,9 @@ where
     ///
     /// This will keep track of blocks we know a peer has
     pub(crate) fn on_new_block(&mut self, peer_id: PeerId, hash: B256) {
+        // DISABLED
+        return;
+
         // Mark the blocks as seen
         if let Some(peer) = self.active_peers.get_mut(&peer_id) {
             peer.blocks.insert(hash);
@@ -249,6 +256,9 @@ where
 
     /// Invoked for a `NewBlockHashes` broadcast message.
     pub(crate) fn on_new_block_hashes(&mut self, peer_id: PeerId, hashes: Vec<BlockHashNumber>) {
+        // DISABLED
+        return;
+
         // Mark the blocks as seen
         if let Some(peer) = self.active_peers.get_mut(&peer_id) {
             peer.blocks.extend(hashes.into_iter().map(|b| b.hash));
@@ -343,6 +353,9 @@ where
     /// Caution: this will replace an already pending response. It's the responsibility of the
     /// caller to select the peer.
     fn handle_block_request(&mut self, peer: PeerId, request: BlockRequest) {
+        // DISABLED
+        return;
+
         if let Some(ref mut peer) = self.active_peers.get_mut(&peer) {
             let (request, response) = match request {
                 BlockRequest::GetBlockHeaders(request) => {
@@ -400,7 +413,7 @@ where
         loop {
             // drain buffered messages
             if let Some(message) = self.queued_messages.pop_front() {
-                return Poll::Ready(message)
+                return Poll::Ready(message);
             }
 
             while let Poll::Ready(discovery) = self.discovery.poll(cx) {
@@ -464,7 +477,7 @@ where
             }
 
             if self.queued_messages.is_empty() {
-                return Poll::Pending
+                return Poll::Pending;
             }
         }
     }

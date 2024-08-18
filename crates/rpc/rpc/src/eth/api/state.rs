@@ -29,7 +29,7 @@ where
             .original_bytes())
     }
 
-    pub(crate) fn balance(&self, address: Address, block_id: Option<BlockId>) -> EthResult<U256> {
+    pub fn balance(&self, address: Address, block_id: Option<BlockId>) -> EthResult<U256> {
         Ok(self
             .state_at_block_id_or_latest(block_id)?
             .account_balance(address)?
@@ -53,7 +53,7 @@ where
                 let tx_count = highest_nonce
                     .checked_add(1)
                     .ok_or(RpcInvalidTransactionError::NonceMaxValue)?;
-                return Ok(U256::from(tx_count))
+                return Ok(U256::from(tx_count));
             }
         }
 
@@ -96,7 +96,7 @@ where
 
         // TODO: remove when HistoricalStateProviderRef::proof is implemented
         if !is_latest_block {
-            return Err(EthApiError::InvalidBlockRange)
+            return Err(EthApiError::InvalidBlockRange);
         }
 
         let this = self.clone();

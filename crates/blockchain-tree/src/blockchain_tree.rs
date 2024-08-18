@@ -355,6 +355,7 @@ where
 
         // if not found, check if the parent can be found inside canonical chain.
         if self.is_block_hash_canonical(&parent.hash)? {
+            // dbg!(format!("{} is part of the canonical chain, deferring to FCU.", &block.hash));
             return self.try_append_canonical_chain(block.clone(), block_validation_kind);
         }
 
@@ -1639,12 +1640,14 @@ mod tests {
                                 EMPTY_ROOT_HASH,
                             ),
                         )])),
+
                         ..Default::default()
                     }
                     .seal_slow(),
                     body: body.clone().into_iter().map(|tx| tx.into_signed()).collect(),
                     ommers: Vec::new(),
                     withdrawals: Some(Withdrawals::default()),
+                    shadows: None,
                 },
                 body.iter().map(|tx| tx.signer()).collect(),
             )

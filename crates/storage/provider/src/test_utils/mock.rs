@@ -70,6 +70,7 @@ impl ExtendedAccount {
                 pledges: None,
                 stake: None,
                 slashed: false,
+                last_tx: None,
             },
             bytecode: None,
             storage: Default::default(),

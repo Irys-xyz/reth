@@ -188,6 +188,7 @@ pub fn insert_state<'a, 'b, DB: Database>(
                     pledges: account.pledges.clone(),
                     stake: account.stake.clone(),
                     slashed: account.slashed,
+                    last_tx: account.last_tx,
                 }),
                 storage,
             ),
@@ -289,7 +290,7 @@ pub fn insert_genesis_header<DB: Database>(
         Ok(Some(_)) => {}
         Err(e) => return Err(e),
     }
-
+    info!("writing genesis block hash {} to HeaderNumbers with height 0", block_hash);
     tx.put::<tables::HeaderNumbers>(block_hash, 0)?;
     tx.put::<tables::BlockBodyIndices>(0, Default::default())?;
 

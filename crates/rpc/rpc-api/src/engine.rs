@@ -51,12 +51,12 @@ pub trait EngineApi<Engine: EngineTypes> {
     //     parent_beacon_block_root: B256,
     // ) -> RpcResult<PayloadStatus>;
 
-    #[method(name = "newPayloadV1Irys")]
-    async fn new_payload_irys(
+    #[method(name = "submitNewPayloadV1Irys")]
+    async fn submit_new_payload_irys(
         &self,
         payload: ExecutionPayloadV1Irys,
-        versioned_hashes: Vec<B256>,
-        parent_beacon_block_root: B256,
+        /*         versioned_hashes: Vec<B256>,
+        parent_beacon_block_root: B256, */
     ) -> RpcResult<PayloadStatus>;
 
     // #[method(name = "addShadowsV1")]
@@ -121,12 +121,11 @@ pub trait EngineApi<Engine: EngineTypes> {
         payload_attributes: Option<Engine::PayloadAttributes>,
     ) -> RpcResult<ForkchoiceUpdated>;
 
-    #[method(name = "submitEvmBlockV1Irys")]
-    async fn submit_evm_block_v1_irys(
-        &self,
-        block: Block, // fork_choice_state: ForkchoiceState,
-                      // payload_attributes: Option<Engine::PayloadAttributes>,
-    ) -> RpcResult<ForkchoiceUpdated>;
+    // #[method(name = "submitEvmPayloadV1Irys")]
+    // async fn submit_evm_payload_v1_irys(
+    //     &self,
+    //     payload: Engine::ExecutionPayloadEnvelopeV1Irys,
+    // ) -> RpcResult<ForkchoiceUpdated>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_getpayloadv1>
     ///

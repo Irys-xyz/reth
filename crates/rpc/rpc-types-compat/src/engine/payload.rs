@@ -102,14 +102,10 @@ pub fn try_payload_v3_to_block(payload: ExecutionPayloadV3) -> Result<Block, Pay
 pub fn try_payload_v1_irys_to_block(
     payload: ExecutionPayloadV1Irys,
 ) -> Result<Block, PayloadError> {
-    // this performs the same conversion as the underlying V2 payload, but inserts the blob gas
-    // used and excess blob gas
     let mut base_block = try_payload_v3_to_block(payload.payload_inner)?;
 
-    // base_block.header.blob_gas_used = Some(payload.blob_gas_used);
-    // base_block.header.excess_blob_gas = Some(payload.excess_blob_gas);
-    base_block.shadows = Some(payload.shadows);
-
+    base_block.shadows = payload.shadows;
+    base_block.header.shadows_root = payload.shadows_root;
     Ok(base_block)
 }
 
@@ -248,7 +244,7 @@ pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
                 withdrawals: value.withdrawals.clone().unwrap_or_default().into_inner(),
             },
         },
-        shadows: value.shadows.clone().unwrap_or(Shadows::new(vec![])),
+        shadows: value.shadows.clone(),
         shadows_root: value.shadows_root.clone(),
     };
 

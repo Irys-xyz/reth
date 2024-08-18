@@ -63,9 +63,6 @@ where
     max_block: Option<BlockNumber>,
     /// Engine sync metrics.
     metrics: EngineSyncMetrics,
-    // db: DB,
-    // pipeline: Pipeline<DB>,
-    db: ProviderFactory<DB>,
 }
 
 impl<DB, Client> EngineSyncController<DB, Client>
@@ -83,7 +80,6 @@ where
         chain_spec: Arc<ChainSpec>,
         event_sender: EventSender<BeaconConsensusEngineEvent>,
     ) -> Self {
-        let db = pipeline.provider_factory.clone();
         Self {
             full_block_client: FullBlockClient::new(
                 client,
@@ -99,7 +95,6 @@ where
             event_sender,
             max_block,
             metrics: EngineSyncMetrics::default(),
-            db, // pipeline: pipeline.,
         }
     }
 
@@ -326,24 +321,6 @@ where
         for idx in (0..self.inflight_full_block_requests.len()).rev() {
             let mut request = self.inflight_full_block_requests.swap_remove(idx);
             if let Poll::Ready(block) = request.poll_unpin(cx) {
-                // let pp = match  self.pipeline_state {
-                //     PipelineState::Idle(p) => todo!(),
-                //     PipelineState::Running(p) =>  {
-                //         p.
-                //     },
-                // }
-                // ideally we want to add shadows here
-                // let pending_shadows = self
-                //     .db
-                //     .pending_shadows(BlockHashOrNumber::Hash(block.hash))
-                //     .expect("missing pending shadows for downloaded block");
-                // match self.db.pending_shadows(BlockHashOrNumber::Hash(block.hash())) {
-                //     Ok(shadows) => {
-
-                //     }
-                //     Err(e) => {}
-                // }
-                // block.shadows = pending_shadows;
                 trace!(target: "consensus::engine", block=?block.num_hash(), "Received single full block, buffering");
                 self.range_buffered_blocks.push(Reverse(OrderedSealedBlock(block)));
             } else {

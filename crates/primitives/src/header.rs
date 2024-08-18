@@ -17,6 +17,7 @@ use proptest::prelude::*;
 use reth_codecs::{add_arbitrary_tests, derive_arbitrary, main_codec, Compact};
 use serde::{Deserialize, Serialize};
 use std::{mem, ops::Deref};
+use tracing::debug;
 
 /// Errors that can occur during header sanity checks.
 #[derive(Debug, PartialEq, Eq)]
@@ -269,6 +270,7 @@ impl Header {
     /// WARNING: This method does not perform validation whether the hash is correct.
     #[inline]
     pub fn seal(self, hash: B256) -> SealedHeader {
+        debug!("sealing {} with hash {}", &self.number, &hash);
         SealedHeader { header: self, hash }
     }
 
@@ -288,6 +290,7 @@ impl Header {
         mem::size_of::<B256>() + // state root
         mem::size_of::<B256>() + // transactions root
         mem::size_of::<B256>() + // receipts root
+        mem::size_of::<B256>() + // shadows root
         mem::size_of::<Option<B256>>() + // withdrawals root
         mem::size_of::<Bloom>() + // logs bloom
         mem::size_of::<U256>() + // difficulty
@@ -321,7 +324,7 @@ impl Header {
         length += self.extra_data.length(); // Additional arbitrary data.
         length += self.mix_hash.length(); // Hash used for mining.
         length += B64::new(self.nonce.to_be_bytes()).length(); // Nonce for mining.
-
+        length += self.shadows_root.length(); // shadows root
         if let Some(base_fee) = self.base_fee_per_gas {
             // Adding base fee length if it exists.
             length += U256::from(base_fee).length();

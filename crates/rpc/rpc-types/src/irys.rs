@@ -1,4 +1,5 @@
 use alloy_primitives::B256;
+use revm_primitives::Address;
 use serde::{Deserialize, Serialize};
 use thiserror;
 
@@ -140,4 +141,10 @@ impl ShadowSubmission {
     // pub const fn is_invalid(&self) -> bool {
     //     self.payload_status.is_invalid()
     // }
+}
+
+// fields to assert against a submitted payload to make sure it's aligned with the parent Irys block
+struct PayloadAsserts {
+    pub reward_address: Address,
+    pub block_height: u32,
 }

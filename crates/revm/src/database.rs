@@ -88,6 +88,7 @@ impl<DB: StateProvider> DatabaseRef for StateProviderDatabase<DB> {
             pledges: account.pledges,
             stake: account.stake,
             slashed: account.slashed,
+            last_tx: account.last_tx,
         }))
     }
 

@@ -28,7 +28,8 @@ use revm_primitives::{
     db::{Database, DatabaseCommit},
     BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState,
 };
-use std::sync::Arc;
+use std::{error::Error, sync::Arc};
+use tracing::info;
 
 /// Provides executors to execute regular ethereum blocks
 #[derive(Debug, Clone)]
@@ -124,27 +125,38 @@ where
         &self,
         block: &BlockWithSenders,
         mut evm: Evm<'_, Ext, &mut State<DB>>,
-    ) -> Result<(Vec<Receipt>, u64, Vec<ShadowReceipt>), BlockExecutionError>
+    ) -> Result<(Vec<Receipt>, u64, Option<Vec<ShadowReceipt>>), BlockExecutionError>
     where
         DB: Database<Error = ProviderError>,
     {
-        // // apply pre execution changes
-        apply_beacon_root_contract_call(
-            &self.chain_spec,
-            block.timestamp,
-            block.number,
-            block.parent_beacon_block_root,
-            &mut evm,
-        )?;
+        // // // apply pre execution changes
+        // apply_beacon_root_contract_call(
+        //     &self.chain_spec,
+        //     block.timestamp,
+        //     block.number,
+        //     block.parent_beacon_block_root,
+        //     &mut evm,
+        // )?;
 
-        // execute block shadows
-        let shadow_receipts = match apply_block_shadows(block.shadows.as_ref(), &mut evm) {
-            Ok(v) => match v {
-                Some(v2) => v2, // todo: figure out nicer way to do this
-                None => vec![],
-            },
-            Err(e) => return Err(BlockExecutionError::other(e)),
-        };
+        // let mut evm = revm::Evm::builder()
+        // .with_db(&mut db)
+        // .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
+        //     initialized_cfg.clone(),
+        //     initialized_block_env.clone(),
+        //     // tx_env_with_recovered(&tx),
+        //     Default::default(),
+        // ))
+        // .build();
+        let prev = evm.context.evm.inner.journaled_state.checkpoint();
+        // TODO: fix this
+        let shadow_exec =
+            apply_block_shadows(block.shadows.as_ref(), &mut evm).expect("shadow exec failed :c");
+        info!("shadow exec: {:#?}", &shadow_exec);
+        let ss = evm.context.evm.inner.journaled_state.state.clone();
+
+        evm.db_mut().commit(ss);
+
+        evm.context.evm.inner.journaled_state.checkpoint_revert(prev);
 
         // execute transactions
         let mut cumulative_gas_used = 0;
@@ -193,7 +205,7 @@ where
         }
         drop(evm);
 
-        Ok((receipts, cumulative_gas_used, shadow_receipts))
+        Ok((receipts, cumulative_gas_used, shadow_exec))
     }
 }
 
@@ -443,6 +455,8 @@ mod tests {
             nonce: 1,
             pledges: None,
             stake: None,
+            last_tx: None,
+            slashed: false,
         };
 
         db.insert_account(

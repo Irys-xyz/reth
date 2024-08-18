@@ -56,11 +56,11 @@ impl<E: EngineTypes + 'static> EngineApiTestContext<E> {
         let envelope_v3: <E as EngineTypes>::ExecutionPayloadEnvelopeV1Irys = payload.into();
 
         // submit payload to engine api
-        let submission = EngineApiClient::<E>::new_payload_irys(
+        let submission = EngineApiClient::<E>::submit_new_payload_irys(
             &self.engine_api_client,
             envelope_v3.execution_payload(),
-            versioned_hashes,
-            payload_builder_attributes.parent_beacon_block_root().unwrap(),
+            // versioned_hashes,
+            // payload_builder_attributes.parent_beacon_block_root().unwrap(),
         )
         .await?;
 

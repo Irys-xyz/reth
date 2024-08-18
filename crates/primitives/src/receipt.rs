@@ -10,6 +10,7 @@ use proptest::strategy::Strategy;
 use reth_codecs::CompactZstd;
 use reth_codecs::{add_arbitrary_tests, main_codec, Compact};
 use revm_primitives::{pledge::IrysTxId, shadow::ShadowTxType};
+use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     ops::{Deref, DerefMut},
@@ -56,7 +57,7 @@ pub struct Receipt {
 // }
 
 #[add_arbitrary_tests]
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 // #[rlp(trailing)]
 pub struct ShadowReceipt {
     pub tx_id: IrysTxId,
@@ -64,7 +65,7 @@ pub struct ShadowReceipt {
     pub result: ShadowResult,
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum ShadowResult {
     #[default]
     Success,

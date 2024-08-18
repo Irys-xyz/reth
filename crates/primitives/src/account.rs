@@ -7,7 +7,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
 use revm_primitives::{
-    pledge::{Pledges, Stake},
+    pledge::{IrysTxId, LastTx, Pledges, Stake},
     JumpTable,
 };
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,7 @@ pub struct Account {
     pub bytecode_hash: Option<B256>,
     pub stake: Option<Stake>,
     pub pledges: Option<Pledges>,
+    pub last_tx: Option<LastTx>,
     pub slashed: bool,
 }
 
@@ -56,6 +57,7 @@ impl Account {
             pledges: value.pledges.clone(),
             stake: value.stake,
             slashed: value.slashed,
+            last_tx: value.last_tx,
         }
     }
 

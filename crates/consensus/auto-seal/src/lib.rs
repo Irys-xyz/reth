@@ -301,7 +301,7 @@ impl StorageInner {
         let mut header = Header {
             parent_hash: self.best_hash,
             ommers_hash: proofs::calculate_ommers_root(ommers),
-            shadows_root: EMPTY_SHADOWS_ROOT,
+            shadows_root: Default::default(),
             beneficiary: Default::default(),
             state_root: Default::default(),
             transactions_root: Default::default(),

@@ -8,7 +8,7 @@ use proptest::prelude::{any, prop_compose};
 use reth_codecs::derive_arbitrary;
 use revm_primitives::shadow::Shadows;
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub use alloy_eips::eip1898::{
     BlockHashOrNumber, BlockId, BlockNumHash, BlockNumberOrTag, ForkBlock, RpcBlockHash,
@@ -19,7 +19,16 @@ pub use alloy_eips::eip1898::{
 /// Withdrawals can be optionally included at the end of the RLP encoded message.
 #[derive_arbitrary(rlp, 25)]
 #[derive(
-    Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, RlpEncodable, RlpDecodable,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    Serialize,
+    Deserialize,
+    RlpEncodable,
+    RlpDecodable,
+    // DerefMut,
 )]
 #[rlp(trailing)]
 pub struct Block {
@@ -40,18 +49,18 @@ pub struct Block {
         proptest(strategy = "proptest::collection::vec(valid_header_strategy(), 0..=2)")
     )]
     pub ommers: Vec<Header>,
-    /// Block withdrawals.
-    #[cfg_attr(
-        any(test, feature = "arbitrary"),
-        proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Withdrawals>())")
-    )]
-    pub withdrawals: Option<Withdrawals>,
     /// Block shadows.
     #[cfg_attr(
         any(test, feature = "arbitrary"),
         proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Shadows>())")
     )]
     pub shadows: Option<Shadows>,
+    /// Block withdrawals.
+    #[cfg_attr(
+        any(test, feature = "arbitrary"),
+        proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Withdrawals>())")
+    )]
+    pub withdrawals: Option<Withdrawals>,
 }
 
 impl Block {
@@ -261,13 +270,18 @@ pub struct SealedBlock {
         proptest(strategy = "proptest::collection::vec(valid_header_strategy(), 0..=2)")
     )]
     pub ommers: Vec<Header>,
+    /// Block shadows.
+    #[cfg_attr(
+        any(test, feature = "arbitrary"),
+        proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Shadows>())")
+    )]
+    pub shadows: Option<Shadows>,
     /// Block withdrawals.
     #[cfg_attr(
         any(test, feature = "arbitrary"),
         proptest(strategy = "proptest::option::of(proptest::arbitrary::any::<Withdrawals>())")
     )]
     pub withdrawals: Option<Withdrawals>,
-    pub shadows: Option<Shadows>,
 }
 
 impl SealedBlock {

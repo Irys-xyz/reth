@@ -1,7 +1,8 @@
 use alloy_consensus::TxEnvelope;
 use alloy_network::eip2718::Decodable2718;
+use alloy_rpc_types::BlockId;
 use reth::{api::FullNodeComponents, builder::rpc::RpcRegistry, rpc::api::DebugApiServer};
-use reth_primitives::{Bytes, B256};
+use reth_primitives::{Address, Bytes, B256, U256};
 use reth_rpc::eth::{error::EthResult, EthTransactions};
 
 pub struct RpcTestContext<Node: FullNodeComponents> {
@@ -20,5 +21,13 @@ impl<Node: FullNodeComponents> RpcTestContext<Node> {
         let tx = self.inner.debug_api().raw_transaction(hash).await?.unwrap();
         let tx = tx.to_vec();
         Ok(TxEnvelope::decode_2718(&mut tx.as_ref()).unwrap())
+    }
+    pub async fn get_balance(
+        &mut self,
+        address: Address,
+        block_id: Option<BlockId>,
+    ) -> eyre::Result<U256> {
+        let eth_api = self.inner.eth_api();
+        Ok(eth_api.balance(address, block_id)?)
     }
 }

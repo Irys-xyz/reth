@@ -31,7 +31,7 @@ use reth_tasks::TaskSpawner;
 use serde_json;
 use std::{sync::Arc, time::Instant};
 use tokio::sync::oneshot;
-use tracing::{debug, trace, warn};
+use tracing::{debug, error, trace, warn};
 
 /// The Engine API response sender.
 pub type EngineApiSender<Ok> = oneshot::Sender<EngineApiResult<Ok>>;
@@ -198,17 +198,16 @@ where
     //     Ok(self.inner.beacon_consensus.new_payload(payload, Some(cancun_fields)).await?)
     // }
 
-    pub async fn new_payload_irys(
+    pub async fn submit_new_payload_irys(
         &self,
         payload: ExecutionPayloadV1Irys,
-        versioned_hashes: Vec<B256>,
-        parent_beacon_block_root: B256,
+        // versioned_hashes: Vec<B256>,
+        // parent_beacon_block_root: B256,
     ) -> EngineApiResult<PayloadStatus> {
         let payload = ExecutionPayload::from(payload);
         let payload_or_attrs =
             PayloadOrAttributes::<'_, EngineT::PayloadAttributes>::from_execution_payload(
-                &payload,
-                Some(parent_beacon_block_root),
+                &payload, None,
             );
         EngineT::validate_version_specific_fields(
             &self.inner.chain_spec,
@@ -216,9 +215,9 @@ where
             payload_or_attrs,
         )?;
 
-        let cancun_fields = CancunPayloadFields { versioned_hashes, parent_beacon_block_root };
+        // let cancun_fields = CancunPayloadFields { versioned_hashes, parent_beacon_block_root };
 
-        Ok(self.inner.beacon_consensus.new_payload(payload, Some(cancun_fields)).await?)
+        Ok(self.inner.beacon_consensus.new_payload(payload, None).await?)
     }
 
     /// Sends a message to the beacon consensus engine to update the fork choice _without_
@@ -277,123 +276,111 @@ where
         payload_attributes: EngineT::PayloadAttributes,
     ) -> EngineApiResult<EngineT::ExecutionPayloadEnvelopeV1Irys> /* EngineApiResult<EngineT::ExecutionPayloadV1Irys> */ /* RpcResult<ForkchoiceUpdated> */
     {
-        let payload_builder_attributes =
-            <EngineT as EngineTypes>::PayloadBuilderAttributes::try_new(parent, payload_attributes)
+        // TODO: fix this loop required for when the payload is dropped due to debugging(??)
+        'outer: loop {
+            let payload_builder_attributes =
+                <EngineT as EngineTypes>::PayloadBuilderAttributes::try_new(
+                    parent,
+                    payload_attributes.clone(),
+                )
                 // TODO: fix
                 .expect("unable to build PayloadBuilderAttributes");
 
-        // EthPayloadBuilderAttributes::new();
-        let payload_id = self
-            .inner
-            .payload_store
-            .inner
-            .new_payload(payload_builder_attributes)
-            .await
-            .expect("unable to build payload");
+            // EthPayloadBuilderAttributes::new();
+            let payload_id = self
+                .inner
+                .payload_store
+                .inner
+                .new_payload(payload_builder_attributes)
+                .await
+                .expect("unable to build payload");
 
-        // busypoll
-        // loop {
-        //     let payload =
-        //         self.inner.payload_store.inner.best_payload(payload_id).await.unwrap().unwrap();
-        //     if payload.block().body.is_empty() {
-        //         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-        //         continue;
-        //     }
-        //     break;
-        // }
-        // let payload_event_stream = self
-        //     .inner
-        //     .payload_store
-        //     .inner
-        //     .subscribe()
-        //     .await
-        //     .expect("unable to subscribe to events");
-
-        //  {
-        let b = loop {
-            // let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
-            match self.inner.payload_store.inner.best_payload(payload_id).await {
-                Some(v) => match v {
-                    Ok(v) => {
-                        if v.is_empty() && v.block().is_empty()
-                        /* && v.block().shadows.is_none() */
-                        {
-                            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-                            continue;
-                        } else {
-                            dbg!("got built payload");
-                            break v.block().clone();
+            // todo: redo this
+            let b = loop {
+                match self.inner.payload_store.inner.best_payload(payload_id).await {
+                    Some(v) => match v {
+                        Ok(v) => {
+                            if v.is_empty() && v.block().is_empty()
+                            /* && v.block().shadows.is_none() */
+                            {
+                                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                                continue;
+                            } else {
+                                trace!("got payload");
+                                break v.block().clone();
+                            }
                         }
+                        Err(e) => {
+                            error!("Error building a payload: {}", e);
+                        }
+                    },
+                    None => {
+                        error!("Didn't get a payload from payload builder - retrying...");
+                        continue 'outer;
                     }
-                    Err(e) => {
-                        dbg!(e);
-                    }
-                },
-                None => {
-                    dbg!("no payload :c");
+                }
+                // if payload.block().body.is_empty() {
+                //     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                //     continue;
+                // }
+                // break;
+                // }
+            };
+
+            dbg!(&b);
+
+            // Ok(b)
+
+            let payload = self
+                .get_payload_v1_irys(payload_id)
+                .await
+                .expect("unable to get payload from payload store");
+
+            // let payload = self
+            //     .inner
+            //     .payload_store
+            //     .resolve(payload_id)
+            //     .await
+            //     .ok_or(EngineApiError::UnknownPayload)?
+            //     .map_err(|_| EngineApiError::UnknownPayload)?
+            //     .try_into()
+            //     .map_err(|_| {
+            //         warn!("could not transform built payload into ExecutionPayloadV3");
+            //         EngineApiError::UnknownPayload
+            //     });
+
+            // return payload;
+
+            // Ok((b, payload))
+            match serde_json::to_string(&payload.clone()) {
+                Ok(v) => {
+                    // println!("PAYLOAD {}", v);
+                    warn!(target: "payload_builder", ?v, "payload");
+                    // trace!("{}", &v);
+                    ()
+                }
+                Err(e) => {
+                    // trace!("{}", &e);
+                    // println!("ERROR {}", e);
+                    warn!(target: "payload_builder", ?e, "payload");
+
+                    ()
                 }
             }
-            // if payload.block().body.is_empty() {
-            //     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-            //     continue;
+            // let exec = payload.execution_payload();
+            // let encoded_blobs = BlobsBundleV1Wrapper { inner: payload.blobs_bundle() };
+            // let opaque = OpaquePayload {
+            //     body: exec.payload_inner.payload_inner.payload_inner.transactions,
+            //     blobs_bundle: BlobsBundleV1Wrapper {inner: payload.blobs_bundle()}
             // }
-            // break;
-            // }
-        };
+            // serialize `transactions` into an opaque bin?
+            // serialize the bits we `don't` need access to.
+            // dbg!(pj);
+            return Ok(payload);
 
-        dbg!(&b);
-
-        // Ok(b)
-
-        let payload = self
-            .get_payload_v1_irys(payload_id)
-            .await
-            .expect("unable to get payload from payload store");
-
-        // let payload = self
-        //     .inner
-        //     .payload_store
-        //     .resolve(payload_id)
-        //     .await
-        //     .ok_or(EngineApiError::UnknownPayload)?
-        //     .map_err(|_| EngineApiError::UnknownPayload)?
-        //     .try_into()
-        //     .map_err(|_| {
-        //         warn!("could not transform built payload into ExecutionPayloadV3");
-        //         EngineApiError::UnknownPayload
-        //     });
-
-        // return payload;
-
-        // Ok((b, payload))
-        match serde_json::to_string(&payload.clone()) {
-            Ok(v) => {
-                // println!("PAYLOAD {}", v);
-                warn!(target: "payload_builder", ?v, "payload");
-                // trace!("{}", &v);
-                ()
-            }
-            Err(e) => {
-                // trace!("{}", &e);
-                // println!("ERROR {}", e);
-                warn!(target: "payload_builder", ?e, "payload");
-
-                ()
-            }
+            // Ok(ForkchoiceUpdated::new(PayloadStatus::new(PayloadStatusEnum::Valid, None))
+            //     .with_payload_id(payload_id))
         }
-        // let exec = payload.execution_payload();
-        // let encoded_blobs = BlobsBundleV1Wrapper { inner: payload.blobs_bundle() };
-        // let opaque = OpaquePayload {
-        //     body: exec.payload_inner.payload_inner.payload_inner.transactions,
-        //     blobs_bundle: BlobsBundleV1Wrapper {inner: payload.blobs_bundle()}
-        // }
-        // serialize `transactions` into an opaque bin?
-        // serialize the bits we `don't` need access to.
-        // dbg!(pj);
-        Ok(payload)
-
-        // Ok(ForkchoiceUpdated::new(PayloadStatus::new(PayloadStatusEnum::Valid, None))
-        //     .with_payload_id(payload_id))
     }
 
     // pub async fn add_shadows_v1(
@@ -550,7 +537,6 @@ where
         &self,
         payload_id: PayloadId,
     ) -> EngineApiResult<EngineT::ExecutionPayloadEnvelopeV1Irys> {
-        dbg!(&payload_id);
         // First we fetch the payload attributes to check the timestamp
         let attributes = self.get_payload_attributes(payload_id).await?;
 
@@ -823,65 +809,16 @@ where
         + 'static,
     EngineT: EngineTypes + 'static,
 {
-    // /// Handler for `engine_newPayloadV1`
-    // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/paris.md#engine_newpayloadv1>
-    // /// Caution: This should not accept the `withdrawals` field
-    // async fn new_payload_v1(&self, payload: ExecutionPayloadV1) -> RpcResult<PayloadStatus> {
-    //     trace!(target: "rpc::engine", "Serving engine_newPayloadV1");
-    //     let start = Instant::now();
-    //     let res = EngineApi::new_payload_v1(self, payload).await;
-    //     self.inner.metrics.latency.new_payload_v1.record(start.elapsed());
-    //     self.inner.metrics.new_payload_response.update_response_metrics(&res);
-    //     Ok(res?)
-    // }
-
-    // /// Handler for `engine_newPayloadV2`
-    // /// See also <https://github.com/ethereum/execution-apis/blob/584905270d8ad665718058060267061ecfd79ca5/src/engine/shanghai.md#engine_newpayloadv2>
-    // async fn new_payload_v2(&self, payload: ExecutionPayloadInputV2) -> RpcResult<PayloadStatus> {
-    //     trace!(target: "rpc::engine", "Serving engine_newPayloadV2");
-    //     let start = Instant::now();
-    //     let res = EngineApi::new_payload_v2(self, payload).await;
-    //     self.inner.metrics.latency.new_payload_v2.record(start.elapsed());
-    //     self.inner.metrics.new_payload_response.update_response_metrics(&res);
-    //     Ok(res?)
-    // }
-
-    // /// Handler for `engine_newPayloadV3`
-    // /// See also <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#engine_newpayloadv3>
-    // async fn new_payload_v3(
-    //     &self,
-    //     payload: ExecutionPayloadV3,
-    //     versioned_hashes: Vec<B256>,
-    //     parent_beacon_block_root: B256,
-    // ) -> RpcResult<PayloadStatus> {
-    //     trace!(target: "rpc::engine", "Serving engine_newPayloadV3");
-    //     let start = Instant::now();
-    //     let res =
-    //         EngineApi::new_payload_v3(self, payload, versioned_hashes, parent_beacon_block_root)
-    //             .await;
-    //     self.inner.metrics.latency.new_payload_v3.record(start.elapsed());
-    //     self.inner.metrics.new_payload_response.update_response_metrics(&res);
-    //     Ok(res?)
-    // }
-
-    async fn new_payload_irys(
+    async fn submit_new_payload_irys(
         &self,
         payload: ExecutionPayloadV1Irys,
-        versioned_hashes: Vec<B256>,
-        parent_beacon_block_root: B256,
     ) -> RpcResult<PayloadStatus> {
         trace!(target: "rpc::engine", "Serving engine_newPayloadIrys");
         let start = Instant::now();
-        let res =
-            EngineApi::new_payload_irys(self, payload, versioned_hashes, parent_beacon_block_root)
-                .await;
+        let res = EngineApi::submit_new_payload_irys(self, payload).await;
         self.inner.metrics.latency.new_payload_v3.record(start.elapsed());
         self.inner.metrics.new_payload_response.update_response_metrics(&res);
         Ok(res?)
-    }
-
-    async fn submit_evm_block_v1_irys(&self, block: Block) -> RpcResult<ForkchoiceUpdated> {
-        todo!()
     }
 
     async fn build_new_payload_irys(
@@ -892,57 +829,6 @@ where
     ) -> RpcResult<EngineT::ExecutionPayloadEnvelopeV1Irys> {
         Ok(EngineApi::build_new_payload_irys(&self, parent, payload_attributes).await?)
     }
-
-    // /// Handler for `engine_forkchoiceUpdatedV1`
-    // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/paris.md#engine_forkchoiceupdatedv1>
-    // ///
-    // /// Caution: This should not accept the `withdrawals` field
-    // async fn fork_choice_updated_v1(
-    //     &self,
-    //     fork_choice_state: ForkchoiceState,
-    //     payload_attributes: Option<EngineT::PayloadAttributes>,
-    // ) -> RpcResult<ForkchoiceUpdated> {
-    //     trace!(target: "rpc::engine", "Serving engine_forkchoiceUpdatedV1");
-    //     let start = Instant::now();
-    //     let res =
-    //         EngineApi::fork_choice_updated_v1(self, fork_choice_state, payload_attributes).await;
-    //     self.inner.metrics.latency.fork_choice_updated_v1.record(start.elapsed());
-    //     self.inner.metrics.fcu_response.update_response_metrics(&res);
-    //     Ok(res?)
-    // }
-
-    // /// Handler for `engine_forkchoiceUpdatedV2`
-    // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/shanghai.md#engine_forkchoiceupdatedv2>
-    // async fn fork_choice_updated_v2(
-    //     &self,
-    //     fork_choice_state: ForkchoiceState,
-    //     payload_attributes: Option<EngineT::PayloadAttributes>,
-    // ) -> RpcResult<ForkchoiceUpdated> {
-    //     trace!(target: "rpc::engine", "Serving engine_forkchoiceUpdatedV2");
-    //     let start = Instant::now();
-    //     let res =
-    //         EngineApi::fork_choice_updated_v2(self, fork_choice_state, payload_attributes).await;
-    //     self.inner.metrics.latency.fork_choice_updated_v2.record(start.elapsed());
-    //     self.inner.metrics.fcu_response.update_response_metrics(&res);
-    //     Ok(res?)
-    // }
-
-    /// Handler for `engine_forkchoiceUpdatedV2`
-    ///
-    /// See also <https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_forkchoiceupdatedv3>
-    // async fn fork_choice_updated_v3(
-    //     &self,
-    //     fork_choice_state: ForkchoiceState,
-    //     payload_attributes: Option<EngineT::PayloadAttributes>,
-    // ) -> RpcResult<ForkchoiceUpdated> {
-    //     trace!(target: "rpc::engine", "Serving engine_forkchoiceUpdatedV3");
-    //     let start = Instant::now();
-    //     let res =
-    //         EngineApi::fork_choice_updated_v3(self, fork_choice_state, payload_attributes).await;
-    //     self.inner.metrics.latency.fork_choice_updated_v3.record(start.elapsed());
-    //     self.inner.metrics.fcu_response.update_response_metrics(&res);
-    //     Ok(res?)
-    // }
 
     async fn fork_choice_updated_v1_irys(
         &self,
@@ -959,85 +845,6 @@ where
         Ok(res?)
     }
 
-    // async fn add_shadows_v1(
-    //     &self,
-    //     block_id: B256,
-    //     shadows: Shadows,
-    // ) -> RpcResult<ShadowSubmission> {
-    //     trace!(target: "rpc::engine", "Serving engine_addShadowsV1Irys");
-    //     // let start = Instant::now();
-    //     let res = EngineApi::add_shadows_v1(&self, block_id, shadows).await;
-    //     Ok(res?)
-    //     // let res =
-    //     //     EngineApi::fork_choice_updated_v1_irys(self, fork_choice_state, payload_attributes)
-    //     //         .await;
-    //     // self.inner.metrics.latency.fork_choice_updated_v3.record(start.elapsed());
-    //     // self.inner.metrics.fcu_response.update_response_metrics(&res);
-    //     // Ok(res?)
-    // }
-
-    // /// Handler for `engine_getPayloadV1`
-    // ///
-    // /// Returns the most recent version of the payload that is available in the corresponding
-    // /// payload build process at the time of receiving this call.
-    // ///
-    // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/paris.md#engine_getPayloadV1>
-    // ///
-    // /// Caution: This should not return the `withdrawals` field
-    // ///
-    // /// Note:
-    // /// > Provider software MAY stop the corresponding build process after serving this call.
-    // async fn get_payload_v1(
-    //     &self,
-    //     payload_id: PayloadId,
-    // ) -> RpcResult<EngineT::ExecutionPayloadV1> {
-    //     trace!(target: "rpc::engine", "Serving engine_getPayloadV1");
-    //     let start = Instant::now();
-    //     let res = EngineApi::get_payload_v1(self, payload_id).await;
-    //     self.inner.metrics.latency.get_payload_v1.record(start.elapsed());
-    //     Ok(res?)
-    // }
-
-    // /// Handler for `engine_getPayloadV2`
-    // ///
-    // /// Returns the most recent version of the payload that is available in the corresponding
-    // /// payload build process at the time of receiving this call.
-    // ///
-    // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/shanghai.md#engine_getpayloadv2>
-    // ///
-    // /// Note:
-    // /// > Provider software MAY stop the corresponding build process after serving this call.
-    // async fn get_payload_v2(
-    //     &self,
-    //     payload_id: PayloadId,
-    // ) -> RpcResult<EngineT::ExecutionPayloadV2> {
-    //     trace!(target: "rpc::engine", "Serving engine_getPayloadV2");
-    //     let start = Instant::now();
-    //     let res = EngineApi::get_payload_v2(self, payload_id).await;
-    //     self.inner.metrics.latency.get_payload_v2.record(start.elapsed());
-    //     Ok(res?)
-    // }
-
-    /// Handler for `engine_getPayloadV3`
-    ///
-    /// Returns the most recent version of the payload that is available in the corresponding
-    /// payload build process at the time of receiving this call.
-    ///
-    /// See also <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#engine_getpayloadv3>
-    ///
-    /// Note:
-    /// > Provider software MAY stop the corresponding build process after serving this call.
-    // async fn get_payload_v3(
-    //     &self,
-    //     payload_id: PayloadId,
-    // ) -> RpcResult<EngineT::ExecutionPayloadV3> {
-    //     trace!(target: "rpc::engine", "Serving engine_getPayloadV3");
-    //     let start = Instant::now();
-    //     let res = EngineApi::get_payload_v3(self, payload_id).await;
-    //     self.inner.metrics.latency.get_payload_v3.record(start.elapsed());
-    //     Ok(res?)
-    // }
-
     async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
@@ -1048,19 +855,6 @@ where
         self.inner.metrics.latency.get_payload_v3.record(start.elapsed());
         Ok(res?)
     }
-
-    /// Handler for `engine_getPayloadBodiesByHashV1`
-    /// See also <https://github.com/ethereum/execution-apis/blob/6452a6b194d7db269bf1dbd087a267251d3cc7f8/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1>
-    // async fn get_payload_bodies_by_hash_v1(
-    //     &self,
-    //     block_hashes: Vec<BlockHash>,
-    // ) -> RpcResult<ExecutionPayloadBodiesV1> {
-    //     trace!(target: "rpc::engine", "Serving engine_getPayloadBodiesByHashV1");
-    //     let start = Instant::now();
-    //     let res = EngineApi::get_payload_bodies_by_hash(self, block_hashes);
-    //     self.inner.metrics.latency.get_payload_bodies_by_hash_v1.record(start.elapsed());
-    //     Ok(res?)
-    // }
 
     async fn get_payload_bodies_by_hash_v1_irys(
         &self,
@@ -1124,32 +918,6 @@ where
         self.inner.metrics.latency.get_payload_bodies_by_range_v1.record(start_time.elapsed());
         Ok(res?)
     }
-
-    // /// Handler for `engine_exchangeTransitionConfigurationV1`
-    // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/paris.md#engine_exchangeTransitionConfigurationV1>
-    // async fn exchange_transition_configuration(
-    //     &self,
-    //     config: TransitionConfiguration,
-    // ) -> RpcResult<TransitionConfiguration> {
-    //     trace!(target: "rpc::engine", "Serving engine_exchangeTransitionConfigurationV1");
-    //     let start = Instant::now();
-    //     let res = EngineApi::exchange_transition_configuration(self, config).await;
-    //     self.inner.metrics.latency.exchange_transition_configuration.record(start.elapsed());
-    //     Ok(res?)
-    // }
-    /// Handler for `engine_getClientVersionV1`
-    ///
-    /// See also <https://github.com/ethereum/execution-apis/blob/03911ffc053b8b806123f1fc237184b0092a485a/src/engine/identification.md>
-    // async fn get_client_version_v1(
-    //     &self,
-    //     client: ClientVersionV1,
-    // ) -> RpcResult<Vec<ClientVersionV1>> {
-    //     trace!(target: "rpc::engine", "Serving engine_getClientVersionV1");
-    //     let res = EngineApi::get_client_version_v1(self, client).await;
-
-    //     Ok(res?)
-    // }
-    //
 
     async fn get_client_version_v1_irys(
         &self,
