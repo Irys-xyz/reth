@@ -11,14 +11,14 @@ mod merkle;
 mod replay_engine;
 
 /// `reth debug` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     #[command(subcommand)]
     command: Subcommands,
 }
 
 /// `reth debug` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands {
     /// Debug the roundtrip execution of blocks as well as the generated data.
     Execution(execution::Command),

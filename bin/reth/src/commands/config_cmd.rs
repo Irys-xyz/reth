@@ -8,7 +8,7 @@ use reth_config::Config;
 use reth_node_core::irys_ext::NodeExitReason;
 
 /// `reth config` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]

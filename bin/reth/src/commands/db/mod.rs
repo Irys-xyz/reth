@@ -32,7 +32,7 @@ mod stats;
 mod tui;
 
 /// `reth db` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///
@@ -64,7 +64,7 @@ pub struct Command {
     command: Subcommands,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 /// `reth db` subcommands
 pub enum Subcommands {
     /// Lists all the tables, their entry count and their size

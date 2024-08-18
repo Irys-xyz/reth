@@ -22,7 +22,8 @@ fn main() {
 
     if let Err(err) = Cli::parse_args().run(|builder, _| async {
         let handle = builder.launch_node(EthereumNode::default()).await?;
-        handle.node_exit_future.await
+        handle.node_exit_future.await?;
+        Ok(())
     }) {
         eprintln!("Error: {err:?}");
         std::process::exit(1);

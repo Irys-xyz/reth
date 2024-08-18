@@ -29,7 +29,7 @@ mod headers;
 mod receipts;
 mod transactions;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// Arguments for the `reth db create-static-files` command.
 pub struct Command {
     /// Static File segments to generate.

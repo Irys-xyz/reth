@@ -39,7 +39,7 @@ use std::{any::Any, net::SocketAddr, path::PathBuf, sync::Arc, time::Instant};
 use tracing::*;
 
 /// `reth stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]

@@ -36,7 +36,7 @@ use tracing::*;
 /// This debug routine requires that the node is positioned at the block before the target.
 /// The script will then download the block from p2p network and attempt to calculate and verify
 /// merkle root for it.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

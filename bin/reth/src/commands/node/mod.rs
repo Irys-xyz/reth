@@ -17,8 +17,8 @@ use reth_primitives::ChainSpec;
 use std::{ffi::OsString, fmt, future::Future, net::SocketAddr, path::PathBuf, sync::Arc};
 
 /// Start the node
-#[derive(Debug, Parser)]
-pub struct NodeCommand<Ext: clap::Args + fmt::Debug = NoArgs> {
+#[derive(Debug, Parser, Clone)]
+pub struct NodeCommand<Ext: Clone + clap::Args + fmt::Debug = NoArgs> {
     /// The path to the data dir for all reth files and subdirectories.
     ///
     /// Defaults to the OS-specific data directory:
@@ -129,7 +129,7 @@ impl NodeCommand {
     }
 }
 
-impl<Ext: clap::Args + fmt::Debug> NodeCommand<Ext> {
+impl<Ext: clap::Args + Clone + fmt::Debug> NodeCommand<Ext> {
     /// Launches the node
     ///
     /// This transforms the node command into a node config and launches the node using the given

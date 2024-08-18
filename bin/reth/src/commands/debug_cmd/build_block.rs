@@ -52,7 +52,7 @@ use tracing::*;
 /// `reth debug build-block` command
 /// This debug routine requires that the node is positioned at the block before the target.
 /// The script will then parse the block and attempt to build a similar one.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

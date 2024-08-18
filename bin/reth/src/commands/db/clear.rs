@@ -10,7 +10,7 @@ use reth_primitives::{static_file::find_fixed_range, StaticFileSegment};
 use reth_provider::{ProviderFactory, StaticFileProviderFactory};
 
 /// The arguments for the `reth db clear` command
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Command {
     #[clap(subcommand)]
     subcommand: Subcommands,
@@ -40,7 +40,7 @@ impl Command {
     }
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 enum Subcommands {
     /// Deletes all database table entries
     Mdbx { table: Tables },

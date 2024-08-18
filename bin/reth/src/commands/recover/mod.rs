@@ -7,14 +7,14 @@ use reth_node_core::irys_ext::NodeExitReason;
 mod storage_tries;
 
 /// `reth recover` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     #[command(subcommand)]
     command: Subcommands,
 }
 
 /// `reth recover` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands {
     /// Recover the node by deleting dangling storage tries.
     StorageTries(storage_tries::Command),

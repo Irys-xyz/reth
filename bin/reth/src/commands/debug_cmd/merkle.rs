@@ -37,7 +37,7 @@ use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 use tracing::*;
 
 /// `reth debug merkle` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

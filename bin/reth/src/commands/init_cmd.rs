@@ -17,7 +17,7 @@ use std::sync::Arc;
 use tracing::info;
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct InitCommand {
     /// The path to the data dir for all reth files and subdirectories.
     ///

@@ -34,7 +34,7 @@ mod merkle;
 use merkle::dump_merkle_stage;
 
 /// `reth dump-stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

@@ -21,7 +21,7 @@ use reth_primitives::static_file::{find_fixed_range, SegmentRangeInclusive};
 use reth_provider::providers::StaticFileProvider;
 use tracing::info;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db stats` command
 pub struct Command {
     /// Show only the total size for static files.

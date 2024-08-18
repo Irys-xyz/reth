@@ -7,7 +7,7 @@ use reth_primitives::hex;
 use std::cell::RefCell;
 use tracing::error;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db list` command
 pub struct Command {
     /// The table name

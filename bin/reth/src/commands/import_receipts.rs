@@ -24,7 +24,7 @@ use tracing::{debug, error, info, trace};
 use std::{path::PathBuf, sync::Arc};
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct ImportReceiptsCommand {
     /// The path to the data dir for all reth files and subdirectories.
     ///

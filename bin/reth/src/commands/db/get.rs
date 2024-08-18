@@ -11,13 +11,13 @@ use reth_provider::StaticFileProviderFactory;
 use tracing::error;
 
 /// The arguments for the `reth db get` command
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Command {
     #[command(subcommand)]
     subcommand: Subcommand,
 }
 
-#[derive(clap::Subcommand, Debug)]
+#[derive(clap::Subcommand, Debug, Clone)]
 enum Subcommand {
     /// Gets the content of a database table for the given key
     Mdbx {

@@ -10,14 +10,14 @@ pub mod run;
 pub mod unwind;
 
 /// `reth stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     #[command(subcommand)]
     command: Subcommands,
 }
 
 /// `reth stage` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands {
     /// Run a single stage.
     ///

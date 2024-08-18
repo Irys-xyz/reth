@@ -6,7 +6,7 @@ use reth_primitives::ChainSpec;
 use std::sync::Arc;
 
 /// Dumps genesis block JSON configuration to stdout
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct DumpGenesisCommand {
     /// The chain this node is running.
     ///

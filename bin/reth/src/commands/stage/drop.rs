@@ -20,7 +20,7 @@ use reth_provider::{providers::StaticFileWriter, ProviderFactory, StaticFileProv
 use std::sync::Arc;
 
 /// `reth drop-stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

@@ -18,7 +18,7 @@ use std::{fs, sync::Arc};
 use tracing::*;
 
 /// `reth recover storage-tries` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

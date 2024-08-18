@@ -40,7 +40,7 @@ use tokio::sync::watch;
 use tracing::{debug, error, info};
 
 /// Syncs RLP encoded blocks from a file.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct ImportCommand {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]

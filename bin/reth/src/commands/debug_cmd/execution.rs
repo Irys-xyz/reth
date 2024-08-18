@@ -46,7 +46,7 @@ use tokio::sync::watch;
 use tracing::*;
 
 /// `reth debug execution` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///

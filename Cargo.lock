@@ -6538,6 +6538,7 @@ dependencies = [
 name = "reth-cli-runner"
 version = "0.2.0-beta.7"
 dependencies = [
+ "reth-node-core",
  "reth-tasks",
  "tokio",
  "tracing",
@@ -6987,6 +6988,7 @@ dependencies = [
  "reth-primitives",
  "reth-revm",
  "revm-primitives",
+ "tracing",
 ]
 
 [[package]]
@@ -7565,6 +7567,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types 0.1.0 (git+https://github.com/alloy-rs/alloy?rev=64feb9b)",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy?rev=64feb9b)",
  "alloy-trie",
  "arbitrary",
  "assert_matches",
@@ -7587,6 +7590,7 @@ dependencies = [
  "reth-codecs",
  "reth-ethereum-forks",
  "reth-network-types",
+ "reth-rpc-types",
  "reth-static-file-types",
  "revm",
  "revm-primitives",
@@ -7599,6 +7603,7 @@ dependencies = [
  "test-fuzz",
  "thiserror",
  "toml",
+ "tracing",
  "triehash",
  "zstd",
 ]
@@ -7823,6 +7828,7 @@ dependencies = [
  "reth-tasks",
  "reth-tokio-util",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tracing",
@@ -7855,6 +7861,7 @@ dependencies = [
  "alloy-rpc-types-beacon",
  "alloy-rpc-types-engine",
  "alloy-rpc-types-trace",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy?rev=64feb9b)",
  "arbitrary",
  "bytes",
  "jsonrpsee-types",
@@ -8180,6 +8187,7 @@ name = "revm-primitives"
 version = "4.0.0"
 dependencies = [
  "alloy-eips 0.1.0 (git+https://github.com/alloy-rs/alloy?rev=64feb9b)",
+ "alloy-genesis 0.1.0 (git+https://github.com/alloy-rs/alloy?rev=64feb9b)",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types 0.1.0 (git+https://github.com/alloy-rs/alloy?rev=64feb9b)",

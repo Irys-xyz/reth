@@ -19,7 +19,7 @@ use std::{fs::File, io::BufReader, path::PathBuf, sync::Arc};
 use tracing::info;
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct InitStateCommand {
     /// The path to the data dir for all reth files and subdirectories.
     ///

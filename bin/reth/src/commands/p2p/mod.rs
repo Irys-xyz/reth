@@ -26,7 +26,7 @@ use std::{
 };
 
 /// `reth p2p` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]
@@ -70,7 +70,7 @@ pub struct Command {
 }
 
 /// `reth p2p` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands {
     /// Download block header
     Header {

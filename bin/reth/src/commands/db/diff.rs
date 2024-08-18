@@ -23,7 +23,7 @@ use std::{
 };
 use tracing::{info, warn};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db diff` command
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.

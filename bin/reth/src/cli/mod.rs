@@ -33,9 +33,9 @@ pub use crate::core::cli::*;
 /// The main reth cli interface.
 ///
 /// This is the entrypoint to the executable.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 #[command(author, version = SHORT_VERSION, long_version = LONG_VERSION, about = "Reth", long_about = None)]
-pub struct Cli<Ext: clap::Args + fmt::Debug = NoArgs> {
+pub struct Cli<Ext: clap::Args + Clone + fmt::Debug = NoArgs> {
     /// The command to run
     #[command(subcommand)]
     pub command: Commands<Ext>,
@@ -89,7 +89,7 @@ impl Cli {
     }
 }
 
-impl<Ext: clap::Args + fmt::Debug> Cli<Ext> {
+impl<Ext: clap::Args + Clone + fmt::Debug> Cli<Ext> {
     /// Execute the configured cli command.
     ///
     /// This accepts a closure that is used to launch the node via the
@@ -119,7 +119,7 @@ impl<Ext: clap::Args + fmt::Debug> Cli<Ext> {
     /// use clap::Parser;
     /// use reth::cli::Cli;
     ///
-    /// #[derive(Debug, Parser)]
+    /// #[derive(Debug, Parser, Clone)]
     /// pub struct MyArgs {
     ///     pub enable: bool,
     /// }
@@ -179,8 +179,8 @@ impl<Ext: clap::Args + fmt::Debug> Cli<Ext> {
 }
 
 /// Commands to be executed
-#[derive(Debug, Subcommand)]
-pub enum Commands<Ext: clap::Args + fmt::Debug = NoArgs> {
+#[derive(Debug, Subcommand, Clone)]
+pub enum Commands<Ext: clap::Args + Clone + fmt::Debug = NoArgs> {
     /// Start the node
     #[command(name = "node")]
     Node(node::NodeCommand<Ext>),

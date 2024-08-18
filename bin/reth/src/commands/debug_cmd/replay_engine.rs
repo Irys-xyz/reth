@@ -39,7 +39,7 @@ use tracing::*;
 /// `reth debug replay-engine` command
 /// This script will read stored engine API messages and replay them by the timestamp.
 /// It does not require
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
     ///
