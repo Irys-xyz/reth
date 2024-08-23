@@ -51,6 +51,9 @@ pub trait EngineApi<Engine: EngineTypes> {
     //     parent_beacon_block_root: B256,
     // ) -> RpcResult<PayloadStatus>;
 
+    #[method(name = "ping")]
+    fn ping(&self) -> RpcResult<String>;
+
     #[method(name = "submitNewPayloadV1Irys")]
     async fn submit_new_payload_irys(
         &self,

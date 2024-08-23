@@ -809,6 +809,10 @@ where
         + 'static,
     EngineT: EngineTypes + 'static,
 {
+    fn ping(&self) -> RpcResult<String> {
+        Ok("pong".to_string())
+    }
+
     async fn submit_new_payload_irys(
         &self,
         payload: ExecutionPayloadV1Irys,
