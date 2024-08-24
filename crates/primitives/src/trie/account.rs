@@ -2,7 +2,7 @@ use crate::{constants::EMPTY_ROOT_HASH, proofs, Account, B256, KECCAK_EMPTY, U25
 use alloy_primitives::keccak256;
 use alloy_rlp::{RlpDecodable, RlpEncodable};
 use revm_primitives::{
-    pledge::{Pledge, Pledges, Stake},
+    commitment::{Commitments, Stake},
     AccountInfo, GenesisAccount,
 };
 
@@ -19,7 +19,7 @@ pub struct TrieAccount {
     /// Hash of the account's bytecode.
     code_hash: B256,
     stake: Option<Stake>,
-    pledges: Option<Pledges>,
+    commitments: Option<Commitments>,
 }
 
 impl From<(Account, B256)> for TrieAccount {
@@ -30,7 +30,7 @@ impl From<(Account, B256)> for TrieAccount {
             storage_root,
             code_hash: account.bytecode_hash.unwrap_or(KECCAK_EMPTY),
             stake: account.stake,
-            pledges: account.pledges,
+            commitments: account.commitments,
         }
     }
 }
@@ -43,7 +43,7 @@ impl From<(AccountInfo, B256)> for TrieAccount {
             storage_root,
             code_hash: account.code_hash,
             stake: account.stake,
-            pledges: account.pledges,
+            commitments: account.commitments,
         }
     }
 }
@@ -68,7 +68,7 @@ impl From<GenesisAccount> for TrieAccount {
             storage_root,
             code_hash: account.code.map_or(KECCAK_EMPTY, keccak256),
             stake: account.stake,
-            pledges: account.pledges,
+            commitments: account.commitments,
         }
     }
 }

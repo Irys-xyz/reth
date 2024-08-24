@@ -9,7 +9,7 @@ use proptest::strategy::Strategy;
 #[cfg(feature = "zstd-codec")]
 use reth_codecs::CompactZstd;
 use reth_codecs::{add_arbitrary_tests, main_codec, Compact};
-use revm_primitives::{pledge::IrysTxId, shadow::ShadowTxType};
+use revm_primitives::{commitment::IrysTxId, shadow::ShadowTxType};
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,

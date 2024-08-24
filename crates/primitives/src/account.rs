@@ -7,7 +7,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
 use revm_primitives::{
-    pledge::{IrysTxId, LastTx, Pledges, Stake},
+    commitment::{Commitments, LastTx, Stake},
     JumpTable,
 };
 use serde::{Deserialize, Serialize};
@@ -26,7 +26,7 @@ pub struct Account {
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
     pub stake: Option<Stake>,
-    pub pledges: Option<Pledges>,
+    pub commitments: Option<Commitments>,
     pub last_tx: Option<LastTx>,
     pub slashed: bool,
 }
@@ -44,7 +44,7 @@ impl Account {
             && self.balance.is_zero()
             && self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
             && self.stake.is_none()
-            && self.pledges.is_none()
+            && self.commitments.is_none()
     }
 
     /// Makes an [Account] from [GenesisAccount] type
@@ -54,7 +54,7 @@ impl Account {
             nonce: value.nonce.unwrap_or_default(),
             balance: value.balance,
             bytecode_hash: value.code.as_ref().map(keccak256),
-            pledges: value.pledges.clone(),
+            commitments: value.commitments.clone(),
             stake: value.stake,
             slashed: value.slashed,
             last_tx: value.last_tx,
@@ -183,7 +183,7 @@ mod tests {
             nonce: 0,
             balance: U256::ZERO,
             bytecode_hash: None,
-            pledges: None,
+            commitments: None,
             stake: None,
             slashed: false,
         };

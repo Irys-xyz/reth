@@ -1,13 +1,13 @@
 use reth_consensus_common::calc;
 use reth_execution_errors::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
-    revm::env::fill_tx_env_with_beacon_root_contract_call, Address, BlockWithSenders, ChainSpec,
-    Header, ShadowReceipt, ShadowResult, Withdrawal, B256, U256,
+    revm::env::fill_tx_env_with_beacon_root_contract_call, Address, ChainSpec, Header,
+    ShadowReceipt, ShadowResult, Withdrawal, B256, U256,
 };
 use revm::{
-    interpreter::{instructions::data, Host, InstructionResult},
+    interpreter::Host,
     primitives::{
-        pledge::{IrysTxId, LastTx, Pledge, Pledges, Stake, StakeStatus},
+        commitment::{Commitment, CommitmentStatus, Commitments, IrysTxId, LastTx, Stake},
         shadow::{ShadowTx, ShadowTxType, Shadows, TransferShadow},
         Account, EVMError, State,
     },
@@ -296,7 +296,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                         tx_id: shadow.tx_id,
                         quantity: stake.value,
                         height: stake.height,
-                        status: StakeStatus::Pending,
+                        status: CommitmentStatus::Pending,
                     });
                     // add revert record to journal
                     journaled_state.state.insert(address, primary_account);
@@ -321,9 +321,10 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                 break 'partition_pledge ShadowResult::OutOfFunds;
             };
             // check a pledge for this target (`dest_hash`) doesn't already exist
-            match &mut primary_account.info.pledges {
-                Some(pledges) => {
-                    if pledges.iter().find(|p| p.dest_hash == pledge_shadow.part_hash).is_some() {
+            match &mut primary_account.info.commitments {
+                Some(commitments) => {
+                    if commitments.iter().find(|p| p.dest_hash == pledge_shadow.part_hash).is_some()
+                    {
                         break 'partition_pledge ShadowResult::AlreadyPledged;
                     }
                 }
@@ -331,16 +332,16 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
             }
 
             primary_account.info.balance = new_balance;
-            let pledge = Pledge {
+            let pledge = Commitment {
                 tx_id: shadow.tx_id,
                 quantity: pledge_shadow.quantity,
                 dest_hash: pledge_shadow.part_hash,
                 height: pledge_shadow.height,
-                status: StakeStatus::Pending,
+                status: CommitmentStatus::Pending,
             };
-            match &mut primary_account.info.pledges {
-                Some(pledges) => pledges.push(pledge),
-                None => primary_account.info.pledges = Some(vec![pledge].into()),
+            match &mut primary_account.info.commitments {
+                Some(commitments) => commitments.push(pledge),
+                None => primary_account.info.commitments = Some(vec![pledge].into()),
             };
 
             journaled_state.state.insert(address, primary_account);
@@ -354,13 +355,13 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
             ShadowResult::Success
         }
         ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
-            match &mut primary_account.info.pledges {
+            match &mut primary_account.info.commitments {
                 None => ShadowResult::NoPledges,
                 Some(pledges) => {
                     // find relevant pledge - only refund `Active` pledges
                     // TODO: should we allow instant refunds for pending pledges?
                     let pledge = match pledges.iter_mut().find(|p| {
-                        p.dest_hash == unpledge.part_hash && p.status == StakeStatus::Active
+                        p.dest_hash == unpledge.part_hash && p.status == CommitmentStatus::Active
                     }) {
                         Some(p) => p,
                         None => break 'partition_unpledge ShadowResult::NoMatchingPledge,
@@ -375,7 +376,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                     primary_account.info.balance = new_balance;
                     // change this to an unpledge record
 
-                    pledge.update_status(StakeStatus::Active);
+                    pledge.update_status(CommitmentStatus::Active);
 
                     journaled_state.state.insert(address, primary_account);
 
@@ -393,13 +394,13 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
             match &mut primary_account.info.stake {
                 None => (),
                 Some(stake) => {
-                    if stake.status == StakeStatus::Active {
+                    if stake.status == CommitmentStatus::Active {
                         let Some(new_balance) =
                             primary_account.info.balance.checked_add(stake.quantity)
                         else {
                             break 'unpledge_all ShadowResult::OverflowPayment;
                         };
-                        stake.update_status(StakeStatus::Inactive);
+                        stake.update_status(CommitmentStatus::Inactive);
                         primary_account.info.balance = new_balance;
                     }
                 }
@@ -407,12 +408,13 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
 
             // remove/refund all `Active` pledges
             // TODO: handling for other pledge states
-            let original_pledges: Option<Vec<(IrysTxId, StakeStatus)>> =
-                match &mut primary_account.info.pledges {
+            let original_pledges: Option<Vec<(IrysTxId, CommitmentStatus)>> =
+                match &mut primary_account.info.commitments {
                     None => None,
                     Some(pledges) => {
                         let mut original_pledges = vec![];
-                        for pledge in pledges.iter_mut().filter(|p| p.status == StakeStatus::Active)
+                        for pledge in
+                            pledges.iter_mut().filter(|p| p.status == CommitmentStatus::Active)
                         {
                             original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
                             let Some(new_balance) =
@@ -420,7 +422,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                             else {
                                 break 'unpledge_all ShadowResult::OverflowPayment;
                             };
-                            pledge.update_status(StakeStatus::Active);
+                            pledge.update_status(CommitmentStatus::Active);
                             primary_account.info.balance = new_balance;
                         }
                         Some(original_pledges)
@@ -441,8 +443,8 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
             match &mut primary_account.info.stake {
                 None => (),
                 Some(stake) => {
-                    if stake.status == StakeStatus::Active {
-                        stake.update_status(StakeStatus::Slashed);
+                    if stake.status == CommitmentStatus::Active {
+                        stake.update_status(CommitmentStatus::Slashed);
                         // TODO: transfer slashed tokens to slasher(s)
                     }
                 }
@@ -450,12 +452,13 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
 
             // remove all `Active` pledges
             // TODO: handling for other pledge states
-            let _original_pledges: Option<Vec<(IrysTxId, StakeStatus)>> =
-                match &mut primary_account.info.pledges {
+            let _original_pledges: Option<Vec<(IrysTxId, CommitmentStatus)>> =
+                match &mut primary_account.info.commitments {
                     None => None,
                     Some(pledges) => {
                         let mut original_pledges = vec![];
-                        for pledge in pledges.iter_mut().filter(|p| p.status == StakeStatus::Active)
+                        for pledge in
+                            pledges.iter_mut().filter(|p| p.status == CommitmentStatus::Active)
                         {
                             original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
                             let Some(_new_balance) =
@@ -463,7 +466,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                             else {
                                 break 'slash ShadowResult::OverflowPayment;
                             };
-                            pledge.update_status(StakeStatus::Slashed);
+                            pledge.update_status(CommitmentStatus::Slashed);
                             // TODO: transfer slashed tokens to slasher(s)
 
                             // primary_account.info.balance = new_balance;

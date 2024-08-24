@@ -185,7 +185,7 @@ pub fn insert_state<'a, 'b, DB: Database>(
                     nonce: account.nonce.unwrap_or_default(),
                     balance: account.balance,
                     bytecode_hash,
-                    pledges: account.pledges.clone(),
+                    commitments: account.commitments.clone(),
                     stake: account.stake.clone(),
                     slashed: account.slashed,
                     last_tx: account.last_tx,

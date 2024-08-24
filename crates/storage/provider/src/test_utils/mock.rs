@@ -67,7 +67,7 @@ impl ExtendedAccount {
                 nonce,
                 balance,
                 bytecode_hash: None,
-                pledges: None,
+                commitments: None,
                 stake: None,
                 slashed: false,
                 last_tx: None,

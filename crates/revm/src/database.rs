@@ -85,7 +85,7 @@ impl<DB: StateProvider> DatabaseRef for StateProviderDatabase<DB> {
             nonce: account.nonce,
             code_hash: account.bytecode_hash.unwrap_or(KECCAK_EMPTY),
             code: None,
-            pledges: account.pledges,
+            commitments: account.commitments,
             stake: account.stake,
             slashed: account.slashed,
             last_tx: account.last_tx,
