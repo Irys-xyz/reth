@@ -62,6 +62,8 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
         "FixedBytes",
         "IrysTxId",
         "IrysBlockHash",
+        "CommitmentStatus",
+        "DestHash",
     ];
 
     // Only types without `Bytes` should be added here. It's currently manually added, since
@@ -75,6 +77,8 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
         "CheckpointBlockRange",
         "IrysTxId",
         "IrysBlockHash",
+        "CommitmentType",
+        "CommitmentStatus",
     ]);
 
     // let mut handle = FieldListHandler::new(fields);

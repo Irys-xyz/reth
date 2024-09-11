@@ -7,8 +7,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use reth_codecs::{main_codec, Compact};
 use revm_primitives::{
-    commitment::{Commitments, LastTx, Stake},
-    JumpTable,
+    commitment::{Commitments, Stake},
+    JumpTable, LastTx,
 };
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, ops::Deref};
@@ -186,6 +186,7 @@ mod tests {
             commitments: None,
             stake: None,
             slashed: false,
+            last_tx: None,
         };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.
         assert!(acc.is_empty());
