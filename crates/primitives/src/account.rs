@@ -28,7 +28,7 @@ pub struct Account {
     pub stake: Option<Stake>,
     pub commitments: Option<Commitments>,
     pub last_tx: Option<LastTx>,
-    pub slashed: bool,
+    pub mining_permission: bool,
 }
 
 impl Account {
@@ -56,7 +56,7 @@ impl Account {
             bytecode_hash: value.code.as_ref().map(keccak256),
             commitments: value.commitments.clone(),
             stake: value.stake,
-            slashed: value.slashed,
+            mining_permission: value.mining_permission,
             last_tx: value.last_tx,
         }
     }
@@ -185,7 +185,7 @@ mod tests {
             bytecode_hash: None,
             commitments: None,
             stake: None,
-            slashed: false,
+            mining_permission: false,
             last_tx: None,
         };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.

@@ -187,7 +187,7 @@ pub fn insert_state<'a, 'b, DB: Database>(
                     bytecode_hash,
                     commitments: account.commitments.clone(),
                     stake: account.stake.clone(),
-                    slashed: account.slashed,
+                    mining_permission: account.mining_permission,
                     last_tx: account.last_tx,
                 }),
                 storage,

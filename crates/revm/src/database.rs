@@ -87,7 +87,7 @@ impl<DB: StateProvider> DatabaseRef for StateProviderDatabase<DB> {
             code: None,
             commitments: account.commitments,
             stake: account.stake,
-            slashed: account.slashed,
+            mining_permission: account.mining_permission,
             last_tx: account.last_tx,
         }))
     }

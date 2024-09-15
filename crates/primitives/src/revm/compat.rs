@@ -1,6 +1,8 @@
 use crate::{revm_primitives::AccountInfo, Account, Address, TxKind, KECCAK_EMPTY, U256};
 use revm::{interpreter::gas::validate_initial_tx_gas, primitives::SpecId};
 
+// todo: remove this?
+
 /// Converts a Revm [`AccountInfo`] into a Reth [`Account`].
 ///
 /// Sets `bytecode_hash` to `None` if `code_hash` is [`KECCAK_EMPTY`].
@@ -12,7 +14,7 @@ pub fn into_reth_acc(revm_acc: AccountInfo) -> Account {
         bytecode_hash: (code_hash != KECCAK_EMPTY).then_some(code_hash),
         commitments: revm_acc.commitments,
         stake: revm_acc.stake,
-        slashed: revm_acc.slashed,
+        mining_permission: revm_acc.mining_permission,
         last_tx: revm_acc.last_tx,
     }
 }
@@ -28,7 +30,7 @@ pub fn into_revm_acc(reth_acc: Account) -> AccountInfo {
         code: None,
         commitments: reth_acc.commitments,
         stake: reth_acc.stake,
-        slashed: reth_acc.slashed,
+        mining_permission: reth_acc.mining_permission,
         last_tx: reth_acc.last_tx,
     }
 }
