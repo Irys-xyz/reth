@@ -456,7 +456,7 @@ mod tests {
             commitments: None,
             stake: None,
             last_tx: None,
-            mining_permission: false,
+            mining_permission: true,
         };
 
         db.insert_account(
