@@ -61,8 +61,6 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
         "BlockHash",
         "FixedBytes",
         "IrysTxId",
-        "IrysBlockHash",
-        "CommitmentStatus",
         "DestHash",
     ];
 

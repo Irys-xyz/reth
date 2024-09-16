@@ -365,19 +365,30 @@ impl<const N: usize> Compact for FixedBytes<N> {
 }
 
 impl Compact for bool {
-    /// `bool` vars go directly to the `StructFlags` and are not written to the buffer.
+    ///  `bool` vars go directly to the `StructFlags` and are not written to the buffer.
+    //    this ^ is bad, it breaks chaining with stuff like Option<bool>
     #[inline]
-    fn to_compact<B>(self, _: &mut B) -> usize
+    fn to_compact<B>(self, buf: &mut B) -> usize
     where
         B: bytes::BufMut + AsMut<[u8]>,
     {
-        self as usize
+        if self {
+            buf.put_u8(0);
+            1
+        } else {
+            0
+        }
     }
 
     /// `bool` expects the real value to come in `len`, and does not advance the cursor.
     #[inline]
-    fn from_compact(buf: &[u8], len: usize) -> (Self, &[u8]) {
-        (len != 0, buf)
+    fn from_compact(mut buf: &[u8], len: usize) -> (Self, &[u8]) {
+        if len != 0 {
+            buf.advance(1);
+            (true, buf)
+        } else {
+            (false, buf)
+        }
     }
 }
 
