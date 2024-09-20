@@ -69,7 +69,7 @@ impl ExtendedAccount {
                 bytecode_hash: None,
                 commitments: None,
                 stake: None,
-                mining_permission: true,
+                mining_permission: None,
                 last_tx: None,
             },
             bytecode: None,

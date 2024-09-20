@@ -28,7 +28,7 @@ pub struct Account {
     pub stake: Option<Stake>,
     pub commitments: Option<Commitments>,
     pub last_tx: Option<LastTx>,
-    pub mining_permission: bool,
+    pub mining_permission: Option<bool>,
 }
 
 impl Account {

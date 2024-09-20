@@ -510,7 +510,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                 stake: new.stake.map_or(og.stake, |c| c.0),
                 commitments: new.commitments.map_or(og.commitments, |c| c.0),
                 last_tx: new.last_tx.map_or(og.last_tx, |c| c.0),
-                mining_permission: new.mining_permission.unwrap_or(og.mining_permission),
+                mining_permission: new.mining_permission.map_or(og.mining_permission, |c| Some(c)),
             };
             primary_account.info = new_account_info;
             journaled_state.state.insert(address, primary_account);
