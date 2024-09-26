@@ -14,7 +14,7 @@ use revm::{
     Database, DatabaseCommit, Evm, JournalEntry, JournaledState,
 };
 use std::collections::HashMap;
-use tracing::trace;
+use tracing::{info, trace};
 
 /// Collect all balance changes at the end of the block.
 ///
@@ -220,283 +220,283 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
     // we can't use get_mut here due to the `Transfer` function
     let mut primary_account = journaled_state.state.get(&address).unwrap().clone();
 
-    // tx fee
-    let Some(new_balance) = primary_account.info.balance.checked_sub(shadow.fee) else {
-        return Ok(ShadowReceipt {
-            tx_id: shadow.tx_id,
-            result: ShadowResult::OutOfFunds,
-            tx_type: shadow.tx,
-        });
-    };
-    primary_account.info.balance = new_balance;
+    // // tx fee
+    // let Some(new_balance) = primary_account.info.balance.checked_sub(shadow.fee) else {
+    //     return Ok(ShadowReceipt {
+    //         tx_id: shadow.tx_id,
+    //         result: ShadowResult::OutOfFunds,
+    //         tx_type: shadow.tx,
+    //     });
+    // };
+    // primary_account.info.balance = new_balance;
 
     // we use case breaks so we can return early from a case block without returning the entire function
     let res = match shadow.tx {
-        ShadowTxType::Null => ShadowResult::Success,
-        ShadowTxType::Data(data_shadow) => 'data_shadow: {
-            let Some(new_balance) = primary_account.info.balance.checked_sub(data_shadow.fee)
-            else {
-                break 'data_shadow ShadowResult::OutOfFunds;
-            };
-            primary_account.info.balance = new_balance;
-            journaled_state.state.insert(address, primary_account);
-            journaled_state
-                .journal
-                .last_mut()
-                .unwrap()
-                .push(JournalEntry::DataCostChange { address, cost: data_shadow.fee });
-            ShadowResult::Success
-        }
+        // ShadowTxType::Null => ShadowResult::Success,
+        // ShadowTxType::Data(data_shadow) => 'data_shadow: {
+        //     let Some(new_balance) = primary_account.info.balance.checked_sub(data_shadow.fee)
+        //     else {
+        //         break 'data_shadow ShadowResult::OutOfFunds;
+        //     };
+        //     primary_account.info.balance = new_balance;
+        //     journaled_state.state.insert(address, primary_account);
+        //     journaled_state
+        //         .journal
+        //         .last_mut()
+        //         .unwrap()
+        //         .push(JournalEntry::DataCostChange { address, cost: data_shadow.fee });
+        //     ShadowResult::Success
+        // }
 
-        ShadowTxType::Transfer(transfer) => 'transfer_shadow: {
-            let TransferShadow { to, amount } = transfer;
-            journaled_state.load_account(to, db)?;
-            let mut to_account = journaled_state.state.get(&to).unwrap().clone();
-            journaled_state.touch(&to);
+        // ShadowTxType::Transfer(transfer) => 'transfer_shadow: {
+        //     let TransferShadow { to, amount } = transfer;
+        //     journaled_state.load_account(to, db)?;
+        //     let mut to_account = journaled_state.state.get(&to).unwrap().clone();
+        //     journaled_state.touch(&to);
 
-            let Some(new_from_balance) = primary_account.info.balance.checked_sub(amount) else {
-                break 'transfer_shadow ShadowResult::OutOfFunds;
-            };
+        //     let Some(new_from_balance) = primary_account.info.balance.checked_sub(amount) else {
+        //         break 'transfer_shadow ShadowResult::OutOfFunds;
+        //     };
 
-            let Some(new_to_balance) = to_account.info.balance.checked_add(amount) else {
-                break 'transfer_shadow ShadowResult::OverflowPayment;
-            };
+        //     let Some(new_to_balance) = to_account.info.balance.checked_add(amount) else {
+        //         break 'transfer_shadow ShadowResult::OverflowPayment;
+        //     };
 
-            primary_account.info.balance = new_from_balance;
-            to_account.info.balance = new_to_balance;
+        //     primary_account.info.balance = new_from_balance;
+        //     to_account.info.balance = new_to_balance;
 
-            journaled_state.state.insert(address, primary_account);
-            journaled_state.state.insert(to, to_account);
-            journaled_state.journal.last_mut().unwrap().push(JournalEntry::BalanceTransfer {
-                from: address,
-                to,
-                balance: amount,
-            });
+        //     journaled_state.state.insert(address, primary_account);
+        //     journaled_state.state.insert(to, to_account);
+        //     journaled_state.journal.last_mut().unwrap().push(JournalEntry::BalanceTransfer {
+        //         from: address,
+        //         to,
+        //         balance: amount,
+        //     });
 
-            ShadowResult::Success
-        }
+        //     ShadowResult::Success
+        // }
 
-        ShadowTxType::MiningAddressStake(stake) => {
-            // check if this account already has a stake
-            match primary_account.info.stake {
-                Some(_) => ShadowResult::AlreadyStaked,
-                None => 'mining_address_stake: {
-                    // check account has the balance required for the stake
-                    let Some(new_balance) = primary_account.info.balance.checked_sub(stake.value)
-                    else {
-                        break 'mining_address_stake ShadowResult::OutOfFunds;
-                    };
-                    primary_account.info.balance = new_balance;
-                    // add active stake to account
-                    primary_account.info.stake = Some(Stake {
-                        tx_id: shadow.tx_id,
-                        quantity: stake.value,
-                        height: stake.height,
-                        status: CommitmentStatus::Pending,
-                    });
-                    // add revert record to journal
-                    journaled_state.state.insert(address, primary_account);
-                    journaled_state
-                        .journal
-                        .last_mut()
-                        .unwrap()
-                        .push(JournalEntry::AddressStaked { address });
+        // ShadowTxType::MiningAddressStake(stake) => {
+        //     // check if this account already has a stake
+        //     match primary_account.info.stake {
+        //         Some(_) => ShadowResult::AlreadyStaked,
+        //         None => 'mining_address_stake: {
+        //             // check account has the balance required for the stake
+        //             let Some(new_balance) = primary_account.info.balance.checked_sub(stake.value)
+        //             else {
+        //                 break 'mining_address_stake ShadowResult::OutOfFunds;
+        //             };
+        //             primary_account.info.balance = new_balance;
+        //             // add active stake to account
+        //             primary_account.info.stake = Some(Stake {
+        //                 tx_id: shadow.tx_id,
+        //                 quantity: stake.value,
+        //                 height: stake.height,
+        //                 status: CommitmentStatus::Pending,
+        //             });
+        //             // add revert record to journal
+        //             journaled_state.state.insert(address, primary_account);
+        //             journaled_state
+        //                 .journal
+        //                 .last_mut()
+        //                 .unwrap()
+        //                 .push(JournalEntry::AddressStaked { address });
 
-                    ShadowResult::Success
-                }
-            }
-        }
+        //             ShadowResult::Success
+        //         }
+        //     }
+        // }
 
-        ShadowTxType::PartitionPledge(pledge_shadow) => 'partition_pledge: {
-            // assume higher-level validation of pledge is done on erlang side
+        // ShadowTxType::PartitionPledge(pledge_shadow) => 'partition_pledge: {
+        //     // assume higher-level validation of pledge is done on erlang side
 
-            // // make sure the account has enough balance for this stake
-            // let Some(new_balance) =
-            //     primary_account.info.balance.checked_sub(pledge_shadow.quantity)
-            // else {
-            //     break 'partition_pledge ShadowResult::OutOfFunds;
-            // };
-            // // check a pledge for this target (`dest_hash`) doesn't already exist
-            // match &mut primary_account.info.commitments {
-            //     Some(commitments) => {
-            //         if commitments
-            //             .iter()
-            //             .find(|p| {
-            //                 p.dest_hash.is_part_hash() && p.dest_hash == pledge_shadow.part_hash
-            //             })
-            //             .is_some()
-            //         {
-            //             break 'partition_pledge ShadowResult::AlreadyPledged;
-            //         }
-            //     }
-            //     None => (),
-            // }
+        //     // // make sure the account has enough balance for this stake
+        //     // let Some(new_balance) =
+        //     //     primary_account.info.balance.checked_sub(pledge_shadow.quantity)
+        //     // else {
+        //     //     break 'partition_pledge ShadowResult::OutOfFunds;
+        //     // };
+        //     // // check a pledge for this target (`dest_hash`) doesn't already exist
+        //     // match &mut primary_account.info.commitments {
+        //     //     Some(commitments) => {
+        //     //         if commitments
+        //     //             .iter()
+        //     //             .find(|p| {
+        //     //                 p.dest_hash.is_part_hash() && p.dest_hash == pledge_shadow.part_hash
+        //     //             })
+        //     //             .is_some()
+        //     //         {
+        //     //             break 'partition_pledge ShadowResult::AlreadyPledged;
+        //     //         }
+        //     //     }
+        //     //     None => (),
+        //     // }
 
-            // primary_account.info.balance = new_balance;
-            // let pledge = Commitment {
-            //     tx_id: shadow.tx_id,
-            //     quantity: pledge_shadow.quantity,
-            //     dest_hash: pledge_shadow.part_hash,
-            //     height: pledge_shadow.height,
-            //     status: CommitmentStatus::Pending,
-            //     tx_type: CommitmentType::Pledge,
-            // };
-            // match &mut primary_account.info.commitments {
-            //     Some(commitments) => commitments.push(pledge),
-            //     None => primary_account.info.commitments = Some(vec![pledge].into()),
-            // };
+        //     // primary_account.info.balance = new_balance;
+        //     // let pledge = Commitment {
+        //     //     tx_id: shadow.tx_id,
+        //     //     quantity: pledge_shadow.quantity,
+        //     //     dest_hash: pledge_shadow.part_hash,
+        //     //     height: pledge_shadow.height,
+        //     //     status: CommitmentStatus::Pending,
+        //     //     tx_type: CommitmentType::Pledge,
+        //     // };
+        //     // match &mut primary_account.info.commitments {
+        //     //     Some(commitments) => commitments.push(pledge),
+        //     //     None => primary_account.info.commitments = Some(vec![pledge].into()),
+        //     // };
 
-            // journaled_state.state.insert(address, primary_account);
+        //     // journaled_state.state.insert(address, primary_account);
 
-            // // add revert record to journal
-            // journaled_state.journal.last_mut().unwrap().push(JournalEntry::PartitionPledged {
-            //     address,
-            //     dest_hash: pledge_shadow.part_hash,
-            // });
+        //     // // add revert record to journal
+        //     // journaled_state.journal.last_mut().unwrap().push(JournalEntry::PartitionPledged {
+        //     //     address,
+        //     //     dest_hash: pledge_shadow.part_hash,
+        //     // });
 
-            ShadowResult::Success
-        }
-        ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
-            match &mut primary_account.info.commitments {
-                None => ShadowResult::NoPledges,
-                Some(pledges) => {
-                    // // find relevant pledge - only refund `Active` pledges
-                    // // TODO: should we allow instant refunds for pending pledges?
-                    // let pledge = match pledges.iter_mut().find(|p| {
-                    //     p.dest_hash == unpledge.part_hash && p.status == CommitmentStatus::Active
-                    // }) {
-                    //     Some(p) => p,
-                    //     None => break 'partition_unpledge ShadowResult::NoMatchingPledge,
-                    // };
-                    // // check we can add refund the account without overflowing
-                    // let Some(new_balance) =
-                    //     primary_account.info.balance.checked_add(pledge.quantity)
-                    // else {
-                    //     break 'partition_unpledge ShadowResult::OverflowPayment;
-                    // };
+        //     ShadowResult::Success
+        // }
+        // ShadowTxType::PartitionUnPledge(unpledge) => 'partition_unpledge: {
+        //     match &mut primary_account.info.commitments {
+        //         None => ShadowResult::NoPledges,
+        //         Some(pledges) => {
+        //             // // find relevant pledge - only refund `Active` pledges
+        //             // // TODO: should we allow instant refunds for pending pledges?
+        //             // let pledge = match pledges.iter_mut().find(|p| {
+        //             //     p.dest_hash == unpledge.part_hash && p.status == CommitmentStatus::Active
+        //             // }) {
+        //             //     Some(p) => p,
+        //             //     None => break 'partition_unpledge ShadowResult::NoMatchingPledge,
+        //             // };
+        //             // // check we can add refund the account without overflowing
+        //             // let Some(new_balance) =
+        //             //     primary_account.info.balance.checked_add(pledge.quantity)
+        //             // else {
+        //             //     break 'partition_unpledge ShadowResult::OverflowPayment;
+        //             // };
 
-                    // primary_account.info.balance = new_balance;
-                    // // change this to an unpledge record
+        //             // primary_account.info.balance = new_balance;
+        //             // // change this to an unpledge record
 
-                    // pledge.update_status(CommitmentStatus::Active);
+        //             // pledge.update_status(CommitmentStatus::Active);
 
-                    // journaled_state.state.insert(address, primary_account);
+        //             // journaled_state.state.insert(address, primary_account);
 
-                    // // add revert record to journal
-                    // journaled_state.journal.last_mut().unwrap().push(
-                    //     JournalEntry::PartitionUnPledge { address, dest_hash: unpledge.part_hash },
-                    // );
+        //             // // add revert record to journal
+        //             // journaled_state.journal.last_mut().unwrap().push(
+        //             //     JournalEntry::PartitionUnPledge { address, dest_hash: unpledge.part_hash },
+        //             // );
 
-                    ShadowResult::Success
-                }
-            }
-        }
-        ShadowTxType::Unstake(_unpledge_shadow) => 'unpledge_all: {
-            // // remove/refund account stake
-            // match &mut primary_account.info.stake {
-            //     None => (),
-            //     Some(stake) => {
-            //         if stake.status == CommitmentStatus::Active {
-            //             let Some(new_balance) =
-            //                 primary_account.info.balance.checked_add(stake.quantity)
-            //             else {
-            //                 break 'unpledge_all ShadowResult::OverflowPayment;
-            //             };
-            //             stake.update_status(CommitmentStatus::Inactive);
-            //             primary_account.info.balance = new_balance;
-            //         }
-            //     }
-            // }
+        //             ShadowResult::Success
+        //         }
+        //     }
+        // }
+        // ShadowTxType::Unstake(_unpledge_shadow) => 'unpledge_all: {
+        //     // // remove/refund account stake
+        //     // match &mut primary_account.info.stake {
+        //     //     None => (),
+        //     //     Some(stake) => {
+        //     //         if stake.status == CommitmentStatus::Active {
+        //     //             let Some(new_balance) =
+        //     //                 primary_account.info.balance.checked_add(stake.quantity)
+        //     //             else {
+        //     //                 break 'unpledge_all ShadowResult::OverflowPayment;
+        //     //             };
+        //     //             stake.update_status(CommitmentStatus::Inactive);
+        //     //             primary_account.info.balance = new_balance;
+        //     //         }
+        //     //     }
+        //     // }
 
-            // // remove/refund all `Active` pledges
-            // // TODO: handling for other pledge states
-            // let original_pledges: Option<Vec<(IrysTxId, CommitmentStatus)>> =
-            //     match &mut primary_account.info.commitments {
-            //         None => None,
-            //         Some(pledges) => {
-            //             let mut original_pledges = vec![];
-            //             for pledge in
-            //                 pledges.iter_mut().filter(|p| p.status == CommitmentStatus::Active)
-            //             {
-            //                 original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
-            //                 let Some(new_balance) =
-            //                     primary_account.info.balance.checked_add(pledge.quantity)
-            //                 else {
-            //                     break 'unpledge_all ShadowResult::OverflowPayment;
-            //                 };
-            //                 pledge.update_status(CommitmentStatus::Active);
-            //                 primary_account.info.balance = new_balance;
-            //             }
-            //             Some(original_pledges)
-            //         }
-            //     };
+        //     // // remove/refund all `Active` pledges
+        //     // // TODO: handling for other pledge states
+        //     // let original_pledges: Option<Vec<(IrysTxId, CommitmentStatus)>> =
+        //     //     match &mut primary_account.info.commitments {
+        //     //         None => None,
+        //     //         Some(pledges) => {
+        //     //             let mut original_pledges = vec![];
+        //     //             for pledge in
+        //     //                 pledges.iter_mut().filter(|p| p.status == CommitmentStatus::Active)
+        //     //             {
+        //     //                 original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
+        //     //                 let Some(new_balance) =
+        //     //                     primary_account.info.balance.checked_add(pledge.quantity)
+        //     //                 else {
+        //     //                     break 'unpledge_all ShadowResult::OverflowPayment;
+        //     //                 };
+        //     //                 pledge.update_status(CommitmentStatus::Active);
+        //     //                 primary_account.info.balance = new_balance;
+        //     //             }
+        //     //             Some(original_pledges)
+        //     //         }
+        //     //     };
 
-            // journaled_state.state.insert(address, primary_account);
+        //     // journaled_state.state.insert(address, primary_account);
 
-            // // add revert record to journal
-            // journaled_state.journal.last_mut().unwrap().push(JournalEntry::AddressUnstake {
-            //     address,
-            //     deactivated_pledges: original_pledges,
-            // });
-            ShadowResult::Success
-        }
-        ShadowTxType::Slash(_slash_shadow) => 'slash: {
-            // remove/refund account stake
-            match &mut primary_account.info.stake {
-                None => (),
-                Some(stake) => {
-                    if stake.status == CommitmentStatus::Active {
-                        stake.update_status(CommitmentStatus::Slashed);
-                        // TODO: transfer slashed tokens to slasher(s)
-                    }
-                }
-            }
+        //     // // add revert record to journal
+        //     // journaled_state.journal.last_mut().unwrap().push(JournalEntry::AddressUnstake {
+        //     //     address,
+        //     //     deactivated_pledges: original_pledges,
+        //     // });
+        //     ShadowResult::Success
+        // }
+        // ShadowTxType::Slash(_slash_shadow) => 'slash: {
+        //     // remove/refund account stake
+        //     match &mut primary_account.info.stake {
+        //         None => (),
+        //         Some(stake) => {
+        //             if stake.status == CommitmentStatus::Active {
+        //                 stake.update_status(CommitmentStatus::Slashed);
+        //                 // TODO: transfer slashed tokens to slasher(s)
+        //             }
+        //         }
+        //     }
 
-            // remove all `Active` pledges
-            // TODO: handling for other pledge states
-            let _original_pledges: Option<Vec<(IrysTxId, CommitmentStatus)>> =
-                match &mut primary_account.info.commitments {
-                    None => None,
-                    Some(pledges) => {
-                        let mut original_pledges = vec![];
-                        for pledge in
-                            pledges.iter_mut().filter(|p| p.status == CommitmentStatus::Active)
-                        {
-                            original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
-                            let Some(_new_balance) =
-                                primary_account.info.balance.checked_add(pledge.quantity)
-                            else {
-                                break 'slash ShadowResult::OverflowPayment;
-                            };
-                            pledge.update_status(CommitmentStatus::Slashed);
-                            // TODO: transfer slashed tokens to slasher(s)
+        //     // remove all `Active` pledges
+        //     // TODO: handling for other pledge states
+        //     let _original_pledges: Option<Vec<(IrysTxId, CommitmentStatus)>> =
+        //         match &mut primary_account.info.commitments {
+        //             None => None,
+        //             Some(pledges) => {
+        //                 let mut original_pledges = vec![];
+        //                 for pledge in
+        //                     pledges.iter_mut().filter(|p| p.status == CommitmentStatus::Active)
+        //                 {
+        //                     original_pledges.push((pledge.tx_id.clone(), pledge.status.clone()));
+        //                     let Some(_new_balance) =
+        //                         primary_account.info.balance.checked_add(pledge.quantity)
+        //                     else {
+        //                         break 'slash ShadowResult::OverflowPayment;
+        //                     };
+        //                     pledge.update_status(CommitmentStatus::Slashed);
+        //                     // TODO: transfer slashed tokens to slasher(s)
 
-                            // primary_account.info.balance = new_balance;
-                        }
-                        Some(original_pledges)
-                    }
-                };
+        //                     // primary_account.info.balance = new_balance;
+        //                 }
+        //                 Some(original_pledges)
+        //             }
+        //         };
 
-            // add revert record to journal
-            journaled_state.state.insert(address, primary_account);
-            journaled_state.journal.last_mut().unwrap().push(JournalEntry::AddressSlashed {});
-            ShadowResult::Success
-        }
-        ShadowTxType::BlockReward(reward) => 'block_reward: {
-            let Some(new_producer_balance) =
-                primary_account.info.balance.checked_add(reward.reward)
-            else {
-                break 'block_reward ShadowResult::OverflowPayment;
-            };
-            primary_account.info.balance = new_producer_balance;
-            journaled_state.state.insert(address, primary_account);
-            journaled_state
-                .journal
-                .last_mut()
-                .unwrap()
-                .push(JournalEntry::BlockReward { address, reward: reward.reward });
-            ShadowResult::Success
-        }
+        //     // add revert record to journal
+        //     journaled_state.state.insert(address, primary_account);
+        //     journaled_state.journal.last_mut().unwrap().push(JournalEntry::AddressSlashed {});
+        //     ShadowResult::Success
+        // }
+        // ShadowTxType::BlockReward(reward) => 'block_reward: {
+        //     let Some(new_producer_balance) =
+        //         primary_account.info.balance.checked_add(reward.reward)
+        //     else {
+        //         break 'block_reward ShadowResult::OverflowPayment;
+        //     };
+        //     primary_account.info.balance = new_producer_balance;
+        //     journaled_state.state.insert(address, primary_account);
+        //     journaled_state
+        //         .journal
+        //         .last_mut()
+        //         .unwrap()
+        //         .push(JournalEntry::BlockReward { address, reward: reward.reward });
+        //     ShadowResult::Success
+        // }
         ShadowTxType::Diff(ref new_state) => {
             let og = primary_account.info.clone();
             let og_unmoved = primary_account.info.clone();
@@ -512,6 +512,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                 last_tx: new.last_tx.map_or(og.last_tx, |c| c.0),
                 mining_permission: new.mining_permission.map_or(og.mining_permission, |c| Some(c)),
             };
+            // info!("New Account State {} {:#?} {:#?}", &address, &new_account_info, &og_unmoved);
             primary_account.info = new_account_info;
             journaled_state.state.insert(address, primary_account);
             journaled_state
@@ -521,22 +522,25 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
                 .push(JournalEntry::AccountDiff { address, old_account: og_unmoved });
             ShadowResult::Success
         }
+        // other pledge types are disabled for now
+        _ => todo!(),
     };
 
-    if res == ShadowResult::Success && !(shadow.tx.type_id() as u8 == ShadowTxTypeId::Diff as u8) {
-        // update last_tx on successful tx - DO NOT UPDATE FOR DIFF SHADOWS
-        let mut primary_account = journaled_state.state.get(&address).unwrap().clone();
-        let prev_last = primary_account.info.last_tx.clone();
-        primary_account.info.last_tx = Some(LastTx::TxId(shadow.tx_id.clone()));
+    // if res == ShadowResult::Success && !(shadow.tx.type_id() as u8 == ShadowTxTypeId::Diff as u8) {
+    //     // update last_tx on successful tx - DO NOT UPDATE FOR DIFF SHADOWS
+    //     let mut primary_account = journaled_state.state.get(&address).unwrap().clone();
+    //     let prev_last = primary_account.info.last_tx.clone();
+    //     primary_account.info.last_tx = Some(LastTx::TxId(shadow.tx_id.clone()));
 
-        journaled_state.state.insert(address, primary_account);
+    //     journaled_state.state.insert(address, primary_account);
 
-        journaled_state
-            .journal
-            .last_mut()
-            .unwrap()
-            .push(JournalEntry::UpdateLastTx { address, prev_last_tx: prev_last })
-    }
+    //     journaled_state
+    //         .journal
+    //         .last_mut()
+    //         .unwrap()
+    //         .push(JournalEntry::UpdateLastTx { address, prev_last_tx: prev_last })
+    // }
+    // journaled_state.state.insert(address, primary_account);
     Ok(ShadowReceipt { tx_id: shadow.tx_id, result: res, tx_type: shadow.tx })
 }
 
