@@ -45,6 +45,38 @@ pub struct Receipt {
     pub deposit_receipt_version: Option<u64>,
 }
 
+// #[cfg_attr(feature = "zstd-codec", main_codec(no_arbitrary, zstd))]
+// #[cfg_attr(not(feature = "zstd-codec"), main_codec(no_arbitrary))]
+// #[add_arbitrary_tests]
+// #[derive(Clone, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
+// #[rlp(trailing)]
+// pub struct ShadowReceipt {
+//     pub tx_type: ShadowTxType,
+//     pub success: bool,
+// }
+
+#[add_arbitrary_tests]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
+// #[rlp(trailing)]
+pub struct ShadowReceipt {
+    pub tx_id: IrysTxId,
+    pub tx_type: ShadowTxType,
+    pub result: ShadowResult,
+}
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum ShadowResult {
+    #[default]
+    Success,
+    OutOfFunds,
+    OverflowPayment,
+    Failure,
+    AlreadyStaked,
+    NoPledges,
+    NoMatchingPledge,
+    AlreadyPledged,
+}
+
 impl Receipt {
     /// Calculates [`Log`]'s bloom filter. this is slow operation and [`ReceiptWithBloom`] can
     /// be used to cache this value.
@@ -237,7 +269,7 @@ impl ReceiptWithBloom {
         let b = &mut &**buf;
         let rlp_head = alloy_rlp::Header::decode(b)?;
         if !rlp_head.list {
-            return Err(alloy_rlp::Error::UnexpectedString)
+            return Err(alloy_rlp::Error::UnexpectedString);
         }
         let started_len = b.len();
 
@@ -282,7 +314,7 @@ impl ReceiptWithBloom {
             return Err(alloy_rlp::Error::ListLengthMismatch {
                 expected: rlp_head.payload_length,
                 got: consumed,
-            })
+            });
         }
         *buf = *b;
         Ok(this)
@@ -439,7 +471,7 @@ impl ReceiptWithBloomEncoder<'_> {
     fn encode_inner(&self, out: &mut dyn BufMut, with_header: bool) {
         if matches!(self.receipt.tx_type, TxType::Legacy) {
             self.encode_fields(out);
-            return
+            return;
         }
 
         let mut payload = Vec::new();

@@ -27,9 +27,9 @@ pub struct TreeExternals<N: NodeTypesWithDB, E> {
     /// The provider factory, used to commit the canonical chain, or unwind it.
     pub(crate) provider_factory: ProviderFactory<N>,
     /// The consensus engine.
-    pub(crate) consensus: Arc<dyn Consensus>,
+    pub consensus: Arc<dyn Consensus>,
     /// The executor factory to execute blocks with.
-    pub(crate) executor_factory: E,
+    pub executor_factory: E,
 }
 
 impl<N: ProviderNodeTypes, E> TreeExternals<N, E> {

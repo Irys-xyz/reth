@@ -174,6 +174,10 @@ pub enum ConsensusError {
     /// root.
     #[display("mismatched block requests root: {_0}")]
     BodyRequestsRootDiff(GotExpectedBoxed<B256>),
+    /// Error when the shadows root in the block is different from the expected shadows
+    /// root.
+    #[error("mismatched block shadows root: {0}")]
+    BodyShadowsRootDiff(GotExpectedBoxed<B256>),
 
     /// Error when a block with a specific hash and number is already known.
     #[display("block with [hash={hash}, number={number}] is already known")]
@@ -267,6 +271,14 @@ pub enum ConsensusError {
     /// Error when requests are missing.
     #[display("missing requests")]
     BodyRequestsMissing,
+    
+    /// Error when shadows are missing.
+    #[error("missing shadows")]
+    BodyShadowsMissing,
+
+    /// Error when the shadows root is missing.
+    #[error("missing shadows root")]
+    ShadowsRootMissing,
 
     /// Error when blob gas used is missing.
     #[display("missing blob gas used")]

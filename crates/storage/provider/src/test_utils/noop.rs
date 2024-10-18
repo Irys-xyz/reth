@@ -40,6 +40,30 @@ use crate::{
     ReceiptProviderIdExt, RequestsProvider, StageCheckpointReader, StateProvider, StateProviderBox,
     StateProviderFactory, StateRootProvider, StaticFileProviderFactory, TransactionVariant,
     TransactionsProvider, WithdrawalsProvider,
+    ReceiptProviderIdExt, StageCheckpointReader, StateProvider, StateProviderBox,
+    StateProviderFactory, StateRootProvider, TransactionVariant, TransactionsProvider,
+    WithdrawalsProvider,
+};
+use reth_db::models::{AccountBeforeTx, StoredBlockBodyIndices};
+use reth_evm::ConfigureEvmEnv;
+use reth_primitives::{
+    stage::{StageCheckpoint, StageId},
+    trie::AccountProof,
+    Account, Address, Block, BlockHash, BlockHashOrNumber, BlockId, BlockNumber, BlockWithSenders,
+    Bytecode, ChainInfo, ChainSpec, Header, PruneCheckpoint, PruneSegment, Receipt, SealedBlock,
+    SealedBlockWithSenders, SealedHeader, StorageKey, StorageValue, TransactionMeta,
+    TransactionSigned, TransactionSignedNoHash, TxHash, TxNumber, Withdrawal, Withdrawals, B256,
+    MAINNET, U256,
+};
+use reth_storage_errors::provider::ProviderResult;
+use reth_trie::updates::TrieUpdates;
+use revm::{
+    db::BundleState,
+    primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg},
+};
+use std::{
+    ops::{RangeBounds, RangeInclusive},
+    sync::Arc,
 };
 
 /// Supports various api interfaces for testing purposes.
@@ -154,6 +178,13 @@ impl BlockReader for NoopProvider {
     ) -> ProviderResult<Vec<SealedBlockWithSenders>> {
         Ok(vec![])
     }
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        Ok(None)
+    }
+
+    // fn pending_shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     Ok(None)
+    // }
 }
 
 impl BlockReaderIdExt for NoopProvider {

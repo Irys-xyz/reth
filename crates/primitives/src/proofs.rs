@@ -24,6 +24,10 @@ pub fn calculate_withdrawals_root(withdrawals: &[Withdrawal]) -> B256 {
     ordered_trie_root(withdrawals)
 }
 
+pub fn calculate_shadows_root(shadows: &Shadows) -> B256 {
+    ordered_trie_root(shadows)
+}
+
 /// Calculates the receipt root for a header.
 pub fn calculate_receipt_root(receipts: &[ReceiptWithBloom]) -> B256 {
     ordered_trie_root_with_encoder(receipts, |r, buf| r.encode_inner(buf, false))
@@ -54,7 +58,7 @@ pub fn calculate_receipt_root_no_memo(receipts: &[&Receipt]) -> B256 {
 pub fn calculate_ommers_root(ommers: &[Header]) -> B256 {
     // Check if `ommers` list is empty
     if ommers.is_empty() {
-        return EMPTY_OMMER_ROOT_HASH
+        return EMPTY_OMMER_ROOT_HASH;
     }
     // RLP Encode
     let mut ommers_rlp = Vec::new();

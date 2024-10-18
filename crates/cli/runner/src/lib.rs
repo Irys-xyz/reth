@@ -10,6 +10,7 @@
 
 //! Entrypoint for running commands.
 
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_tasks::{TaskExecutor, TaskManager};
 use std::{future::Future, pin::pin, sync::mpsc, time::Duration};
 use tracing::{debug, error, trace};
@@ -32,9 +33,9 @@ impl CliRunner {
     pub fn run_command_until_exit<F, E>(
         self,
         command: impl FnOnce(CliContext) -> F,
-    ) -> Result<(), E>
+    ) -> Result<NodeExitReason, E>
     where
-        F: Future<Output = Result<(), E>>,
+        F: Future<Output = Result<NodeExitReason, E>>,
         E: Send + Sync + From<std::io::Error> + From<reth_tasks::PanickedTaskError> + 'static,
     {
         let AsyncCliRunner { context, mut task_manager, tokio_runtime } = AsyncCliRunner::new()?;
@@ -76,29 +77,28 @@ impl CliRunner {
     }
 
     /// Executes a regular future until completion or until external signal received.
-    pub fn run_until_ctrl_c<F, E>(self, fut: F) -> Result<(), E>
+    pub fn run_until_ctrl_c<F, E>(self, fut: F) -> Result<NodeExitReason, E>
     where
-        F: Future<Output = Result<(), E>>,
+        F: Future<Output = Result<NodeExitReason, E>>,
         E: Send + Sync + From<std::io::Error> + 'static,
     {
         let tokio_runtime = tokio_runtime()?;
-        tokio_runtime.block_on(run_until_ctrl_c(fut))?;
-        Ok(())
+        Ok(tokio_runtime.block_on(run_until_ctrl_c(fut))?)
     }
 
     /// Executes a regular future as a spawned blocking task until completion or until external
     /// signal received.
     ///
     /// See [`Runtime::spawn_blocking`](tokio::runtime::Runtime::spawn_blocking) .
-    pub fn run_blocking_until_ctrl_c<F, E>(self, fut: F) -> Result<(), E>
+    pub fn run_blocking_until_ctrl_c<F, E>(self, fut: F) -> Result<NodeExitReason, E>
     where
-        F: Future<Output = Result<(), E>> + Send + 'static,
+        F: Future<Output = Result<NodeExitReason, E>> + Send + 'static,
         E: Send + Sync + From<std::io::Error> + 'static,
     {
         let tokio_runtime = tokio_runtime()?;
         let handle = tokio_runtime.handle().clone();
         let fut = tokio_runtime.handle().spawn_blocking(move || handle.block_on(fut));
-        tokio_runtime
+        let res = tokio_runtime
             .block_on(run_until_ctrl_c(async move { fut.await.expect("Failed to join task") }))?;
 
         // drop the tokio runtime on a separate thread because drop blocks until its pools
@@ -109,13 +109,13 @@ impl CliRunner {
             .spawn(move || drop(tokio_runtime))
             .unwrap();
 
-        Ok(())
+        Ok(res)
     }
 }
 
-/// [`CliRunner`] configuration when executing commands asynchronously
-struct AsyncCliRunner {
-    context: CliContext,
+/// [CliRunner] configuration when executing commands asynchronously
+pub struct AsyncCliRunner {
+    pub context: CliContext,
     task_manager: TaskManager,
     tokio_runtime: tokio::runtime::Runtime,
 }
@@ -125,7 +125,7 @@ struct AsyncCliRunner {
 impl AsyncCliRunner {
     /// Attempts to create a tokio Runtime and additional context required to execute commands
     /// asynchronously.
-    fn new() -> Result<Self, std::io::Error> {
+    pub fn new() -> Result<Self, std::io::Error> {
         let tokio_runtime = tokio_runtime()?;
         let task_manager = TaskManager::new(tokio_runtime.handle().clone());
         let task_executor = task_manager.executor();
@@ -149,9 +149,12 @@ pub fn tokio_runtime() -> Result<tokio::runtime::Runtime, std::io::Error> {
 /// Runs the given future to completion or until a critical task panicked.
 ///
 /// Returns the error if a task panicked, or the given future returned an error.
-async fn run_to_completion_or_panic<F, E>(tasks: &mut TaskManager, fut: F) -> Result<(), E>
+async fn run_to_completion_or_panic<F, E>(
+    tasks: &mut TaskManager,
+    fut: F,
+) -> Result<NodeExitReason, E>
 where
-    F: Future<Output = Result<(), E>>,
+    F: Future<Output = Result<NodeExitReason, E>>,
     E: Send + Sync + From<reth_tasks::PanickedTaskError> + 'static,
 {
     {
@@ -160,18 +163,18 @@ where
             err = tasks => {
                 return Err(err.into())
             },
-            res = fut => res?,
+            res = fut =>  return Ok(res?),
         }
     }
-    Ok(())
+    // Ok(())
 }
 
 /// Runs the future to completion or until:
 /// - `ctrl-c` is received.
 /// - `SIGTERM` is received (unix only).
-async fn run_until_ctrl_c<F, E>(fut: F) -> Result<(), E>
+async fn run_until_ctrl_c<F, E>(fut: F) -> Result<NodeExitReason, E>
 where
-    F: Future<Output = Result<(), E>>,
+    F: Future<Output = Result<NodeExitReason, E>>,
     E: Send + Sync + 'static + From<std::io::Error>,
 {
     let ctrl_c = tokio::signal::ctrl_c();
@@ -187,11 +190,13 @@ where
         tokio::select! {
             _ = ctrl_c => {
                 trace!(target: "reth::cli", "Received ctrl-c");
+                return Ok(NodeExitReason::Normal)
             },
             _ = sigterm => {
                 trace!(target: "reth::cli", "Received SIGTERM");
+                return Ok(NodeExitReason::Normal)
             },
-            res = fut => res?,
+            res = fut => return Ok(res?),
         }
     }
 
@@ -203,10 +208,12 @@ where
         tokio::select! {
             _ = ctrl_c => {
                 trace!(target: "reth::cli", "Received ctrl-c");
+                return Ok(NodeExitReason::Normal)
+
             },
-            res = fut => res?,
+            res = fut =>  return Ok(res?),
         }
     }
 
-    Ok(())
+    // Ok(())
 }

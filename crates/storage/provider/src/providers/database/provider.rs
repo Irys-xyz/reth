@@ -30,7 +30,8 @@ use reth_db_api::{
     database::Database,
     models::{
         sharded_key, storage_sharded_key::StorageShardedKey, AccountBeforeTx, BlockNumberAddress,
-        ShardedKey, StoredBlockBodyIndices, StoredBlockOmmers, StoredBlockWithdrawals,
+        ShardedKey, StoredBlockBodyIndices, StoredBlockOmmers, StoredBlockShadows,
+        StoredBlockWithdrawals,
     },
     table::Table,
     transaction::{DbTx, DbTxMut},
@@ -48,6 +49,7 @@ use reth_primitives::{
 use reth_prune_types::{PruneCheckpoint, PruneModes, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
 use reth_storage_api::{StorageChangeSetReader, TryIntoHistoricalStateProvider};
+use reth_rpc_types::irys::ShadowSubmission;
 use reth_storage_errors::provider::{ProviderResult, RootMismatch};
 use reth_trie::{
     prefix_set::{PrefixSet, PrefixSetMut, TriePrefixSets},
@@ -59,6 +61,7 @@ use revm::{
     db::states::{PlainStateReverts, PlainStorageChangeset, PlainStorageRevert, StateChangeset},
     primitives::{BlockEnv, CfgEnvWithHandlerCfg},
 };
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg, SpecId};
 use std::{
     cmp::Ordering,
     collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
@@ -187,10 +190,10 @@ impl<TX: DbTx + 'static, Spec: Send + Sync> TryIntoHistoricalStateProvider
         self,
         mut block_number: BlockNumber,
     ) -> ProviderResult<StateProviderBox> {
-        if block_number == self.best_block_number().unwrap_or_default() &&
-            block_number == self.last_block_number().unwrap_or_default()
+        if block_number == self.best_block_number().unwrap_or_default()
+            && block_number == self.last_block_number().unwrap_or_default()
         {
-            return Ok(Box::new(LatestStateProvider::new(self.tx, self.static_file_provider)))
+            return Ok(Box::new(LatestStateProvider::new(self.tx, self.static_file_provider)));
         }
 
         // +1 as the changeset that we want is the one that was applied after this block.
@@ -288,7 +291,7 @@ where
     while let Some((sharded_key, list)) = item {
         // If the shard does not belong to the key, break.
         if !shard_belongs_to_key(&sharded_key) {
-            break
+            break;
         }
         cursor.delete_current()?;
 
@@ -297,7 +300,7 @@ where
         let first = list.iter().next().expect("List can't be empty");
         if first >= block_number {
             item = cursor.prev()?;
-            continue
+            continue;
         } else if block_number <= sharded_key.as_ref().highest_block_number {
             // Filter out all elements greater than block number.
             return Ok(list.iter().take_while(|i| *i < block_number).collect::<Vec<_>>())
@@ -933,7 +936,7 @@ impl<TX: DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
                 }
                 hash_map::Entry::Occupied(mut entry) => {
                     // overwrite old account state.
-                    entry.get_mut().0 = old_info;
+                    entry.get_mut().0 = old_info.clone();
                 }
             }
             // insert old info into reverts.
@@ -1088,7 +1091,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
         let block_bodies = self.get::<tables::BlockBodyIndices>(range)?;
 
         if block_bodies.is_empty() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         // Compute the first and last tx ID in the range
@@ -1097,7 +1100,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
 
         // If this is the case then all of the blocks in the range are empty
         if last_transaction < first_transaction {
-            return Ok(block_bodies.into_iter().map(|(n, _)| (n, Vec::new())).collect())
+            return Ok(block_bodies.into_iter().map(|(n, _)| (n, Vec::new())).collect());
         }
 
         // Get transactions and senders
@@ -1221,7 +1224,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
 
         let block_headers = self.take::<tables::Headers>(range.clone())?;
         if block_headers.is_empty() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         self.tx.unwind_table_by_walker::<tables::CanonicalHeaders, tables::HeaderNumbers>(
@@ -1234,6 +1237,8 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
         let block_tx = self.take_block_transaction_range(range.clone())?;
 
         let mut blocks = Vec::with_capacity(block_headers.len());
+        let block_shadows = self.get_or_take::<tables::BlockShadows, TAKE>(range.clone())?;
+
 
         // rm HeaderTerminalDifficulties
         self.remove::<tables::HeaderTerminalDifficulties>(range)?;
@@ -1250,6 +1255,8 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
         let mut block_ommers = block_ommers_iter.next();
         let mut block_withdrawals = block_withdrawals_iter.next();
         let mut block_requests = block_requests_iter.next();
+        let mut block_shadows_iter = block_shadows.into_iter();
+        let mut block_shadows = block_shadows_iter.next();
 
         for ((main_block_number, header), (_, header_hash), (_, tx)) in
             izip!(block_header_iter, block_header_hashes_iter, block_tx_iter)
@@ -1295,11 +1302,29 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
             } else {
                 requests = None;
             }
+            
+            let mut shadows: Option<Shadows> = None;
+            if let Some((block_number, _)) = block_shadows.as_ref() {
+                // match self.block_number(*block_hash)? {
+                //     Some(v) => {
+                //         if v == main_block_number {
+                //             shadows = Some(block_shadows.take().unwrap().1.shadows);
+                //             block_shadows = block_shadows_iter.next();
+                //         }
+                //     }
+                //     None => {}
+                // }
+                if *block_number == main_block_number {
+                    shadows = Some(block_shadows.take().unwrap().1.shadows);
+                    block_shadows = block_shadows_iter.next();
+                }
+            };
+
 
             blocks.push(SealedBlockWithSenders {
                 block: SealedBlock {
                     header,
-                    body: BlockBody { transactions, ommers, withdrawals, requests },
+                    body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
                 },
                 senders,
             })
@@ -1320,7 +1345,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> DatabaseProvider<TX, Spec> {
             // delete old shard so new one can be inserted.
             self.tx.delete::<T>(shard_key, None)?;
             let list = list.iter().collect::<Vec<_>>();
-            return Ok(list)
+            return Ok(list);
         }
         Ok(Vec::new())
     }
@@ -1476,7 +1501,7 @@ impl<TX: DbTx, Spec: Send + Sync> HeaderSyncGapProvider for DatabaseProvider<TX,
             }
             Ordering::Less => {
                 // There's either missing or corrupted files.
-                return Err(ProviderError::HeaderNotFound(next_static_file_block_num.into()))
+                return Err(ProviderError::HeaderNotFound(next_static_file_block_num.into()));
             }
             Ordering::Equal => {}
         }
@@ -1523,7 +1548,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> HeaderProvider
         if let Some(td) = self.chain_spec.final_paris_total_difficulty(number) {
             // if this block is higher than the final paris(merge) block, return the final paris
             // difficulty
-            return Ok(Some(td))
+            return Ok(Some(td));
         }
 
         self.static_file_provider.get_with_static_file_or_database(
@@ -1580,7 +1605,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> HeaderProvider
                         .ok_or_else(|| ProviderError::HeaderNotFound(number.into()))?;
                     let sealed = SealedHeader::new(header, hash);
                     if !predicate(&sealed) {
-                        break
+                        break;
                     }
                     headers.push(sealed);
                 }
@@ -1669,6 +1694,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
                 let withdrawals = self.withdrawals_by_block(number.into(), header.timestamp)?;
                 let ommers = self.ommers(number.into())?.unwrap_or_default();
                 let requests = self.requests_by_block(number.into(), header.timestamp)?;
+                let shadows = self.shadows(number.into())?;
                 // If the body indices are not found, this means that the transactions either do not
                 // exist in the database yet, or they do exit but are not indexed.
                 // If they exist but are not indexed, we don't have enough
@@ -1680,7 +1706,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
 
                 return Ok(Some(Block {
                     header,
-                    body: BlockBody { transactions, ommers, withdrawals, requests },
+                    body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
                 }))
             }
         }
@@ -1709,15 +1735,34 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
             // If the Paris (Merge) hardfork block is known and block is after it, return empty
             // ommers.
             if self.chain_spec.final_paris_total_difficulty(number).is_some() {
-                return Ok(Some(Vec::new()))
+                return Ok(Some(Vec::new()));
             }
 
             let ommers = self.tx.get::<tables::BlockOmmers>(number)?.map(|o| o.ommers);
-            return Ok(ommers)
+            return Ok(ommers);
         }
 
         Ok(None)
     }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        if let Some(number) = self.convert_hash_or_number(id)? {
+            return Ok(self.tx.get::<tables::BlockShadows>(number)?.map(|s| s.shadows));
+        }
+        Ok(None)
+    }
+
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     let s = self.convert_number(id)?;
+    //     if let Some(number) = s {
+    //         let r = self.tx.get::<tables::PendingBlockShadows>(number)?.map(|s2| {
+    //             dbg!(&s2);
+    //             s2.shadows
+    //         });
+    //         return Ok(r);
+    //     }
+    //     Ok(None)
+    // }
 
     fn block_body_indices(&self, num: u64) -> ProviderResult<Option<StoredBlockBodyIndices>> {
         Ok(self.tx.get::<tables::BlockBodyIndices>(num)?)
@@ -1761,10 +1806,10 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
             id,
             transaction_kind,
             |block_number| self.sealed_header(block_number),
-            |header, transactions, senders, ommers, withdrawals, requests| {
+            |header, transactions, senders, ommers, withdrawals, requests, shadows| {
                 SealedBlock {
                     header,
-                    body: BlockBody { transactions, ommers, withdrawals, requests },
+                    body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
                 }
                 // Note: we're using unchecked here because we know the block contains valid txs
                 // wrt to its height and can ignore the s value check so pre
@@ -1781,7 +1826,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
         self.block_range(
             range,
             |range| self.headers_range(range),
-            |header, tx_range, ommers, withdrawals, requests| {
+            |header, tx_range, ommers, withdrawals, requests, shadows| {
                 let transactions = if tx_range.is_empty() {
                     Vec::new()
                 } else {
@@ -1792,7 +1837,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
                 };
                 Ok(Block {
                     header,
-                    body: BlockBody { transactions, ommers, withdrawals, requests },
+                    body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
                 })
             },
         )
@@ -1820,11 +1865,11 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> BlockReader for DatabasePr
         self.block_with_senders_range(
             range,
             |range| self.sealed_headers_range(range),
-            |header, transactions, ommers, withdrawals, requests, senders| {
+            |header, transactions, ommers, withdrawals, requests, senders, shadows| {
                 SealedBlockWithSenders::new(
                     SealedBlock {
                         header,
-                        body: BlockBody { transactions, ommers, withdrawals, requests },
+                        body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
                     },
                     senders,
                 )
@@ -1979,7 +2024,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> TransactionsProvider
                                 timestamp: header.timestamp,
                             };
 
-                            return Ok(Some((transaction, meta)))
+                            return Ok(Some((transaction, meta)));
                         }
                     }
                 }
@@ -2012,7 +2057,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> TransactionsProvider
                             .map(Into::into)
                             .collect(),
                     ))
-                }
+                };
             }
         }
         Ok(None)
@@ -2092,7 +2137,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> ReceiptProvider
                     Ok(Some(Vec::new()))
                 } else {
                     self.receipts_by_tx_range(tx_range).map(Some)
-                }
+                };
             }
         }
         Ok(None)
@@ -2129,7 +2174,7 @@ impl<TX: DbTx, Spec: Send + Sync + EthereumHardforks> WithdrawalsProvider
                     .get::<tables::BlockWithdrawals>(number)
                     .map(|w| w.map(|w| w.withdrawals))?
                     .unwrap_or_default();
-                return Ok(Some(withdrawals))
+                return Ok(Some(withdrawals));
             }
         }
         Ok(None)
@@ -2835,7 +2880,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> HashingWriter for DatabaseProvider<T
         let mut hashed_accounts_cursor = self.tx.cursor_write::<tables::HashedAccounts>()?;
         for (hashed_address, account) in &hashed_accounts {
             if let Some(account) = account {
-                hashed_accounts_cursor.upsert(*hashed_address, *account)?;
+                hashed_accounts_cursor.upsert(*hashed_address, account.clone())?;
             } else if hashed_accounts_cursor.seek_exact(*hashed_address)?.is_some() {
                 hashed_accounts_cursor.delete_current()?;
             }
@@ -2853,7 +2898,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> HashingWriter for DatabaseProvider<T
             accounts.into_iter().map(|(ad, ac)| (keccak256(ad), ac)).collect::<BTreeMap<_, _>>();
         for (hashed_address, account) in &hashed_accounts {
             if let Some(account) = account {
-                hashed_accounts_cursor.upsert(*hashed_address, *account)?;
+                hashed_accounts_cursor.upsert(*hashed_address, account.clone())?;
             } else if hashed_accounts_cursor.seek_exact(*hashed_address)?.is_some() {
                 hashed_accounts_cursor.delete_current()?;
             }
@@ -3007,7 +3052,7 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> HashingWriter for DatabaseProvider<T
                     root: GotExpected { got: state_root, expected: expected_state_root },
                     block_number: *range.end(),
                     block_hash: end_block_hash,
-                })))
+                })));
             }
             self.write_trie_updates(&trie_updates)?;
         }
@@ -3087,8 +3132,8 @@ impl<TX: DbTxMut + DbTx, Spec: Send + Sync> HistoryWriter for DatabaseProvider<T
                 StorageShardedKey::last(address, storage_key),
                 rem_index,
                 |storage_sharded_key| {
-                    storage_sharded_key.address == address &&
-                        storage_sharded_key.sharded_key.key == storage_key
+                    storage_sharded_key.address == address
+                        && storage_sharded_key.sharded_key.key == storage_key
                 },
             )?;
 
@@ -3484,6 +3529,13 @@ impl<TX: DbTxMut + DbTx + 'static, Spec: Send + Sync + EthereumHardforks + 'stat
         if let Some(requests) = block.block.body.requests {
             self.tx.put::<tables::BlockRequests>(block_number, requests)?;
             durations_recorder.record_relative(metrics::Action::InsertBlockRequests);
+
+        if let Some(shadows) = block.block.shadows {
+            if !shadows.is_empty() {
+                self.tx
+                    .put::<tables::BlockShadows>(block_number, StoredBlockShadows { shadows })?;
+                durations_recorder.record_relative(metrics::Action::InsertBlockShadows);
+            }
         }
 
         let block_indices = StoredBlockBodyIndices { first_tx_num, tx_count };
@@ -3515,7 +3567,7 @@ impl<TX: DbTxMut + DbTx + 'static, Spec: Send + Sync + EthereumHardforks + 'stat
     ) -> ProviderResult<()> {
         if blocks.is_empty() {
             debug!(target: "providers::db", "Attempted to append empty block range");
-            return Ok(())
+            return Ok(());
         }
 
         let first_number = blocks.first().unwrap().number;
@@ -3556,6 +3608,7 @@ impl<TX: DbTxMut + DbTx + 'static, Spec: Send + Sync + EthereumHardforks + 'stat
         Ok(())
     }
 }
+
 
 impl<TX: DbTx, Spec: Send + Sync> PruneCheckpointReader for DatabaseProvider<TX, Spec> {
     fn get_prune_checkpoint(

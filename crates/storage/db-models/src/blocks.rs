@@ -1,3 +1,7 @@
+//! Block related models and types.
+
+use reth_codecs::{main_codec, Compact};
+use reth_primitives::{revm_primitives::shadow::Shadows, Header, TxNumber, Withdrawals, B256};
 use std::ops::Range;
 
 use alloy_primitives::TxNumber;
@@ -75,6 +79,16 @@ pub struct StoredBlockWithdrawals {
     /// The block withdrawals.
     pub withdrawals: Withdrawals,
 }
+
+#[main_codec]
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
+pub struct StoredBlockShadows {
+    /// The block shadows.
+    pub shadows: Shadows,
+}
+
+/// Hash of the block header. Value for [`CanonicalHeaders`][crate::tables::CanonicalHeaders]
+pub type HeaderHash = B256;
 
 #[cfg(test)]
 mod tests {

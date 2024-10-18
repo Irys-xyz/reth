@@ -24,7 +24,19 @@ use reth_revm::{
     batch::BlockBatchRecord,
     db::{states::bundle_state::BundleRetention, State},
     state_change::post_block_balance_increments,
-    Evm,
+    Evm
+};
+use reth_primitives::{
+    BlockNumber, BlockWithSenders, ChainSpec, Hardfork, Header, PruneModes, Receipt, ShadowReceipt,
+    Withdrawals, MAINNET, U256,
+};
+use reth_revm::{
+    batch::{BlockBatchRecord, BlockExecutorStats},
+    db::states::bundle_state::BundleRetention,
+    state_change::{
+        apply_beacon_root_contract_call, apply_block_shadows, post_block_balance_increments,
+    },
+    Evm, State,
 };
 use revm_primitives::{
     db::{Database, DatabaseCommit},
@@ -147,6 +159,34 @@ where
             SystemCaller::new(&self.evm_config, &self.chain_spec).with_state_hook(state_hook);
 
         system_caller.apply_pre_execution_changes(block, &mut evm)?;
+        // // // apply pre execution changes
+        // apply_beacon_root_contract_call(
+        //     &self.chain_spec,
+        //     block.timestamp,
+        //     block.number,
+        //     block.parent_beacon_block_root,
+        //     &mut evm,
+        // )?;
+
+        // let mut evm = revm::Evm::builder()
+        // .with_db(&mut db)
+        // .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
+        //     initialized_cfg.clone(),
+        //     initialized_block_env.clone(),
+        //     // tx_env_with_recovered(&tx),
+        //     Default::default(),
+        // ))
+        // .build();
+        let prev = evm.context.evm.inner.journaled_state.checkpoint();
+        // TODO: fix this
+        let shadow_exec =
+            apply_block_shadows(block.shadows.as_ref(), &mut evm).expect("shadow exec failed :c");
+        info!("shadow exec: {:#?}", &shadow_exec);
+        let ss = evm.context.evm.inner.journaled_state.state.clone();
+
+        evm.db_mut().commit(ss);
+
+        evm.context.evm.inner.journaled_state.checkpoint_revert(prev);
 
         // execute transactions
         let mut cumulative_gas_used = 0;
@@ -160,7 +200,7 @@ where
                     transaction_gas_limit: transaction.gas_limit(),
                     block_available_gas,
                 }
-                .into())
+                .into());
             }
 
             self.evm_config.fill_tx_env(evm.tx_mut(), transaction, *sender);
@@ -518,6 +558,10 @@ mod tests {
             balance: U256::ZERO,
             bytecode_hash: Some(keccak256(BEACON_ROOTS_CODE.clone())),
             nonce: 1,
+            commitments: None,
+            stake: None,
+            last_tx: None,
+            mining_permission: true,
         };
 
         db.insert_account(
@@ -582,6 +626,7 @@ mod tests {
                                 ommers: vec![],
                                 withdrawals: None,
                                 requests: None,
+                                shadows: None,
                             },
                         },
                         senders: vec![],
@@ -615,6 +660,7 @@ mod tests {
                             ommers: vec![],
                             withdrawals: None,
                             requests: None,
+                            shadows: None,
                         },
                     },
                     senders: vec![],
@@ -683,6 +729,7 @@ mod tests {
                                 ommers: vec![],
                                 withdrawals: None,
                                 requests: None,
+                                shadows: None,
                             },
                         },
                         senders: vec![],
@@ -738,6 +785,7 @@ mod tests {
                                 ommers: vec![],
                                 withdrawals: None,
                                 requests: None,
+                                shadows: None,
                             },
                         },
                         senders: vec![],

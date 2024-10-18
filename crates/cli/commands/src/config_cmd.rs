@@ -5,9 +5,10 @@ use std::path::PathBuf;
 use clap::Parser;
 use eyre::{bail, WrapErr};
 use reth_config::Config;
+use reth_node_core::irys_ext::NodeExitReason;
 
 /// `reth config` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 pub struct Command {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]
@@ -20,7 +21,7 @@ pub struct Command {
 
 impl Command {
     /// Execute `config` command
-    pub async fn execute(&self) -> eyre::Result<()> {
+    pub async fn execute(&self) -> eyre::Result<NodeExitReason> {
         let config = if self.default {
             Config::default()
         } else {
@@ -34,6 +35,6 @@ impl Command {
                 .wrap_err_with(|| format!("Could not load config file: {}", path.display()))?
         };
         println!("{}", toml::to_string_pretty(&config)?);
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

@@ -272,7 +272,7 @@ where
     #[inline]
     fn from_compact(buf: &[u8], len: usize) -> (Self, &[u8]) {
         if len == 0 {
-            return (None, buf)
+            return (None, buf);
         }
 
         let (len, mut buf) = decode_varuint(buf);
@@ -301,7 +301,7 @@ where
     #[inline]
     fn specialized_from_compact(buf: &[u8], len: usize) -> (Self, &[u8]) {
         if len == 0 {
-            return (None, buf)
+            return (None, buf);
         }
 
         let (element, buf) = T::from_compact(buf, len);
@@ -364,7 +364,7 @@ impl<const N: usize> Compact for [u8; N] {
     #[inline]
     fn from_compact(mut buf: &[u8], len: usize) -> (Self, &[u8]) {
         if len == 0 {
-            return ([0; N], buf)
+            return ([0; N], buf);
         }
 
         let v = buf[..N].try_into().unwrap();
@@ -415,19 +415,30 @@ impl<const N: usize> Compact for FixedBytes<N> {
 }
 
 impl Compact for bool {
-    /// `bool` vars go directly to the `StructFlags` and are not written to the buffer.
+    ///  `bool` vars go directly to the `StructFlags` and are not written to the buffer.
+    //    this ^ is bad, it breaks chaining with stuff like Option<bool>
     #[inline]
-    fn to_compact<B>(&self, _: &mut B) -> usize
+    fn to_compact<B>(&self, buf: &mut B) -> usize
     where
         B: bytes::BufMut + AsMut<[u8]>,
     {
-        *self as usize
+        if *self == true {
+            buf.put_u8(0);
+            1
+        } else {
+            0
+        }
     }
 
     /// `bool` expects the real value to come in `len`, and does not advance the cursor.
     #[inline]
-    fn from_compact(buf: &[u8], len: usize) -> (Self, &[u8]) {
-        (len != 0, buf)
+    fn from_compact(mut buf: &[u8], len: usize) -> (Self, &[u8]) {
+        if len != 0 {
+            buf.advance(1);
+            (true, buf)
+        } else {
+            (false, buf)
+        }
     }
 }
 
@@ -449,7 +460,7 @@ fn decode_varuint(buf: &[u8]) -> (usize, &[u8]) {
         let byte = buf[i];
         value |= usize::from(byte & 0x7F) << (i * 7);
         if byte < 0x80 {
-            return (value, &buf[i + 1..])
+            return (value, &buf[i + 1..]);
         }
     }
 

@@ -26,8 +26,9 @@ use reth_primitives::{
 };
 use reth_prune_types::{PruneCheckpoint, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
+use reth_rpc_types::irys::ShadowSubmission;
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     collections::BTreeMap,
     ops::{RangeBounds, RangeInclusive},
@@ -76,9 +77,19 @@ pub struct BlockchainProvider<N: NodeTypesWithDB> {
     /// Provider type used to access the database.
     database: ProviderFactory<N>,
     /// The blockchain tree instance.
-    tree: Arc<dyn TreeViewer>,
+    pub tree: Arc<dyn TreeViewer>,
     /// Tracks the chain info wrt forkchoice updates
-    chain_info: ChainInfoTracker,
+    pub chain_info: ChainInfoTracker,
+}
+
+impl<DB> fmt::Debug for BlockchainProvider<DB> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BlockchainProvider")
+            .field("database", &"fixme".to_string())
+            .field("tree", &"fixme".to_string())
+            .field("chain_info", &"fixme".to_string())
+            .finish()
+    }
 }
 
 impl<N: ProviderNodeTypes> Clone for BlockchainProvider<N> {
@@ -180,6 +191,12 @@ where
         let state_provider = self.history_by_block_hash(canonical_fork.hash)?;
         let bundle_state_provider = BundleStateProvider::new(state_provider, bundle_state_data);
         Ok(Box::new(bundle_state_provider))
+    }
+    fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
+        self.database.provider_rw()
+    }
+    fn database_ref(&self) -> &DB {
+        self.database.db_ref()
     }
 }
 
@@ -379,6 +396,12 @@ impl<N: ProviderNodeTypes> BlockReader for BlockchainProvider<N> {
     ) -> ProviderResult<Vec<SealedBlockWithSenders>> {
         self.database.sealed_block_with_senders_range(range)
     }
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.database.shadows(id)
+    }
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     self.database.pending_shadows(id)
+    // }
 }
 
 impl<N: ProviderNodeTypes> TransactionsProvider for BlockchainProvider<N> {
@@ -678,7 +701,7 @@ impl<N: ProviderNodeTypes> StateProviderFactory for BlockchainProvider<N> {
 
         if let Some(block) = self.tree.pending_block_num_hash() {
             if let Ok(pending) = self.tree.pending_state_provider(block.hash) {
-                return self.pending_with_provider(pending)
+                return self.pending_with_provider(pending);
             }
         }
 
@@ -688,7 +711,7 @@ impl<N: ProviderNodeTypes> StateProviderFactory for BlockchainProvider<N> {
 
     fn pending_state_by_hash(&self, block_hash: B256) -> ProviderResult<Option<StateProviderBox>> {
         if let Some(state) = self.tree.find_pending_state_provider(block_hash) {
-            return Ok(Some(self.pending_with_provider(state)?))
+            return Ok(Some(self.pending_with_provider(state)?));
         }
         Ok(None)
     }
@@ -944,3 +967,39 @@ impl<N: ProviderNodeTypes> AccountReader for BlockchainProvider<N> {
         self.database.provider()?.basic_account(address)
     }
 }
+
+// impl<DB> ShadowsProvider for BlockchainProvider<DB>
+// where
+//     DB: Database + Sync + Send,
+// {
+//     fn add_pending_shadows(
+//         self,
+//         block_id: B256,
+//         shadows: Shadows,
+//     ) -> ProviderResult<ShadowSubmission> {
+//         let provider = self.database.provider_rw();
+//         provider.unwrap().add_pending_shadows(block_id, shadows)
+//     }
+// }
+
+// impl<DB> ShadowsProvider for BlockchainProvider<DB>
+// where
+//     DB: Database,
+// {
+//     fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> ProviderResult<ShadowSubmission> {
+//         self.tx.put::<tables::BlockShadows>(
+//             self.block_number(block_hash)?.unwrap(),
+//             StoredBlockShadows { shadows },
+//         )?;
+
+//         // match self.tx.put::<tables::BlockShadows>(block_hash, StoredBlockShadows { shadows }) {
+//         //     Ok(_) => {
+//         //         Ok(ShadowSubmission::new())
+//         //     },
+//         //     Err(e) => {
+
+//         //     }
+//         // }
+//         Ok(ShadowSubmission::new())
+//     }
+// }

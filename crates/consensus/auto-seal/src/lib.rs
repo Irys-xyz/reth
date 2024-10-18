@@ -341,6 +341,7 @@ impl StorageInner {
         &mut self,
         transactions: Vec<TransactionSigned>,
         ommers: Vec<Header>,
+        shadows: Option<Shadows>,
         provider: &Provider,
         chain_spec: Arc<ChainSpec>,
         executor: &Executor,
@@ -375,6 +376,7 @@ impl StorageInner {
                 ommers: ommers.clone(),
                 withdrawals: withdrawals.clone(),
                 requests: requests.clone(),
+            shadows: shadows.clone(),
             },
         }
         .with_recovered_senders()
@@ -398,7 +400,7 @@ impl StorageInner {
         // root here
 
         let Block { mut header, body, .. } = block.block;
-        let body = BlockBody { transactions: body.transactions, ommers, withdrawals, requests };
+        let body = BlockBody { transactions: body.transactions, ommers, withdrawals, requests, shadows };
 
         trace!(target: "consensus::auto", ?execution_outcome, ?header, ?body, "executed block, calculating state root and completing header");
 

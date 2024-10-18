@@ -138,7 +138,7 @@ impl<
     ///
     /// This transforms the node command into a node config and launches the node using the given
     /// closure.
-    pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<()>
+    pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>, C::ChainSpec>>, Ext) -> Fut,
         Fut: Future<Output = eyre::Result<()>>,
@@ -198,7 +198,8 @@ impl<
             .with_database(database)
             .with_launch_context(ctx.task_executor);
 
-        launcher(builder, ext).await
+        launcher(builder, ext).await?;
+        Ok(NodeExitReason::Normal)
     }
 }
 

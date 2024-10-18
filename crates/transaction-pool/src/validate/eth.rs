@@ -168,7 +168,7 @@ where
                     return TransactionValidationOutcome::Invalid(
                         transaction,
                         InvalidTransactionError::Eip2930Disabled.into(),
-                    )
+                    );
                 }
             }
             EIP1559_TX_TYPE_ID => {
@@ -177,7 +177,7 @@ where
                     return TransactionValidationOutcome::Invalid(
                         transaction,
                         InvalidTransactionError::Eip1559Disabled.into(),
-                    )
+                    );
                 }
             }
             EIP4844_TX_TYPE_ID => {
@@ -186,7 +186,7 @@ where
                     return TransactionValidationOutcome::Invalid(
                         transaction,
                         InvalidTransactionError::Eip4844Disabled.into(),
-                    )
+                    );
                 }
             }
             EIP7702_TX_TYPE_ID => {
@@ -216,13 +216,13 @@ where
                     transaction_size,
                     self.max_tx_input_bytes,
                 ),
-            )
+            );
         }
 
         // Check whether the init code size has been exceeded.
         if self.fork_tracker.is_shanghai_activated() {
             if let Err(err) = ensure_max_init_code_size(&transaction, MAX_INIT_CODE_BYTE_SIZE) {
-                return TransactionValidationOutcome::Invalid(transaction, err)
+                return TransactionValidationOutcome::Invalid(transaction, err);
             }
         }
 
@@ -235,7 +235,7 @@ where
                     transaction_gas_limit,
                     self.block_gas_limit,
                 ),
-            )
+            );
         }
 
         // Ensure max_priority_fee_per_gas (if EIP1559) is less than max_fee_per_gas if any.
@@ -243,19 +243,19 @@ where
             return TransactionValidationOutcome::Invalid(
                 transaction,
                 InvalidTransactionError::TipAboveFeeCap.into(),
-            )
+            );
         }
 
         // Drop non-local transactions with a fee lower than the configured fee for acceptance into
         // the pool.
-        if !self.local_transactions_config.is_local(origin, transaction.sender()) &&
-            transaction.is_eip1559() &&
-            transaction.max_priority_fee_per_gas() < self.minimum_priority_fee
+        if !self.local_transactions_config.is_local(origin, transaction.sender())
+            && transaction.is_eip1559()
+            && transaction.max_priority_fee_per_gas() < self.minimum_priority_fee
         {
             return TransactionValidationOutcome::Invalid(
                 transaction,
                 InvalidPoolTransactionError::Underpriced,
-            )
+            );
         }
 
         // Checks for chainid
@@ -264,7 +264,7 @@ where
                 return TransactionValidationOutcome::Invalid(
                     transaction,
                     InvalidTransactionError::ChainIdMismatch.into(),
-                )
+                );
             }
         }
 
@@ -296,7 +296,7 @@ where
                 return TransactionValidationOutcome::Invalid(
                     transaction,
                     InvalidTransactionError::TxTypeNotSupported.into(),
-                )
+                );
             }
 
             let blob_count = transaction.blob_count();
@@ -307,7 +307,7 @@ where
                     InvalidPoolTransactionError::Eip4844(
                         Eip4844PoolTransactionError::NoEip4844Blobs,
                     ),
-                )
+                );
             }
 
             if blob_count > MAX_BLOBS_PER_BLOCK {
@@ -320,7 +320,7 @@ where
                             permitted: MAX_BLOBS_PER_BLOCK,
                         },
                     ),
-                )
+                );
             }
         }
 
@@ -380,7 +380,6 @@ where
         }
 
         let cost = transaction.cost();
-
         // Checks for max cost
         if cost > account.balance {
             return TransactionValidationOutcome::Invalid(
@@ -389,7 +388,7 @@ where
                     GotExpected { got: account.balance, expected: cost }.into(),
                 )
                 .into(),
-            )
+            );
         }
 
         let mut maybe_blob_sidecar = None;
@@ -403,7 +402,7 @@ where
                     return TransactionValidationOutcome::Invalid(
                         transaction,
                         InvalidTransactionError::TxTypeNotSupported.into(),
-                    )
+                    );
                 }
                 EthBlobTransactionSidecar::Missing => {
                     // This can happen for re-injected blob transactions (on re-org), since the blob
@@ -418,7 +417,7 @@ where
                             InvalidPoolTransactionError::Eip4844(
                                 Eip4844PoolTransactionError::MissingEip4844BlobSidecar,
                             ),
-                        )
+                        );
                     }
                 }
                 EthBlobTransactionSidecar::Present(blob) => {
@@ -429,7 +428,7 @@ where
                             InvalidPoolTransactionError::Eip4844(
                                 Eip4844PoolTransactionError::InvalidEip4844Blob(err),
                             ),
-                        )
+                        );
                     }
                     // store the extracted blob
                     maybe_blob_sidecar = Some(blob);

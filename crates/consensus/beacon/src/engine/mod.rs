@@ -470,7 +470,7 @@ where
                 current_head_num=?head.number,
                 "[Optimism] Allowing beacon reorg to old head"
             );
-            return true
+            return true;
         }
 
         // 2. Client software MAY skip an update of the forkchoice state and MUST NOT begin a
@@ -614,7 +614,7 @@ where
                     inconsistent_stage_checkpoint = stage_checkpoint,
                     "Pipeline sync progress is inconsistent"
                 );
-                return Ok(self.blockchain.block_hash(first_stage_checkpoint)?)
+                return Ok(self.blockchain.block_hash(first_stage_checkpoint)?);
             }
         }
 
@@ -692,7 +692,7 @@ where
                         if !state.finalized_block_hash.is_zero() {
                             // we don't have the block yet and the distance exceeds the allowed
                             // threshold
-                            return Some(state.finalized_block_hash)
+                            return Some(state.finalized_block_hash);
                         }
 
                         // OPTIMISTIC SYNCING
@@ -708,7 +708,7 @@ where
                         // However, optimism chains will do this. The risk of a reorg is however
                         // low.
                         debug!(target: "consensus::engine", hash=?state.head_block_hash, "Setting head hash as an optimistic pipeline target.");
-                        return Some(state.head_block_hash)
+                        return Some(state.head_block_hash);
                     }
                     Ok(Some(_)) => {
                         // we're fully synced to the finalized block
@@ -861,10 +861,10 @@ where
         //
         // This ensures that the finalized block is consistent with the head block, i.e. the
         // finalized block is an ancestor of the head block.
-        if !state.finalized_block_hash.is_zero() &&
-            !self.blockchain.is_canonical(state.finalized_block_hash)?
+        if !state.finalized_block_hash.is_zero()
+            && !self.blockchain.is_canonical(state.finalized_block_hash)?
         {
-            return Ok(Some(OnForkChoiceUpdated::invalid_state()))
+            return Ok(Some(OnForkChoiceUpdated::invalid_state()));
         }
 
         // Finalized block is consistent, so update it in the canon chain tracker.
@@ -875,10 +875,10 @@ where
         //
         // This ensures that the safe block is consistent with the head block, i.e. the safe
         // block is an ancestor of the head block.
-        if !state.safe_block_hash.is_zero() &&
-            !self.blockchain.is_canonical(state.safe_block_hash)?
+        if !state.safe_block_hash.is_zero()
+            && !self.blockchain.is_canonical(state.safe_block_hash)?
         {
-            return Ok(Some(OnForkChoiceUpdated::invalid_state()))
+            return Ok(Some(OnForkChoiceUpdated::invalid_state()));
         }
 
         // Safe block is consistent, so update it in the canon chain tracker.
@@ -939,7 +939,7 @@ where
         if !safe_block_hash.is_zero() {
             if self.blockchain.safe_block_hash()? == Some(safe_block_hash) {
                 // nothing to update
-                return Ok(())
+                return Ok(());
             }
 
             let safe = self
@@ -959,7 +959,7 @@ where
         if !finalized_block_hash.is_zero() {
             if self.blockchain.finalized_block_hash()? == Some(finalized_block_hash) {
                 // nothing to update
-                return Ok(())
+                return Ok(());
             }
 
             let finalized = self
@@ -1172,7 +1172,7 @@ where
         //    begin a payload build process. In such an event, the forkchoiceState update MUST NOT
         //    be rolled back.
         if attrs.timestamp() <= head.timestamp {
-            return OnForkChoiceUpdated::invalid_payload_attributes()
+            return OnForkChoiceUpdated::invalid_payload_attributes();
         }
 
         // 8. Client software MUST begin a payload build process building on top of
@@ -1260,15 +1260,15 @@ where
                 latest_valid_hash = Some(block_hash);
                 PayloadStatusEnum::Valid
             }
-            InsertPayloadOk::Inserted(BlockStatus::Disconnected { .. }) |
-            InsertPayloadOk::AlreadySeen(BlockStatus::Disconnected { .. }) => {
+            InsertPayloadOk::Inserted(BlockStatus::Disconnected { .. })
+            | InsertPayloadOk::AlreadySeen(BlockStatus::Disconnected { .. }) => {
                 // check if the block's parent is already marked as invalid
                 if let Some(status) =
                     self.check_invalid_ancestor_with_head(block.parent_hash, block.hash()).map_err(
                         |error| InsertBlockError::new(block, InsertBlockErrorKind::Provider(error)),
                     )?
                 {
-                    return Ok(status)
+                    return Ok(status);
                 }
 
                 // not known to be invalid, but we don't know anything else
@@ -1304,7 +1304,7 @@ where
             // threshold
             self.sync.set_pipeline_sync_target(target.into());
             // we can exit early here because the pipeline will take care of syncing
-            return
+            return;
         }
 
         // continue downloading the missing parent
@@ -1435,7 +1435,7 @@ where
             }
             EngineSyncEvent::PipelineTaskDropped => {
                 error!(target: "consensus::engine", "Failed to receive spawned pipeline");
-                return Err(BeaconConsensusEngineError::PipelineChannelClosed)
+                return Err(BeaconConsensusEngineError::PipelineChannelClosed);
             }
         };
 
@@ -1452,7 +1452,7 @@ where
             warn!(target: "consensus::engine", invalid_hash=?bad_block.hash(), invalid_number=?bad_block.number, "Bad block detected in unwind");
             // update the `invalid_headers` cache with the new invalid header
             self.invalid_headers.insert(*bad_block);
-            return Ok(())
+            return Ok(());
         }
 
         let sync_target_state = match self.forkchoice_state_tracker.sync_target_state() {
@@ -1461,7 +1461,7 @@ where
                 // This is only possible if the node was run with `debug.tip`
                 // argument and without CL.
                 warn!(target: "consensus::engine", "No fork choice state available");
-                return Ok(())
+                return Ok(());
             }
         };
 
@@ -1470,7 +1470,7 @@ where
             self.blockchain.update_block_hashes_and_clear_buffered()?;
             self.blockchain.connect_buffered_blocks_to_canonical_hashes()?;
             // We are on an optimistic syncing process, better to wait for the next FCU to handle
-            return Ok(())
+            return Ok(());
         }
 
         // Next, we check if we need to schedule another pipeline run or transition
@@ -1502,7 +1502,7 @@ where
                 head = %sync_target_state.head_block_hash,
                 "Current head has an invalid ancestor"
             );
-            return Ok(())
+            return Ok(());
         }
 
         // get the block number of the finalized block, if we have it
@@ -1587,7 +1587,7 @@ where
                         self.blockchain.connect_buffered_blocks_to_canonical_hashes()
                     {
                         error!(target: "consensus::engine", %error, "Error connecting buffered blocks to canonical hashes on hook result");
-                        return Err(RethError::Canonical(error).into())
+                        return Err(RethError::Canonical(error).into());
                     }
                 }
             }
@@ -1621,14 +1621,14 @@ where
                             if self.sync.has_reached_max_block(tip_number) {
                                 // Terminate the sync early if it's reached
                                 // the maximum user configured block.
-                                return Ok(EngineEventOutcome::ReachedMaxBlock)
+                                return Ok(EngineEventOutcome::ReachedMaxBlock);
                             }
                         }
                     }
                     Err(error) => {
                         let _ = tx.send(Err(RethError::Canonical(error.clone())));
                         if error.is_fatal() {
-                            return Err(RethError::Canonical(error))
+                            return Err(RethError::Canonical(error));
                         }
                     }
                 };
@@ -1654,7 +1654,7 @@ where
                             // TODO: revise if any error should be considered fatal at this point.
                             let _ =
                                 tx.send(Err(BeaconOnNewPayloadError::Internal(Box::new(error))));
-                            return Ok(EngineEventOutcome::Processed)
+                            return Ok(EngineEventOutcome::Processed);
                         }
 
                         // If the error was due to an invalid payload, the payload is added to the
@@ -1707,7 +1707,7 @@ where
                             let response =
                                 Err(BeaconOnNewPayloadError::Internal(Box::new(error.clone())));
                             let _ = tx.send(response);
-                            return Err(RethError::Canonical(error))
+                            return Err(RethError::Canonical(error));
                         } else if error.optimistic_revert_block_number().is_some() {
                             // engine already set the pipeline unwind target on
                             // `try_make_sync_target_canonical`
@@ -1730,6 +1730,7 @@ where
             }
 
             BlockchainTreeAction::InsertDownloadedPayload { block } => {
+                // need to get shadows here somehow
                 let downloaded_num_hash = block.num_hash();
                 match self.blockchain.insert_block_without_senders(
                     block,
@@ -1823,7 +1824,7 @@ where
                     this.hooks.poll_active_db_write_hook(cx, this.current_engine_hook_context()?)?
                 {
                     this.on_hook_result(result)?;
-                    continue
+                    continue;
                 }
 
                 // Process any blockchain tree action result as set forth during engine message
@@ -1834,12 +1835,12 @@ where
                         Ok(EngineEventOutcome::ReachedMaxBlock) => return Poll::Ready(Ok(())),
                         Err(error) => {
                             error!(target: "consensus::engine", %error, "Encountered fatal error");
-                            return Poll::Ready(Err(error.into()))
+                            return Poll::Ready(Err(error.into()));
                         }
                     };
 
                     // Blockchain tree action handler might set next action to take.
-                    continue
+                    continue;
                 }
 
                 // If the db write hook is no longer active and we have a pending forkchoice update,
@@ -1882,12 +1883,12 @@ where
                             this.blockchain.on_transition_configuration_exchanged();
                         }
                     }
-                    continue
+                    continue;
                 }
 
                 // Both running hook with db write access and engine messages are pending,
                 // proceed to other polls
-                break
+                break;
             }
 
             // process sync events if any
@@ -1901,7 +1902,7 @@ where
 
                 // this could have taken a while, so we start the next cycle to handle any new
                 // engine messages
-                continue 'main
+                continue 'main;
             }
 
             // at this point, all engine messages and sync events are fully drained
@@ -1919,13 +1920,13 @@ where
 
                     // ensure we're polling until pending while also checking for new engine
                     // messages before polling the next hook
-                    continue 'main
+                    continue 'main;
                 }
             }
 
             // incoming engine messages and sync events are drained, so we can yield back
             // control
-            return Poll::Pending
+            return Poll::Pending;
         }
     }
 }
@@ -2074,7 +2075,7 @@ mod tests {
                         result,
                         Err(BeaconConsensusEngineError::Pipeline(n)) if matches!(*n.as_ref(), PipelineError::Stage(StageError::ChannelClosed))
                     );
-                    break
+                    break;
                 }
                 Err(TryRecvError::Empty) => {
                     let _ = env

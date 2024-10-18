@@ -29,6 +29,12 @@ use reth_stages_types::{StageCheckpoint, StageId};
 use reth_storage_api::{
     DatabaseProviderFactory, StageCheckpointReader, StateProofProvider, StorageRootProvider,
 };
+use reth_storage_errors::provider::{ProviderError, ProviderResult};
+use reth_trie::updates::TrieUpdates;
+use revm::{
+    db::BundleState,
+    primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg},
+};
 use reth_storage_errors::provider::{ConsistentViewError, ProviderError, ProviderResult};
 use reth_trie::{
     updates::TrieUpdates, AccountProof, HashedPostState, HashedStorage, MultiProof, StorageProof,
@@ -80,7 +86,15 @@ impl ExtendedAccount {
     /// Create new instance of extended account
     pub fn new(nonce: u64, balance: U256) -> Self {
         Self {
-            account: Account { nonce, balance, bytecode_hash: None },
+            account: Account {
+                nonce,
+                balance,
+                bytecode_hash: None,
+                commitments: None,
+                stake: None,
+                mining_permission: None,
+                last_tx: None,
+            },
             bytecode: None,
             storage: Default::default(),
         }
@@ -294,7 +308,7 @@ impl TransactionsProvider for MockEthProvider {
                         excess_blob_gas: block.header.excess_blob_gas,
                         timestamp: block.header.timestamp,
                     };
-                    return Ok(Some((tx.clone(), meta)))
+                    return Ok(Some((tx.clone(), meta)));
                 }
             }
         }
@@ -550,6 +564,13 @@ impl BlockReader for MockEthProvider {
     ) -> ProviderResult<Vec<SealedBlockWithSenders>> {
         Ok(vec![])
     }
+    fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        Ok(None)
+    }
+
+    // fn pending_shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     Ok(None)
+    // }
 }
 
 impl BlockReaderIdExt for MockEthProvider {

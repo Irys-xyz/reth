@@ -3,12 +3,13 @@ use reth::api::{BuiltPayload, EngineTypes, PayloadBuilderAttributes};
 use reth_payload_builder::{PayloadBuilderHandle, PayloadId};
 use reth_payload_primitives::{Events, PayloadBuilder};
 use tokio_stream::wrappers::BroadcastStream;
+use tracing::{error, info, trace};
 
 /// Helper for payload operations
 #[derive(Debug)]
 pub struct PayloadTestContext<E: EngineTypes> {
     pub payload_event_stream: BroadcastStream<Events<E>>,
-    payload_builder: PayloadBuilderHandle<E>,
+    pub payload_builder: PayloadBuilderHandle<E>,
     pub timestamp: u64,
 }
 
@@ -49,12 +50,26 @@ impl<E: EngineTypes> PayloadTestContext<E> {
     /// Wait until the best built payload is ready
     pub async fn wait_for_built_payload(&self, payload_id: PayloadId) {
         loop {
-            let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
-            if payload.block().body.transactions.is_empty() {
-                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-                continue
+            // let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
+            match self.payload_builder.best_payload(payload_id).await {
+                Some(v) => match v {
+                    Ok(v) => {
+                        if v.block().body.is_empty() {
+                            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                            continue;
+                        } else {
+                            trace!("got payload");
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        error!("Error building a payload: {}", e);
+                    }
+                },
+                None => {
+                    error!("Didn't get a payload from payload builder");
+                }
             }
-            break
         }
     }
 

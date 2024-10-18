@@ -593,6 +593,9 @@ tikv-jemallocator = "0.6"
 tracy-client = "0.17.3"
 
 [patch.crates-io]
+revm = {path = "/workspaces/revm/crates/revm"}
+revm-primitives = {path = "/workspaces/revm/crates/primitives"}
+
 #alloy-consensus = { git = "https://github.com/alloy-rs/alloy", rev = "8c499409"}
 #alloy-eips = { git = "https://github.com/alloy-rs/alloy", rev = "8c499409"}
 #alloy-genesis = { git = "https://github.com/alloy-rs/alloy", rev = "8c499409"}

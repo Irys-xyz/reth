@@ -33,4 +33,12 @@ where
         let tx = tx.to_vec();
         Ok(TxEnvelope::decode_2718(&mut tx.as_ref()).unwrap())
     }
+    pub async fn get_balance(
+        &mut self,
+        address: Address,
+        block_id: Option<BlockId>,
+    ) -> eyre::Result<U256> {
+        let eth_api = self.inner.eth_api();
+        Ok(eth_api.balance(address, block_id)?)
+    }
 }

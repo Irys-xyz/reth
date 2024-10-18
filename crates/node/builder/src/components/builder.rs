@@ -17,6 +17,8 @@ use crate::{
 };
 
 use super::EngineValidatorBuilder;
+use reth_node_core::irys_ext::{IrysExt, IrysExtWrapped};
+
 
 /// A generic, general purpose and customizable [`NodeComponentsBuilder`] implementation.
 ///
@@ -45,6 +47,7 @@ pub struct ComponentsBuilder<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
     executor_builder: ExecB,
     consensus_builder: ConsB,
     engine_validator_builder: EVB,
+    irys_ext: IrysExtWrapped,
     _marker: PhantomData<Node>,
 }
 
@@ -65,6 +68,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -74,6 +78,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             network_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker: Default::default(),
         }
     }
@@ -87,6 +92,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             executor_builder: self.executor_builder,
             consensus_builder: self.consensus_builder,
             engine_validator_builder: self.engine_validator_builder,
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -100,6 +106,8 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             executor_builder: self.executor_builder,
             consensus_builder: self.consensus_builder,
             engine_validator_builder: self.engine_validator_builder,
+            irys_ext: self.irys_ext,
+
             _marker: self._marker,
         }
     }
@@ -113,6 +121,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             executor_builder: self.executor_builder,
             consensus_builder: self.consensus_builder,
             engine_validator_builder: self.engine_validator_builder,
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -126,6 +135,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             executor_builder: f(self.executor_builder),
             consensus_builder: self.consensus_builder,
             engine_validator_builder: self.engine_validator_builder,
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -139,6 +149,7 @@ impl<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
             executor_builder: self.executor_builder,
             consensus_builder: f(self.consensus_builder),
             engine_validator_builder: self.engine_validator_builder,
+            irys_ext: self.irys_ext,
             _marker: self._marker,
         }
     }
@@ -167,6 +178,8 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
+
             _marker,
         } = self;
         ComponentsBuilder {
@@ -176,6 +189,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -205,6 +219,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -214,6 +229,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -236,6 +252,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -245,6 +262,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -267,6 +285,7 @@ where
             executor_builder: _,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         } = self;
         ComponentsBuilder {
@@ -276,6 +295,7 @@ where
             executor_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -338,6 +358,7 @@ where
             executor_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext,
             _marker,
         }
     }
@@ -374,6 +395,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
+            irys_ext: _,
             _marker,
         } = self;
 
@@ -392,6 +414,7 @@ where
             executor,
             consensus,
             engine_validator,
+            irys_ext: context.irys_ext.clone(),
         })
     }
 }
@@ -405,6 +428,8 @@ impl Default for ComponentsBuilder<(), (), (), (), (), (), ()> {
             executor_builder: (),
             consensus_builder: (),
             engine_validator_builder: (),
+            irys_ext: IrysExtWrapped(Arc::new(Mutex::new(IrysExt { reload: None }))),
+
             _marker: Default::default(),
         }
     }

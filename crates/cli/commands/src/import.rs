@@ -22,6 +22,7 @@ use reth_network_p2p::{
 };
 use reth_node_builder::NodeTypesWithEngine;
 use reth_node_core::version::SHORT_VERSION;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_node_events::node::NodeEvent;
 use reth_provider::{
     providers::ProviderNodeTypes, BlockNumReader, ChainSpecProvider, HeaderProvider, ProviderError,
@@ -58,7 +59,7 @@ pub struct ImportCommand<C: ChainSpecParser> {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> ImportCommand<C> {
     /// Execute `import` command
-    pub async fn execute<N, E, F>(self, executor: F) -> eyre::Result<()>
+    pub async fn execute<N, E, F>(self, executor: F) -> eyre::Result<NodeExitReason>
     where
         N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>,
         E: BlockExecutorProvider,
@@ -132,8 +133,8 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> ImportComm
         let total_imported_blocks = provider.tx_ref().entries::<tables::HeaderNumbers>()?;
         let total_imported_txns = provider.tx_ref().entries::<tables::TransactionHashNumbers>()?;
 
-        if total_decoded_blocks != total_imported_blocks ||
-            total_decoded_txns != total_imported_txns
+        if total_decoded_blocks != total_imported_blocks
+            || total_decoded_txns != total_imported_txns
         {
             error!(target: "reth::cli",
                 total_decoded_blocks,
@@ -150,7 +151,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> ImportComm
             "Chain file imported"
         );
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

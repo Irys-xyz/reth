@@ -173,7 +173,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
 }
 
 /// `reth stage unwind` subcommand
-#[derive(Subcommand, Debug, Eq, PartialEq)]
+#[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
 enum Subcommands {
     /// Unwinds the database from the latest block, until the given block number or hash has been
     /// reached, that block is not included.

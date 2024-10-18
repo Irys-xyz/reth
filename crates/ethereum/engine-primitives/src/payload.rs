@@ -13,6 +13,7 @@ use reth_primitives::{SealedBlock, Withdrawals};
 use reth_rpc_types_compat::engine::payload::{
     block_to_payload_v1, block_to_payload_v3, block_to_payload_v4,
     convert_block_to_payload_field_v2,
+    block_to_payload_v1_irys
 };
 use std::convert::Infallible;
 
@@ -34,19 +35,15 @@ pub struct EthBuiltPayload {
     /// The blobs, proofs, and commitments in the block. If the block is pre-cancun, this will be
     /// empty.
     pub(crate) sidecars: Vec<BlobTransactionSidecar>,
+    pub(crate) is_empty: bool,
 }
 
 // === impl BuiltPayload ===
 
 impl EthBuiltPayload {
     /// Initializes the payload with the given initial block.
-    pub const fn new(
-        id: PayloadId,
-        block: SealedBlock,
-        fees: U256,
-        executed_block: Option<ExecutedBlock>,
-    ) -> Self {
-        Self { id, block, executed_block, fees, sidecars: Vec::new() }
+    pub fn new(id: PayloadId, block: SealedBlock, fees: U256, is_empty: bool) -> Self {
+        Self { id, block, fees, sidecars: Vec::new(), is_empty }
     }
 
     /// Returns the identifier of the payload.
@@ -87,6 +84,10 @@ impl BuiltPayload for EthBuiltPayload {
     fn executed_block(&self) -> Option<ExecutedBlock> {
         self.executed_block.clone()
     }
+    
+    fn is_empty(&self) -> bool {
+        self.is_empty
+    }
 }
 
 impl BuiltPayload for &EthBuiltPayload {
@@ -100,6 +101,10 @@ impl BuiltPayload for &EthBuiltPayload {
 
     fn executed_block(&self) -> Option<ExecutedBlock> {
         self.executed_block.clone()
+    }
+    
+    fn is_empty(&self) -> bool {
+        (**self).is_empty()
     }
 }
 
@@ -161,6 +166,27 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV4 {
     }
 }
 
+impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
+    fn from(value: EthBuiltPayload) -> Self {
+        let EthBuiltPayload { block, fees, sidecars /*  is_empty, */, .. } = value;
+        ExecutionPayloadEnvelopeV1Irys {
+            execution_payload: block_to_payload_v1_irys(block.clone()),
+            block_value: fees,
+            // From the engine API spec:
+            //
+            // > Client software **MAY** use any heuristics to decide whether to set
+            // `shouldOverrideBuilder` flag or not. If client software does not implement any
+            // heuristic this flag **SHOULD** be set to `false`.
+            //
+            // Spec:
+            // <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#specification-2>
+            should_override_builder: false,
+            blobs_bundle: sidecars.clone().into_iter().map(Into::into).collect::<Vec<_>>().into(),
+            // is_empty, // shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
+        }
+    }
+}
+
 /// Container type for all components required to build a payload.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EthPayloadBuilderAttributes {
@@ -178,6 +204,7 @@ pub struct EthPayloadBuilderAttributes {
     pub prev_randao: B256,
     /// Withdrawals for the generated payload
     pub withdrawals: Withdrawals,
+    pub shadows: Shadows,
     /// Root of the parent beacon block
     pub parent_beacon_block_root: Option<B256>,
 }
@@ -204,6 +231,7 @@ impl EthPayloadBuilderAttributes {
             prev_randao: attributes.prev_randao,
             withdrawals: attributes.withdrawals.unwrap_or_default().into(),
             parent_beacon_block_root: attributes.parent_beacon_block_root,
+            shadows: attributes.shadows.unwrap_or_default(),
         }
     }
 }

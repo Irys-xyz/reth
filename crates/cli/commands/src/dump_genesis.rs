@@ -23,9 +23,9 @@ pub struct DumpGenesisCommand<C: ChainSpecParser> {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec>> DumpGenesisCommand<C> {
     /// Execute the `dump-genesis` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         println!("{}", serde_json::to_string_pretty(self.chain.genesis())?);
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

@@ -220,6 +220,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
             suggested_fee_recipient: self.suggested_fee_recipient,
             // TODO: add support for withdrawals
             withdrawals: None,
+            shadows: None,
         };
         let payload_config = PayloadConfig::new(
             Arc::clone(&best_block),

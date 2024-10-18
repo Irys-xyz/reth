@@ -53,72 +53,72 @@ pub fn validate_payload_timestamp(
     version: EngineApiMessageVersion,
     timestamp: u64,
 ) -> Result<(), EngineObjectValidationError> {
-    let is_cancun = chain_spec.is_cancun_active_at_timestamp(timestamp);
-    if version == EngineApiMessageVersion::V2 && is_cancun {
-        // From the Engine API spec:
-        //
-        // ### Update the methods of previous forks
-        //
-        // This document defines how Cancun payload should be handled by the [`Shanghai
-        // API`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md).
-        //
-        // For the following methods:
-        //
-        // - [`engine_forkchoiceUpdatedV2`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md#engine_forkchoiceupdatedv2)
-        // - [`engine_newPayloadV2`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md#engine_newpayloadV2)
-        // - [`engine_getPayloadV2`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md#engine_getpayloadv2)
-        //
-        // a validation **MUST** be added:
-        //
-        // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-        //    payload or payloadAttributes is greater or equal to the Cancun activation timestamp.
-        return Err(EngineObjectValidationError::UnsupportedFork)
-    }
+    // let is_cancun = chain_spec.is_cancun_active_at_timestamp(timestamp);
+    // if version == EngineApiMessageVersion::V1Irys && is_cancun {
+    //     // From the Engine API spec:
+    //     //
+    //     // ### Update the methods of previous forks
+    //     //
+    //     // This document defines how Cancun payload should be handled by the [`Shanghai
+    //     // API`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md).
+    //     //
+    //     // For the following methods:
+    //     //
+    //     // - [`engine_forkchoiceUpdatedV2`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md#engine_forkchoiceupdatedv2)
+    //     // - [`engine_newPayloadV2`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md#engine_newpayloadV2)
+    //     // - [`engine_getPayloadV2`](https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/shanghai.md#engine_getpayloadv2)
+    //     //
+    //     // a validation **MUST** be added:
+    //     //
+    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
+    //     //    payload or payloadAttributes is greater or equal to the Cancun activation timestamp.
+    //     return Err(EngineObjectValidationError::UnsupportedFork);
+    // }
 
-    if version == EngineApiMessageVersion::V3 && !is_cancun {
-        // From the Engine API spec:
-        // <https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/cancun.md#specification-2>
-        //
-        // For `engine_getPayloadV3`:
-        //
-        // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-        //    the built payload does not fall within the time frame of the Cancun fork.
-        //
-        // For `engine_forkchoiceUpdatedV3`:
-        //
-        // 2. Client software **MUST** return `-38005: Unsupported fork` error if the
-        //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall within
-        //    the time frame of the Cancun fork.
-        //
-        // For `engine_newPayloadV3`:
-        //
-        // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-        //    the payload does not fall within the time frame of the Cancun fork.
-        return Err(EngineObjectValidationError::UnsupportedFork)
-    }
+    // if version == EngineApiMessageVersion::V3 && !is_cancun {
+    //     // From the Engine API spec:
+    //     // <https://github.com/ethereum/execution-apis/blob/ff43500e653abde45aec0f545564abfb648317af/src/engine/cancun.md#specification-2>
+    //     //
+    //     // For `engine_getPayloadV3`:
+    //     //
+    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
+    //     //    the built payload does not fall within the time frame of the Cancun fork.
+    //     //
+    //     // For `engine_forkchoiceUpdatedV3`:
+    //     //
+    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the
+    //     //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall within
+    //     //    the time frame of the Cancun fork.
+    //     //
+    //     // For `engine_newPayloadV3`:
+    //     //
+    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
+    //     //    the payload does not fall within the time frame of the Cancun fork.
+    //     return Err(EngineObjectValidationError::UnsupportedFork);
+    // }
 
-    let is_prague = chain_spec.is_prague_active_at_timestamp(timestamp);
-    if version == EngineApiMessageVersion::V4 && !is_prague {
-        // From the Engine API spec:
-        // <https://github.com/ethereum/execution-apis/blob/7907424db935b93c2fe6a3c0faab943adebe8557/src/engine/prague.md#specification-1>
-        //
-        // For `engine_getPayloadV4`:
-        //
-        // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-        //    the built payload does not fall within the time frame of the Prague fork.
-        //
-        // For `engine_forkchoiceUpdatedV4`:
-        //
-        // 2. Client software **MUST** return `-38005: Unsupported fork` error if the
-        //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall within
-        //    the time frame of the Prague fork.
-        //
-        // For `engine_newPayloadV4`:
-        //
-        // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-        //    the payload does not fall within the time frame of the Prague fork.
-        return Err(EngineObjectValidationError::UnsupportedFork)
-    }
+    // let is_prague = chain_spec.is_prague_active_at_timestamp(timestamp);
+    // if version == EngineApiMessageVersion::V4 && !is_prague {
+    //     // From the Engine API spec:
+    //     // <https://github.com/ethereum/execution-apis/blob/7907424db935b93c2fe6a3c0faab943adebe8557/src/engine/prague.md#specification-1>
+    //     //
+    //     // For `engine_getPayloadV4`:
+    //     //
+    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
+    //     //    the built payload does not fall within the time frame of the Prague fork.
+    //     //
+    //     // For `engine_forkchoiceUpdatedV4`:
+    //     //
+    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the
+    //     //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall within
+    //     //    the time frame of the Prague fork.
+    //     //
+    //     // For `engine_newPayloadV4`:
+    //     //
+    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
+    //     //    the payload does not fall within the time frame of the Prague fork.
+    //     return Err(EngineObjectValidationError::UnsupportedFork);
+    // }
     Ok(())
 }
 
@@ -132,26 +132,30 @@ pub fn validate_withdrawals_presence(
     timestamp: u64,
     has_withdrawals: bool,
 ) -> Result<(), EngineObjectValidationError> {
-    let is_shanghai_active = chain_spec.is_shanghai_active_at_timestamp(timestamp);
+    // let is_shanghai_active = chain_spec.is_shanghai_active_at_timestamp(timestamp);
 
-    match version {
-        EngineApiMessageVersion::V1 => {
-            if has_withdrawals {
-                return Err(message_validation_kind
-                    .to_error(VersionSpecificValidationError::WithdrawalsNotSupportedInV1))
-            }
-        }
-        EngineApiMessageVersion::V2 | EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4 => {
-            if is_shanghai_active && !has_withdrawals {
-                return Err(message_validation_kind
-                    .to_error(VersionSpecificValidationError::NoWithdrawalsPostShanghai))
-            }
-            if !is_shanghai_active && has_withdrawals {
-                return Err(message_validation_kind
-                    .to_error(VersionSpecificValidationError::HasWithdrawalsPreShanghai))
-            }
-        }
-    };
+    // match version {
+    //     EngineApiMessageVersion::V1 => {
+    //         if has_withdrawals {
+    //             return Err(message_validation_kind
+    //                 .to_error(VersionSpecificValidationError::WithdrawalsNotSupportedInV1));
+    //         }
+    //     }
+    //     EngineApiMessageVersion::V2 | EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4 => {
+    //         if is_shanghai_active && !has_withdrawals {
+    //             return Err(message_validation_kind
+    //                 .to_error(VersionSpecificValidationError::NoWithdrawalsPostShanghai));
+    //         }
+    //         if !is_shanghai_active && has_withdrawals {
+    //             return Err(message_validation_kind
+    //                 .to_error(VersionSpecificValidationError::HasWithdrawalsPreShanghai));
+    //         }
+    //     }
+    // };
+    // if !has_withdrawals {
+    //     return Err(message_validation_kind
+    //         .to_error(VersionSpecificValidationError::NoWithdrawalsPostShanghai));
+    // }
 
     Ok(())
 }
@@ -234,21 +238,21 @@ pub fn validate_parent_beacon_block_root_presence(
     //        failure.
     //     4. If any of the above checks fails, the `forkchoiceState` update **MUST NOT** be rolled
     //        back.
-    match version {
-        EngineApiMessageVersion::V1 | EngineApiMessageVersion::V2 => {
-            if has_parent_beacon_block_root {
-                return Err(validation_kind.to_error(
-                    VersionSpecificValidationError::ParentBeaconBlockRootNotSupportedBeforeV3,
-                ))
-            }
-        }
-        EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4 => {
-            if !has_parent_beacon_block_root {
-                return Err(validation_kind
-                    .to_error(VersionSpecificValidationError::NoParentBeaconBlockRootPostCancun))
-            }
-        }
-    };
+    // match version {
+    //     EngineApiMessageVersion::V1 | EngineApiMessageVersion::V2 => {
+    //         if has_parent_beacon_block_root {
+    //             return Err(validation_kind.to_error(
+    //                 VersionSpecificValidationError::ParentBeaconBlockRootNotSupportedBeforeV3,
+    //             ));
+    //         }
+    //     }
+    //     EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4 => {
+    //         if !has_parent_beacon_block_root {
+    //             return Err(validation_kind
+    //                 .to_error(VersionSpecificValidationError::NoParentBeaconBlockRootPostCancun));
+    //         }
+    //     }
+    // };
 
     // For `engine_forkchoiceUpdatedV3`:
     //
@@ -260,7 +264,7 @@ pub fn validate_parent_beacon_block_root_presence(
     //
     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of the
     //    payload does not fall within the time frame of the Cancun fork.
-    validate_payload_timestamp(chain_spec, version, timestamp)?;
+    // validate_payload_timestamp(chain_spec, version, timestamp)?;
 
     Ok(())
 }
@@ -306,6 +310,7 @@ pub fn validate_version_specific_fields<Type>(
 where
     Type: PayloadAttributes,
 {
+    // TODO: add code to check shadows presence
     validate_withdrawals_presence(
         chain_spec,
         version,
@@ -325,20 +330,21 @@ where
 /// The version of Engine API message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EngineApiMessageVersion {
-    /// Version 1
-    V1,
-    /// Version 2
-    ///
-    /// Added in the Shanghai hardfork.
-    V2,
-    /// Version 3
-    ///
-    /// Added in the Cancun hardfork.
-    V3,
-    /// Version 4
-    ///
-    /// Added in the Prague hardfork.
-    V4,
+    // /// Version 1
+    // V1,
+    // /// Version 2
+    // ///
+    // /// Added in the Shanghai hardfork.
+    // V2,
+    // /// Version 3
+    // ///
+    // /// Added in the Cancun hardfork.
+    // V3,
+    // /// Version 4
+    // ///
+    // /// Added in the Prague hardfork.
+    // V4,
+    V1Irys,
 }
 
 #[cfg(test)]

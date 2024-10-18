@@ -18,21 +18,21 @@ use std::collections::{btree_map, hash_map, BTreeMap, HashMap, HashSet};
 #[derive(Debug)]
 pub struct BlockBuffer {
     /// All blocks in the buffer stored by their block hash.
-    pub(crate) blocks: HashMap<BlockHash, SealedBlockWithSenders>,
+    pub blocks: HashMap<BlockHash, SealedBlockWithSenders>,
     /// Map of any parent block hash (even the ones not currently in the buffer)
     /// to the buffered children.
     /// Allows connecting buffered blocks by parent.
     pub(crate) parent_to_child: HashMap<BlockHash, HashSet<BlockHash>>,
     /// `BTreeMap` tracking the earliest blocks by block number.
     /// Used for removal of old blocks that precede finalization.
-    pub(crate) earliest_blocks: BTreeMap<BlockNumber, HashSet<BlockHash>>,
+    pub earliest_blocks: BTreeMap<BlockNumber, HashSet<BlockHash>>,
     /// LRU used for tracing oldest inserted blocks that are going to be
     /// first in line for evicting if `max_blocks` limit is hit.
     ///
     /// Used as counter of amount of blocks inside buffer.
-    pub(crate) lru: LruCache<BlockHash>,
+    pub lru: LruCache<BlockHash>,
     /// Various metrics for the block buffer.
-    pub(crate) metrics: BlockBufferMetrics,
+    pub metrics: BlockBufferMetrics,
 }
 
 impl BlockBuffer {
@@ -108,7 +108,7 @@ impl BlockBuffer {
         // discard all blocks that are before the finalized number.
         while let Some(entry) = self.earliest_blocks.first_entry() {
             if *entry.key() > block_number {
-                break
+                break;
             }
             let block_hashes = entry.remove();
             block_hashes_to_remove.extend(block_hashes);

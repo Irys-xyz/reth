@@ -10,7 +10,7 @@ use reth_provider::{ProviderFactory, StaticFileProviderFactory};
 use reth_static_file_types::StaticFileSegment;
 
 /// The arguments for the `reth db clear` command
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Command {
     #[clap(subcommand)]
     subcommand: Subcommands,
@@ -42,7 +42,7 @@ impl Command {
     }
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 enum Subcommands {
     /// Deletes all database table entries
     Mdbx { table: Tables },
@@ -50,7 +50,7 @@ enum Subcommands {
     StaticFile { segment: StaticFileSegment },
 }
 
-struct ClearViewer<'a, DB: Database> {
+pub struct ClearViewer<'a, DB: Database> {
     db: &'a DB,
 }
 

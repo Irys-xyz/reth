@@ -1,3 +1,23 @@
+use crate::{
+    constants::{
+        EIP1559_INITIAL_BASE_FEE, EMPTY_RECEIPTS, EMPTY_SHADOWS_ROOT, EMPTY_TRANSACTIONS,
+        EMPTY_WITHDRAWALS,
+    },
+    holesky_nodes,
+    net::{goerli_nodes, mainnet_nodes, sepolia_nodes},
+    proofs::{calculate_shadows_root, state_root_ref_unhashed},
+    revm_primitives::{address, b256, Genesis, GenesisAccount},
+    Address, BlockNumber, Chain, ChainKind, ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork,
+    Head, Header, NamedChain, NodeRecord, SealedHeader, B256, EMPTY_OMMER_ROOT_HASH, U256,
+};
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::BTreeMap,
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
+
 pub use alloy_eips::eip1559::BaseFeeParams;
 
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
@@ -303,6 +323,10 @@ impl ChainSpec {
             None
         };
 
+        let shadows_root = match &self.genesis.shadows {
+            Some(shadows) => calculate_shadows_root(&shadows),
+            None => EMPTY_SHADOWS_ROOT,
+        };
         Header {
             gas_limit: self.genesis.gas_limit,
             difficulty: self.genesis.difficulty,
@@ -318,6 +342,7 @@ impl ChainSpec {
             blob_gas_used: blob_gas_used.map(Into::into),
             excess_blob_gas: excess_blob_gas.map(Into::into),
             requests_root,
+            shadows_root
             ..Default::default()
         }
     }
@@ -470,8 +495,8 @@ impl ChainSpec {
         for (_, cond) in self.hardforks.forks_iter() {
             // handle block based forks and the sepolia merge netsplit block edge case (TTD
             // ForkCondition with Some(block))
-            if let ForkCondition::Block(block) |
-            ForkCondition::TTD { fork_block: Some(block), .. } = cond
+            if let ForkCondition::Block(block)
+            | ForkCondition::TTD { fork_block: Some(block), .. } = cond
             {
                 if cond.active_at_head(head) {
                     if block != current_applied {
@@ -481,7 +506,7 @@ impl ChainSpec {
                 } else {
                     // we can return here because this block fork is not active, so we set the
                     // `next` value
-                    return ForkId { hash: forkhash, next: block }
+                    return ForkId { hash: forkhash, next: block };
                 }
             }
         }
@@ -502,7 +527,7 @@ impl ChainSpec {
                 // can safely return here because we have already handled all block forks and
                 // have handled all active timestamp forks, and set the next value to the
                 // timestamp that is known but not active yet
-                return ForkId { hash: forkhash, next: timestamp }
+                return ForkId { hash: forkhash, next: timestamp };
             }
         }
 
@@ -546,17 +571,17 @@ impl ChainSpec {
                     ForkCondition::TTD { fork_block, .. } => {
                         // handle Sepolia merge netsplit case
                         if fork_block.is_some() {
-                            return *fork_block
+                            return *fork_block;
                         }
                         // ensure curr_cond is indeed ForkCondition::Block and return block_num
                         if let ForkCondition::Block(block_num) = curr_cond {
-                            return Some(block_num)
+                            return Some(block_num);
                         }
                     }
                     ForkCondition::Timestamp(_) => {
                         // ensure curr_cond is indeed ForkCondition::Block and return block_num
                         if let ForkCondition::Block(block_num) = curr_cond {
-                            return Some(block_num)
+                            return Some(block_num);
                         }
                     }
                     ForkCondition::Block(_) | ForkCondition::Never => continue,

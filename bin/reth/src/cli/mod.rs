@@ -17,6 +17,7 @@ use reth_cli_runner::CliRunner;
 use reth_db::DatabaseEnv;
 use reth_ethereum_cli::chainspec::EthereumChainSpecParser;
 use reth_node_builder::{NodeBuilder, WithLaunchContext};
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_node_ethereum::{EthExecutorProvider, EthereumNode};
 use reth_tracing::FileWorkerGuard;
 use std::{ffi::OsString, fmt, future::Future, sync::Arc};
@@ -32,7 +33,7 @@ pub use crate::core::cli::*;
 /// The main reth cli interface.
 ///
 /// This is the entrypoint to the executable.
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 #[command(author, version = SHORT_VERSION, long_version = LONG_VERSION, about = "Reth", long_about = None)]
 pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + fmt::Debug = NoArgs>
 {
@@ -67,10 +68,10 @@ pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + f
     /// - `HTTP_RPC_PORT`: default - `instance` + 1
     /// - `WS_RPC_PORT`: default + `instance` * 2 - 2
     #[arg(long, value_name = "INSTANCE", global = true, default_value_t = 1, value_parser = value_parser!(u16).range(..=200))]
-    instance: u16,
+    pub instance: u16,
 
     #[command(flatten)]
-    logs: LogArgs,
+    pub logs: LogArgs,
 }
 
 impl Cli {
@@ -120,7 +121,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + fmt::Debug> Cl
     /// use reth::cli::Cli;
     /// use reth_ethereum_cli::chainspec::EthereumChainSpecParser;
     ///
-    /// #[derive(Debug, Parser)]
+    /// #[derive(Debug, Parser, Clone)]
     /// pub struct MyArgs {
     ///     pub enable: bool,
     /// }
@@ -133,7 +134,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + fmt::Debug> Cl
     ///     })
     ///     .unwrap();
     /// ````
-    pub fn run<L, Fut>(mut self, launcher: L) -> eyre::Result<()>
+    pub fn run<L, Fut>(mut self, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>, C::ChainSpec>>, Ext) -> Fut,
         Fut: Future<Output = eyre::Result<()>>,
@@ -177,7 +178,8 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + fmt::Debug> Cl
                 runner.run_command_until_exit(|ctx| command.execute::<EthereumNode>(ctx))
             }
             Commands::Prune(command) => runner.run_until_ctrl_c(command.execute::<EthereumNode>()),
-        }
+        }?;
+        Ok(NodeExitReason::Normal)
     }
 
     /// Initializes tracing with the configured options.
@@ -192,7 +194,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + fmt::Debug> Cl
 
 /// Commands to be executed
 #[derive(Debug, Subcommand)]
-pub enum Commands<C: ChainSpecParser, Ext: clap::Args + fmt::Debug> {
+pub enum Commands<C: ChainSpecParser, Ext: clap::Args + fmt::Debug = NoArgs> {
     /// Start the node
     #[command(name = "node")]
     Node(Box<node::NodeCommand<C, Ext>>),

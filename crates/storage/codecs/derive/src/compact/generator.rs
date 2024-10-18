@@ -89,14 +89,32 @@ pub fn generate_from_to(
 /// Generates code to implement the `Compact` trait method `to_compact`.
 fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> TokenStream2 {
     let mut lines = vec![];
-    let mut known_types =
-        vec!["B256", "Address", "Bloom", "Vec", "TxHash", "BlockHash", "FixedBytes"];
+    let mut known_types = vec![
+        "B256",
+        "Address",
+        "Bloom",
+        "Vec",
+        "TxHash",
+        "BlockHash",
+        "FixedBytes",
+        "IrysTxId",
+        "DestHash",
+    ];
 
     // Only types without `Bytes` should be added here. It's currently manually added, since
     // it's hard to figure out with derive_macro which types have Bytes fields.
     //
     // This removes the requirement of the field to be placed last in the struct.
-    known_types.extend_from_slice(&["TxKind", "AccessList", "Signature", "CheckpointBlockRange"]);
+    known_types.extend_from_slice(&[
+        "TxKind",
+        "AccessList",
+        "Signature",
+        "CheckpointBlockRange",
+        "IrysTxId",
+        "IrysBlockHash",
+        "CommitmentType",
+        "CommitmentStatus",
+    ]);
 
     // let mut handle = FieldListHandler::new(fields);
     let is_enum = fields.iter().any(|field| matches!(field, FieldTypes::EnumVariant(_)));
@@ -126,7 +144,7 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
                     let ident = format_ident!("{name}");
                     return Some(quote! {
                         #ident: #ident,
-                    })
+                    });
                 }
                 None
             });

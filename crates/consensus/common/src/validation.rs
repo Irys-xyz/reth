@@ -18,7 +18,7 @@ pub const fn validate_header_gas(header: &Header) -> Result<(), ConsensusError> 
         return Err(ConsensusError::HeaderGasUsedExceedsGasLimit {
             gas_used: header.gas_used,
             gas_limit: header.gas_limit,
-        })
+        });
     }
     Ok(())
 }
@@ -32,7 +32,7 @@ pub fn validate_header_base_fee<ChainSpec: EthereumHardforks>(
     if chain_spec.is_fork_active_at_block(EthereumHardfork::London, header.number) &&
         header.base_fee_per_gas.is_none()
     {
-        return Err(ConsensusError::BaseFeeMissing)
+        return Err(ConsensusError::BaseFeeMissing);
     }
     Ok(())
 }
@@ -110,7 +110,7 @@ pub fn validate_block_pre_execution<ChainSpec: EthereumHardforks>(
     if block.header.ommers_hash != ommers_hash {
         return Err(ConsensusError::BodyOmmersHashDiff(
             GotExpected { got: ommers_hash, expected: block.header.ommers_hash }.into(),
-        ))
+        ));
     }
 
     // Check transaction root
@@ -131,6 +131,17 @@ pub fn validate_block_pre_execution<ChainSpec: EthereumHardforks>(
         validate_prague_request(block)?;
     }
 
+    let shadows = block.shadows.as_ref().ok_or(ConsensusError::BodyShadowsMissing)?;
+    let shadows_root = reth_primitives::proofs::calculate_shadows_root(shadows);
+    // let header_shadows_root =
+    //     block.shadows_root.as_ref().ok_or(ConsensusError::ShadowsRootMissing)?;
+    let header_shadows_root = &block.shadows_root;
+    if shadows_root != *header_shadows_root {
+        return Err(ConsensusError::BodyShadowsRootDiff(
+            GotExpected { got: shadows_root, expected: *header_shadows_root }.into(),
+        ));
+    }
+
     Ok(())
 }
 
@@ -146,22 +157,22 @@ pub fn validate_4844_header_standalone(header: &Header) -> Result<(), ConsensusE
     let blob_gas_used = header.blob_gas_used.ok_or(ConsensusError::BlobGasUsedMissing)?;
     let excess_blob_gas = header.excess_blob_gas.ok_or(ConsensusError::ExcessBlobGasMissing)?;
 
-    if header.parent_beacon_block_root.is_none() {
-        return Err(ConsensusError::ParentBeaconBlockRootMissing)
-    }
+    // if header.parent_beacon_block_root.is_none() {
+    //     return Err(ConsensusError::ParentBeaconBlockRootMissing);
+    // }
 
     if blob_gas_used > MAX_DATA_GAS_PER_BLOCK {
         return Err(ConsensusError::BlobGasUsedExceedsMaxBlobGasPerBlock {
             blob_gas_used,
             max_blob_gas_per_block: MAX_DATA_GAS_PER_BLOCK,
-        })
+        });
     }
 
     if blob_gas_used % DATA_GAS_PER_BLOB != 0 {
         return Err(ConsensusError::BlobGasUsedNotMultipleOfBlobGasPerBlob {
             blob_gas_used,
             blob_gas_per_blob: DATA_GAS_PER_BLOB,
-        })
+        });
     }
 
     // `excess_blob_gas` must also be a multiple of `DATA_GAS_PER_BLOB`. This will be checked later
@@ -170,7 +181,7 @@ pub fn validate_4844_header_standalone(header: &Header) -> Result<(), ConsensusE
         return Err(ConsensusError::ExcessBlobGasNotMultipleOfBlobGasPerBlob {
             excess_blob_gas,
             blob_gas_per_blob: DATA_GAS_PER_BLOB,
-        })
+        });
     }
 
     Ok(())

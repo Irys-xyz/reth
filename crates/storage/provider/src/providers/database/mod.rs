@@ -25,7 +25,7 @@ use reth_prune_types::{PruneCheckpoint, PruneModes, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
 use reth_storage_api::TryIntoHistoricalStateProvider;
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     ops::{RangeBounds, RangeInclusive},
     path::Path,
@@ -192,9 +192,11 @@ impl<N: ProviderNodeTypes> DatabaseProviderFactory for ProviderFactory<N> {
     fn database_provider_ro(&self) -> ProviderResult<Self::Provider> {
         self.provider()
     }
-
-    fn database_provider_rw(&self) -> ProviderResult<Self::ProviderRW> {
+    fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
         self.provider_rw().map(|provider| provider.0)
+    }
+    fn database_ref(&self) -> &DB {
+        &self.db
     }
 }
 
@@ -237,7 +239,7 @@ impl<N: ProviderNodeTypes> HeaderProvider for ProviderFactory<N> {
         if let Some(td) = self.chain_spec.final_paris_total_difficulty(number) {
             // if this block is higher than the final paris(merge) block, return the final paris
             // difficulty
-            return Ok(Some(td))
+            return Ok(Some(td));
         }
 
         self.static_file_provider.get_with_static_file_or_database(
@@ -397,6 +399,13 @@ impl<N: ProviderNodeTypes> BlockReader for ProviderFactory<N> {
     ) -> ProviderResult<Vec<SealedBlockWithSenders>> {
         self.provider()?.sealed_block_with_senders_range(range)
     }
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.provider()?.shadows(id)
+    }
+
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     self.provider()?.pending_shadows(id)
+    // }
 }
 
 impl<N: ProviderNodeTypes> TransactionsProvider for ProviderFactory<N> {

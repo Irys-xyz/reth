@@ -26,7 +26,7 @@ pub struct Command<C: ChainSpecParser> {
     command: Subcommands,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 /// `reth db` subcommands
 pub enum Subcommands {
     /// Lists all the tables, their entry count and their size
@@ -67,7 +67,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
     /// Execute `db` command
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         let data_dir = self.env.datadir.clone().resolve_datadir(self.env.chain.chain());
         let db_path = data_dir.db();
         let static_files_path = data_dir.static_files();
@@ -121,7 +121,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
 
                     if !input.trim().eq_ignore_ascii_case("y") {
                         println!("Database drop aborted!");
-                        return Ok(())
+                        return Ok(NodeExitReason::Normal);
                     }
                 }
 
@@ -153,7 +153,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
             }
         }
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

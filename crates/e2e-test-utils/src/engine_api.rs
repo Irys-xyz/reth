@@ -6,6 +6,7 @@ use jsonrpsee::{
 };
 use reth::{
     api::{EngineTypes, PayloadBuilderAttributes},
+    payload,
     providers::CanonStateNotificationStream,
     rpc::{
         api::EngineApiClient,
@@ -13,6 +14,7 @@ use reth::{
     },
 };
 use reth_payload_builder::PayloadId;
+use reth_primitives::{revm_primitives::shadow::Shadows, B256};
 use reth_rpc_layer::AuthClientService;
 use std::marker::PhantomData;
 
@@ -29,16 +31,16 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
     pub async fn get_payload_v3(
         &self,
         payload_id: PayloadId,
-    ) -> eyre::Result<E::ExecutionPayloadV3> {
-        Ok(EngineApiClient::<E>::get_payload_v3(&self.engine_api_client, payload_id).await?)
+    ) -> eyre::Result<E::ExecutionPayloadEnvelopeV1Irys> {
+        Ok(EngineApiClient::<E>::get_payload_v1_irys(&self.engine_api_client, payload_id).await?)
     }
 
     /// Retrieves a v3 payload from the engine api as serde value
-    pub async fn get_payload_v3_value(
+    pub async fn get_payload_v1_irys_value(
         &self,
         payload_id: PayloadId,
     ) -> eyre::Result<serde_json::Value> {
-        Ok(self.engine_api_client.request("engine_getPayloadV3", (payload_id,)).await?)
+        Ok(self.engine_api_client.request("engine_getPayloadV1Irys", (payload_id,)).await?)
     }
 
     /// Submits a payload to the engine api
@@ -50,17 +52,17 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
         versioned_hashes: Vec<B256>,
     ) -> eyre::Result<B256>
     where
-        E::ExecutionPayloadV3: From<E::BuiltPayload> + PayloadEnvelopeExt,
+        E::ExecutionPayloadEnvelopeV1Irys: From<E::BuiltPayload> + PayloadEnvelopeExt,
     {
         // setup payload for submission
-        let envelope_v3: <E as EngineTypes>::ExecutionPayloadV3 = payload.into();
+        let envelope_v3: <E as EngineTypes>::ExecutionPayloadEnvelopeV1Irys = payload.into();
 
         // submit payload to engine api
-        let submission = EngineApiClient::<E>::new_payload_v3(
+        let submission = EngineApiClient::<E>::submit_new_payload_irys(
             &self.engine_api_client,
             envelope_v3.execution_payload(),
-            versioned_hashes,
-            payload_builder_attributes.parent_beacon_block_root().unwrap(),
+            // versioned_hashes,
+            // payload_builder_attributes.parent_beacon_block_root().unwrap(),
         )
         .await?;
 
@@ -71,7 +73,7 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
 
     /// Sends forkchoice update to the engine api
     pub async fn update_forkchoice(&self, current_head: B256, new_head: B256) -> eyre::Result<()> {
-        EngineApiClient::<E>::fork_choice_updated_v2(
+        EngineApiClient::<E>::fork_choice_updated_v1_irys(
             &self.engine_api_client,
             ForkchoiceState {
                 head_block_hash: new_head,
@@ -83,10 +85,28 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
         .await?;
         Ok(())
     }
+    pub async fn update_forkchoice_payload_attr(
+        &self,
+        current_head: B256,
+        new_head: B256,
+        payload_attributes: Option<E::PayloadAttributes>,
+    ) -> eyre::Result<()> {
+        EngineApiClient::<E>::fork_choice_updated_v1_irys(
+            &self.engine_api_client,
+            ForkchoiceState {
+                head_block_hash: new_head,
+                safe_block_hash: current_head,
+                finalized_block_hash: current_head,
+            },
+            payload_attributes,
+        )
+        .await?;
+        Ok(())
+    }
 
     /// Sends forkchoice update to the engine api with a zero finalized hash
     pub async fn update_optimistic_forkchoice(&self, hash: B256) -> eyre::Result<()> {
-        EngineApiClient::<E>::fork_choice_updated_v2(
+        EngineApiClient::<E>::fork_choice_updated_v1_irys(
             &self.engine_api_client,
             ForkchoiceState {
                 head_block_hash: hash,
@@ -99,4 +119,9 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
 
         Ok(())
     }
+
+    // pub async fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> eyre::Result<()> {
+    //     EngineApiClient::<E>::add_shadows_v1(&self.engine_api_client, block_hash, shadows).await?;
+    //     Ok(())
+    // }
 }

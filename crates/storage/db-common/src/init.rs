@@ -90,13 +90,13 @@ where
         Ok(Some(block_hash)) => {
             if block_hash == hash {
                 debug!("Genesis already written, skipping.");
-                return Ok(hash)
+                return Ok(hash);
             }
 
             return Err(InitDatabaseError::GenesisHashMismatch {
                 chainspec_hash: hash,
                 database_hash: block_hash,
-            })
+            });
         }
         Err(e) => return Err(dbg!(e).into()),
     }
@@ -204,6 +204,10 @@ where
                     nonce: account.nonce.unwrap_or_default(),
                     balance: account.balance,
                     bytecode_hash,
+                    commitments: account.commitments.clone(),
+                    stake: account.stake.clone(),
+                    mining_permission: account.mining_permission,
+                    last_tx: account.last_tx,
                 }),
                 storage,
             ),
@@ -311,7 +315,8 @@ where
         Ok(Some(_)) => {}
         Err(e) => return Err(e),
     }
-
+    
+    info!("writing genesis block hash {} to HeaderNumbers with height 0", block_hash);
     provider.tx_ref().put::<tables::HeaderNumbers>(block_hash, 0)?;
     provider.tx_ref().put::<tables::BlockBodyIndices>(0, Default::default())?;
 
@@ -428,7 +433,7 @@ fn parse_accounts(
 
     while let Ok(n) = reader.read_line(&mut line) {
         if n == 0 {
-            break
+            break;
         }
 
         let GenesisAccountWithAddress { genesis_account, address } = serde_json::from_str(&line)?;
@@ -472,8 +477,8 @@ where
 
         accounts.push((address, account));
 
-        if (index > 0 && index % AVERAGE_COUNT_ACCOUNTS_PER_GB_STATE_DUMP == 0) ||
-            index == accounts_len - 1
+        if (index > 0 && index % AVERAGE_COUNT_ACCOUNTS_PER_GB_STATE_DUMP == 0)
+            || index == accounts_len - 1
         {
             total_inserted_accounts += accounts.len();
 
@@ -555,7 +560,7 @@ where
                     "State root has been computed"
                 );
 
-                return Ok(root)
+                return Ok(root);
             }
         }
     }

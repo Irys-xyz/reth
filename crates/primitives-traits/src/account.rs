@@ -5,7 +5,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use derive_more::Deref;
 use reth_codecs::{add_arbitrary_tests, Compact};
-use revm_primitives::{AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError, JumpTable};
+use revm_primitives::{AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError, JumpTable,  commitment::{Commitments, Stake},};
 use serde::{Deserialize, Serialize};
 
 /// Identifier for [`LegacyRaw`](RevmBytecode::LegacyRaw).
@@ -34,6 +34,10 @@ pub struct Account {
     pub balance: U256,
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
+    pub stake: Option<Stake>,
+    pub commitments: Option<Commitments>,
+    pub last_tx: Option<LastTx>,
+    pub mining_permission: Option<bool>,
 }
 
 impl Account {
@@ -45,9 +49,11 @@ impl Account {
     /// After `SpuriousDragon` empty account is defined as account with nonce == 0 && balance == 0
     /// && bytecode = None (or hash is [`KECCAK_EMPTY`]).
     pub fn is_empty(&self) -> bool {
-        self.nonce == 0 &&
-            self.balance.is_zero() &&
-            self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
+        self.nonce == 0
+            && self.balance.is_zero()
+            && self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
+            && self.stake.is_none()
+            && self.commitments.is_none()
     }
 
     /// Returns an account bytecode's hash.
@@ -208,7 +214,15 @@ mod tests {
 
     #[test]
     fn test_empty_account() {
-        let mut acc = Account { nonce: 0, balance: U256::ZERO, bytecode_hash: None };
+        let mut acc = Account {
+            nonce: 0,
+            balance: U256::ZERO,
+            bytecode_hash: None,
+            commitments: None,
+            stake: None,
+            mining_permission: true,
+            last_tx: None,
+        };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.
         assert!(acc.is_empty());
 

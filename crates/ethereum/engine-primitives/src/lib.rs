@@ -22,6 +22,11 @@ use reth_payload_primitives::{
     validate_version_specific_fields, EngineApiMessageVersion, EngineObjectValidationError,
     PayloadOrAttributes, PayloadTypes,
 };
+use reth_rpc_types::{
+    engine::{ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3},
+    irys_payload::ExecutionPayloadEnvelopeV1Irys,
+};
+
 
 /// The types used in the default mainnet ethereum beacon consensus engine.
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
@@ -47,6 +52,8 @@ where
     type ExecutionPayloadV2 = ExecutionPayloadEnvelopeV2;
     type ExecutionPayloadV3 = ExecutionPayloadEnvelopeV3;
     type ExecutionPayloadV4 = ExecutionPayloadEnvelopeV4;
+    type ExecutionPayloadEnvelopeV1Irys = ExecutionPayloadEnvelopeV1Irys;
+
 }
 
 /// A default payload type for [`EthEngineTypes`]

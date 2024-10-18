@@ -18,7 +18,7 @@ use std::{
 };
 use tracing::{info, warn};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db diff` command
 pub struct Command {
     /// The path to the data dir for all reth files and subdirectories.
@@ -302,12 +302,12 @@ where
     ) {
         // do not bother comparing if the key is already in the discrepancies map
         if self.discrepancies.contains_key(&key) {
-            return
+            return;
         }
 
         // do not bother comparing if the key is already in the extra elements map
         if self.extra_elements.contains_key(&key) {
-            return
+            return;
         }
 
         match (first, second) {

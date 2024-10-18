@@ -207,6 +207,19 @@ impl<DB, ChainSpec: EthChainSpec> NodeBuilder<DB, ChainSpec> {
 
         WithLaunchContext { builder: self.with_database(db), task_executor }
     }
+    /// Creates an _ephemeral_ preconfigured node for testing purposes.
+    pub fn testing_node_2(
+        self,
+        task_executor: TaskExecutor,
+    ) -> WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>>> {
+        let (db, path) = create_test_rw_db_2();
+        let db_path_str = path.to_str().expect("Path is not valid unicode");
+        let path =
+            MaybePlatformPath::<DataDirPath>::from_str(db_path_str).expect("Path is not valid");
+        let data_dir = path.unwrap_or_chain_default(self.config.chain.chain);
+
+        WithLaunchContext { builder: self.with_database(db), task_executor, data_dir }
+    }
 }
 
 impl<DB, ChainSpec> NodeBuilder<DB, ChainSpec>
@@ -518,6 +531,9 @@ pub struct BuilderContext<Node: FullNodeTypes> {
     pub(crate) executor: TaskExecutor,
     /// Config container
     pub(crate) config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
+
+    pub(crate) irys_ext: IrysExtWrapped,
+
 }
 
 impl<Node: FullNodeTypes> BuilderContext<Node> {
@@ -527,8 +543,9 @@ impl<Node: FullNodeTypes> BuilderContext<Node> {
         provider: Node::Provider,
         executor: TaskExecutor,
         config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
+        irys_ext: IrysExtWrapped
     ) -> Self {
-        Self { head, provider, executor, config_container }
+        Self { head, provider, executor, config_container, irys_ext }
     }
 
     /// Returns the configured provider to interact with the blockchain.

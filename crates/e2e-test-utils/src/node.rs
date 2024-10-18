@@ -88,7 +88,7 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes + Copy,
     ) -> eyre::Result<Vec<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>>
     where
-        Engine::ExecutionPayloadV3: From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+        Engine::ExecutionPayloadEnvelopeV1Irys: From<Engine::BuiltPayload> + PayloadEnvelopeExt,
         AddOns::EthApi: EthApiSpec + EthTransactions + TraceExt + FullEthApiTypes,
     {
         let mut chain = Vec::with_capacity(length as usize);
@@ -113,8 +113,8 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
     ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
     where
-        <Engine as EngineTypes>::ExecutionPayloadV3:
-            From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+        <Node::Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
+            From<<Node::Engine as EngineTypes>::BuiltPayload> + PayloadEnvelopeExt,
     {
         // trigger new payload building draining the pool
         let eth_attr = self.payload.new_payload(attributes_generator).await.unwrap();
@@ -123,9 +123,10 @@ where
         // wait for the payload builder to have finished building
         self.payload.wait_for_built_payload(eth_attr.payload_id()).await;
         // trigger resolve payload via engine api
-        self.engine_api.get_payload_v3_value(eth_attr.payload_id()).await?;
+        self.engine_api.get_payload_v1_irys_value(eth_attr.payload_id()).await?;
         // ensure we're also receiving the built payload as event
-        Ok((self.payload.expect_built_payload().await?, eth_attr))
+        let built_payload = self.payload.expect_built_payload().await?;
+        Ok((built_payload, eth_attr))
     }
 
     /// Advances the node forward one block
@@ -135,7 +136,7 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
     ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
     where
-        <Engine as EngineTypes>::ExecutionPayloadV3:
+        <Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
             From<Engine::BuiltPayload> + PayloadEnvelopeExt,
     {
         let (payload, eth_attr) = self.new_payload(attributes_generator).await?;
@@ -180,7 +181,7 @@ where
             if check {
                 if let Some(latest_block) = self.inner.provider.block_by_number(number)? {
                     assert_eq!(latest_block.hash_slow(), expected_block_hash);
-                    break
+                    break;
                 }
                 assert!(
                     !wait_finish_checkpoint,
@@ -197,7 +198,7 @@ where
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             if let Some(checkpoint) = self.inner.provider.get_stage_checkpoint(StageId::Headers)? {
                 if checkpoint.block_number == number {
-                    break
+                    break;
                 }
             }
         }
@@ -230,7 +231,7 @@ where
                     // make sure the block hash we submitted via FCU engine api is the new latest
                     // block using an RPC call
                     assert_eq!(latest_block.hash_slow(), block_hash);
-                    break
+                    break;
                 }
             }
         }

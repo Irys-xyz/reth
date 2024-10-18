@@ -458,7 +458,7 @@ impl SealedBlock {
             return Err(GotExpected {
                 got: calculated_root,
                 expected: self.header.transactions_root,
-            })
+            });
         }
 
         Ok(())
@@ -574,6 +574,8 @@ pub struct BlockBody {
     pub withdrawals: Option<Withdrawals>,
     /// Requests in the block.
     pub requests: Option<Requests>,
+    /// Block shadows.
+    pub shadows: Option<Shadows>,
 }
 
 impl BlockBody {
@@ -587,6 +589,12 @@ impl BlockBody {
         crate::proofs::calculate_transaction_root(&self.transactions)
     }
 
+    pub fn calculate_shadows_root(&self) -> Option<B256> {
+        match &self.shadows {
+            Some(shadows) => Some(crate::proofs::calculate_shadows_root(shadows)),
+            None => None,
+        }
+    }
     /// Calculate the ommers root for the block body.
     pub fn calculate_ommers_root(&self) -> B256 {
         crate::proofs::calculate_ommers_root(&self.ommers)
