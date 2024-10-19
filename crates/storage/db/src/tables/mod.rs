@@ -14,7 +14,6 @@
 pub mod codecs;
 
 mod raw;
-use models::StoredBlockShadows;
 pub use raw::{RawDupSort, RawKey, RawTable, RawValue, TableRawRow};
 
 #[cfg(feature = "mdbx")]
@@ -26,7 +25,7 @@ use reth_db_api::{
         accounts::BlockNumberAddress,
         blocks::{HeaderHash, StoredBlockOmmers},
         storage_sharded_key::StorageShardedKey,
-        AccountBeforeTx, ClientVersion, CompactU256, ShardedKey, StoredBlockBodyIndices,
+        AccountBeforeTx, ClientVersion, CompactU256, ShardedKey, StoredBlockBodyIndices, StoredBlockShadows,
         StoredBlockWithdrawals,
     },
     table::{Decode, DupSort, Encode, Table},

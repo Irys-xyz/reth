@@ -1,11 +1,11 @@
 [package]
-name = "reth-chainspec"
-version.workspace = true
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
+name = "reth-chainspec"
 repository.workspace = true
 rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
@@ -14,33 +14,35 @@ workspace = true
 # reth
 reth-ethereum-forks.workspace = true
 reth-network-peers.workspace = true
-reth-trie-common.workspace = true
 reth-primitives-traits.workspace = true
+reth-trie-common.workspace = true
 
 # op-reth
 reth-optimism-forks = { workspace = true, optional = true }
 
 # ethereum
-alloy-chains = { workspace = true, features = ["serde", "rlp"] }
+alloy-chains = { workspace = true, features = ["rlp", "serde"] }
 alloy-eips = { workspace = true, features = ["serde"] }
-alloy-genesis.workspace = true
+# alloy-genesis.workspace = true
 alloy-primitives = { workspace = true, features = ["rand", "rlp"] }
 alloy-trie.workspace = true
 
 # misc
 auto_impl.workspace = true
-once_cell.workspace = true
-serde_json.workspace = true
 derive_more.workspace = true
+once_cell.workspace = true
+revm-primitives.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 # eth
-alloy-trie = { workspace = true, features = ["arbitrary"] }
 alloy-eips = { workspace = true, features = ["arbitrary"] }
-alloy-rlp = { workspace = true, features = ["arrayvec"] }
 alloy-genesis.workspace = true
+alloy-rlp = { workspace = true, features = ["arrayvec"] }
+alloy-trie = { workspace = true, features = ["arbitrary"] }
 
 [features]
+arbitrary = ["alloy-chains/arbitrary"]
 default = ["std"]
 optimism = ["reth-optimism-forks"]
 std = [
@@ -50,5 +52,4 @@ std = [
     "alloy-primitives/std",
     "alloy-trie/std",
 ]
-arbitrary = ["alloy-chains/arbitrary"]
 test-utils = []

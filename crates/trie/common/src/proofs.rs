@@ -54,6 +54,10 @@ impl MultiProof {
                             nonce: account.nonce,
                             bytecode_hash: (account.code_hash != KECCAK_EMPTY)
                                 .then_some(account.code_hash),
+                            stake: account.stake,
+                            commitments: todo!(),
+                            last_tx: todo!(),
+                            mining_permission: todo!(),
                         })
                     }
                 }
@@ -174,7 +178,7 @@ impl AccountProof {
             None
         } else {
             Some(alloy_rlp::encode(TrieAccount::from((
-                self.info.unwrap_or_default(),
+                self.info.clone().unwrap_or_default(),
                 self.storage_root,
             ))))
         };

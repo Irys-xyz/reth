@@ -1,12 +1,10 @@
 //! Block related models and types.
 
-use reth_codecs::{main_codec, Compact};
-use reth_primitives::{revm_primitives::shadow::Shadows, Header, TxNumber, Withdrawals, B256};
+use reth_primitives::{revm_primitives::shadow::Shadows,  Withdrawals};
 use std::ops::Range;
 
-use alloy_primitives::TxNumber;
+use alloy_primitives::{TxNumber, B256};
 use reth_codecs::{add_arbitrary_tests, Compact};
-use reth_primitives::Withdrawals;
 use serde::{Deserialize, Serialize};
 
 /// Total number of transactions.
@@ -80,8 +78,9 @@ pub struct StoredBlockWithdrawals {
     pub withdrawals: Withdrawals,
 }
 
-#[main_codec]
-#[derive(Debug, Default, Eq, PartialEq, Clone)]
+#[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize, Compact)]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
+#[add_arbitrary_tests(compact)]
 pub struct StoredBlockShadows {
     /// The block shadows.
     pub shadows: Shadows,

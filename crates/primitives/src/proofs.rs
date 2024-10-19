@@ -8,6 +8,7 @@ use alloc::vec::Vec;
 use alloy_eips::{eip2718::Encodable2718, eip7685::Encodable7685};
 use alloy_primitives::{keccak256, B256};
 use reth_trie_common::root::{ordered_trie_root, ordered_trie_root_with_encoder};
+use revm_primitives::Shadows;
 
 /// Calculate a transaction root.
 ///

@@ -24,7 +24,7 @@ pub mod storage_sharded_key;
 pub use accounts::*;
 pub use blocks::*;
 pub use reth_db_models::{
-    AccountBeforeTx, ClientVersion, StoredBlockBodyIndices, StoredBlockWithdrawals,
+    AccountBeforeTx, ClientVersion, StoredBlockBodyIndices, StoredBlockWithdrawals, StoredBlockShadows
 };
 pub use sharded_key::ShardedKey;
 
@@ -223,6 +223,7 @@ impl_compression_for_compact!(
     StoredBlockBodyIndices,
     StoredBlockOmmers,
     StoredBlockWithdrawals,
+    StoredBlockShadows,
     Bytecode,
     AccountBeforeTx,
     TransactionSignedNoHash,

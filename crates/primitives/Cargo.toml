@@ -1,49 +1,48 @@
 [package]
-name = "reth-primitives"
-version.workspace = true
+description = "Commonly used types in reth."
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
+name = "reth-primitives"
 repository.workspace = true
 rust-version.workspace = true
-description = "Commonly used types in reth."
+version.workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
 # reth
-reth-primitives-traits.workspace = true
+reth-codecs = { workspace = true, optional = true }
 reth-ethereum-forks.workspace = true
+reth-primitives-traits.workspace = true
 reth-static-file-types.workspace = true
 reth-trie-common.workspace = true
 revm-primitives = { workspace = true, features = ["serde"] }
-reth-codecs = { workspace = true, optional = true }
 
 # op-reth
 reth-optimism-chainspec = { workspace = true, optional = true }
 
 # ethereum
 alloy-consensus.workspace = true
+alloy-eips = { workspace = true, features = ["serde"] }
 alloy-primitives = { workspace = true, features = ["rand", "rlp"] }
 alloy-rlp = { workspace = true, features = ["arrayvec"] }
-alloy-rpc-types = { workspace = true, optional = true }
+alloy-rpc-types = { workspace = true, features = ["engine"] }
 alloy-serde = { workspace = true, optional = true }
-alloy-eips = { workspace = true, features = ["serde"] }
-
 # optimism
-op-alloy-rpc-types = { workspace = true, optional = true }
 op-alloy-consensus = { workspace = true, features = [
     "arbitrary",
 ], optional = true }
+op-alloy-rpc-types = { workspace = true, optional = true }
 
 # crypto
+k256.workspace = true
 secp256k1 = { workspace = true, features = [
     "global-context",
-    "recovery",
     "rand",
+    "recovery",
 ], optional = true }
-k256.workspace = true
 # for eip-4844
 c-kzg = { workspace = true, features = ["serde"], optional = true }
 
@@ -85,20 +84,21 @@ test-fuzz.workspace = true
 
 criterion.workspace = true
 pprof = { workspace = true, features = [
+    "criterion",
     "flamegraph",
     "frame-pointer",
-    "criterion",
 ] }
 
 [features]
-default = ["c-kzg", "alloy-compat", "std", "reth-codec", "secp256k1"]
-std = ["reth-primitives-traits/std"]
-reth-codec = ["dep:reth-codecs", "dep:zstd", "dep:modular-bitfield", "std"]
-asm-keccak = ["alloy-primitives/asm-keccak"]
+alloy-compat = [
+    # "dep:alloy-rpc-types",
+    "dep:alloy-serde",
+    "dep:op-alloy-rpc-types",
+]
 arbitrary = [
+    "alloy-eips/arbitrary",
     "dep:arbitrary",
     "dep:proptest",
-    "alloy-eips/arbitrary",
     "rand",
     "reth-codec",
     "reth-ethereum-forks/arbitrary",
@@ -106,37 +106,36 @@ arbitrary = [
     "revm-primitives/arbitrary",
     "secp256k1",
 ]
-secp256k1 = ["dep:secp256k1"]
+asm-keccak = ["alloy-primitives/asm-keccak"]
 c-kzg = [
-    "dep:c-kzg",
     "alloy-consensus/kzg",
     "alloy-eips/kzg",
+    "dep:c-kzg",
     "revm-primitives/c-kzg",
 ]
+default = ["alloy-compat", "c-kzg", "reth-codec", "secp256k1", "std"]
 optimism = [
     "dep:op-alloy-consensus",
     "dep:reth-optimism-chainspec",
     "reth-codecs?/optimism",
     "revm-primitives/optimism",
 ]
-alloy-compat = [
-    "dep:alloy-rpc-types",
-    "dep:alloy-serde",
-    "dep:op-alloy-rpc-types",
-]
-test-utils = ["reth-primitives-traits/test-utils"]
+reth-codec = ["dep:modular-bitfield", "dep:reth-codecs", "dep:zstd", "std"]
+secp256k1 = ["dep:secp256k1"]
 serde-bincode-compat = [
     "alloy-consensus/serde-bincode-compat",
     "op-alloy-consensus?/serde-bincode-compat",
     "reth-primitives-traits/serde-bincode-compat",
     "serde_with",
 ]
+std = ["reth-primitives-traits/std"]
+test-utils = ["reth-primitives-traits/test-utils"]
 
 [[bench]]
-name = "recover_ecdsa_crit"
 harness = false
+name = "recover_ecdsa_crit"
 
 [[bench]]
+harness = false
 name = "validate_blob_tx"
 required-features = ["arbitrary", "c-kzg"]
-harness = false

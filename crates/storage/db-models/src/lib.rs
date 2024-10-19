@@ -6,7 +6,7 @@ pub use accounts::AccountBeforeTx;
 
 /// Blocks
 pub mod blocks;
-pub use blocks::{StoredBlockBodyIndices, StoredBlockWithdrawals};
+pub use blocks::{StoredBlockBodyIndices, StoredBlockWithdrawals, StoredBlockShadows};
 
 /// Client Version
 pub mod client_version;

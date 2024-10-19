@@ -8,6 +8,7 @@ use alloc::{vec, vec::Vec};
 use alloy_primitives::{Bloom, Bytes, Log, B256};
 use alloy_rlp::{length_of_length, Decodable, Encodable, RlpDecodable, RlpEncodable};
 use bytes::{Buf, BufMut};
+use revm_primitives::{IrysTxId, ShadowTxType};
 use core::{cmp::Ordering, ops::Deref};
 use derive_more::{DerefMut, From, IntoIterator};
 #[cfg(feature = "reth-codec")]
@@ -55,7 +56,6 @@ pub struct Receipt {
 //     pub success: bool,
 // }
 
-#[add_arbitrary_tests]
 #[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 // #[rlp(trailing)]
 pub struct ShadowReceipt {

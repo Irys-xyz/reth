@@ -1,32 +1,18 @@
-use crate::{
-    constants::{
-        EIP1559_INITIAL_BASE_FEE, EMPTY_RECEIPTS, EMPTY_SHADOWS_ROOT, EMPTY_TRANSACTIONS,
-        EMPTY_WITHDRAWALS,
-    },
-    holesky_nodes,
-    net::{goerli_nodes, mainnet_nodes, sepolia_nodes},
-    proofs::{calculate_shadows_root, state_root_ref_unhashed},
-    revm_primitives::{address, b256, Genesis, GenesisAccount},
-    Address, BlockNumber, Chain, ChainKind, ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork,
-    Head, Header, NamedChain, NodeRecord, SealedHeader, B256, EMPTY_OMMER_ROOT_HASH, U256,
-};
+
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::BTreeMap,
-    fmt::{Display, Formatter},
+use std::
+
     sync::Arc,
-};
 
 pub use alloy_eips::eip1559::BaseFeeParams;
 
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use alloy_chains::{Chain, NamedChain};
-use alloy_genesis::Genesis;
+use alloc::{boxed::Box, vec::Vec};
+use alloy_chains::{Chain, };
 use alloy_primitives::{address, b256, Address, BlockNumber, B256, U256};
 use alloy_trie::EMPTY_ROOT_HASH;
 use derive_more::From;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::OnceCell;
 use reth_ethereum_forks::{
     ChainHardforks, DisplayHardforks, EthereumHardfork, EthereumHardforks, ForkCondition,
     ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork, Hardforks, Head, DEV_HARDFORKS,
@@ -342,7 +328,7 @@ impl ChainSpec {
             blob_gas_used: blob_gas_used.map(Into::into),
             excess_blob_gas: excess_blob_gas.map(Into::into),
             requests_root,
-            shadows_root
+            shadows_root,
             ..Default::default()
         }
     }

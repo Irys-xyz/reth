@@ -1,8 +1,8 @@
 use crate::TransactionSigned;
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use bytes::BufMut;
-use reth_rpc_types::engine::BlobsBundleV1;
 use serde::{Deserialize, Serialize};
+use alloy_rpc_types::engine::{BlobsBundleV1, PayloadAttributes};
 
 /// RLP encoding for blobs bundle
 #[derive(Debug, Clone, PartialEq, Eq)]
