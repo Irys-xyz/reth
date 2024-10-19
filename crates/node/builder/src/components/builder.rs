@@ -1,6 +1,6 @@
 //! A generic [`NodeComponentsBuilder`]
 
-use std::{future::Future, marker::PhantomData};
+use std::{future::Future, marker::PhantomData, sync::RwLock};
 
 use reth_consensus::Consensus;
 use reth_evm::execute::BlockExecutorProvider;
@@ -319,6 +319,7 @@ where
             consensus_builder: _,
             engine_validator_builder,
             _marker,
+            irys_ext,
         } = self;
         ComponentsBuilder {
             pool_builder,
@@ -328,6 +329,7 @@ where
             consensus_builder,
             engine_validator_builder,
             _marker,
+            irys_ext,
         }
     }
 
@@ -350,6 +352,7 @@ where
             consensus_builder,
             engine_validator_builder: _,
             _marker,
+            irys_ext,
         } = self;
         ComponentsBuilder {
             pool_builder,
@@ -428,7 +431,7 @@ impl Default for ComponentsBuilder<(), (), (), (), (), (), ()> {
             executor_builder: (),
             consensus_builder: (),
             engine_validator_builder: (),
-            irys_ext: IrysExtWrapped(Arc::new(Mutex::new(IrysExt { reload: None }))),
+            irys_ext: IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: None }))),
 
             _marker: Default::default(),
         }

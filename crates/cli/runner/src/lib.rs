@@ -12,6 +12,7 @@
 
 use reth_node_core::irys_ext::NodeExitReason;
 use reth_tasks::{TaskExecutor, TaskManager};
+use tokio::runtime::Runtime;
 use std::{future::Future, pin::pin, sync::mpsc, time::Duration};
 use tracing::{debug, error, trace};
 

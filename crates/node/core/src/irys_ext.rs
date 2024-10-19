@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use reth_primitives::ChainSpec;
 use tokio::sync::mpsc::UnboundedSender;
@@ -6,7 +6,7 @@ use tokio::sync::mpsc::UnboundedSender;
 #[derive(Debug, Default, Clone)]
 
 /// Wrapper type for the irys extension
-pub struct IrysExtWrapped(pub Arc<Mutex<IrysExt>>);
+pub struct IrysExtWrapped(pub Arc<RwLock<IrysExt>>);
 
 #[derive(Debug, Default)]
 /// Custom Irys extension that allows for node-wide access to the reload channel
