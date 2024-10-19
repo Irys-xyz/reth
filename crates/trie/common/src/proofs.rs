@@ -55,9 +55,9 @@ impl MultiProof {
                             bytecode_hash: (account.code_hash != KECCAK_EMPTY)
                                 .then_some(account.code_hash),
                             stake: account.stake,
-                            commitments: todo!(),
-                            last_tx: todo!(),
-                            mining_permission: todo!(),
+                            commitments: account.commitments,
+                            last_tx: account.last_tx,
+                            mining_permission: account.mining_permission
                         })
                     }
                 }
