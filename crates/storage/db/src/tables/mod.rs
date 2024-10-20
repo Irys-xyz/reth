@@ -25,8 +25,8 @@ use reth_db_api::{
         accounts::BlockNumberAddress,
         blocks::{HeaderHash, StoredBlockOmmers},
         storage_sharded_key::StorageShardedKey,
-        AccountBeforeTx, ClientVersion, CompactU256, ShardedKey, StoredBlockBodyIndices, StoredBlockShadows,
-        StoredBlockWithdrawals,
+        AccountBeforeTx, ClientVersion, CompactU256, ShardedKey, StoredBlockBodyIndices,
+        StoredBlockShadows, StoredBlockWithdrawals,
     },
     table::{Decode, DupSort, Encode, Table},
 };
