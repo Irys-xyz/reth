@@ -18,6 +18,6 @@ impl Compact for Signature {
         let r = U256::from_le_slice(&buf[0..32]);
         let s = U256::from_le_slice(&buf[32..64]);
         buf.advance(64);
-        (Self::new(r, s, Parity::Parity(identifier != 0)), buf)
+        (Self::new(r, s, Parity::Parity(identifier == 0)), buf)
     }
 }
