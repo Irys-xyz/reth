@@ -49,7 +49,7 @@ use super::ProviderNodeTypes;
 #[derive(Debug)]
 pub struct BlockchainProvider2<N: NodeTypesWithDB> {
     /// Provider type used to access the database.
-    database: ProviderFactory<N>,
+    pub database: ProviderFactory<N>,
     /// Tracks the chain info wrt forkchoice updates and in memory canonical
     /// state.
     pub(super) canonical_in_memory_state: CanonicalInMemoryState,

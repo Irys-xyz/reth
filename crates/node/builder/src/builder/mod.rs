@@ -262,7 +262,7 @@ where
 /// See [`WithLaunchContext::launch`]
 pub struct WithLaunchContext<Builder> {
     builder: Builder,
-    task_executor: TaskExecutor,
+    pub task_executor: TaskExecutor,
 }
 
 impl<Builder> WithLaunchContext<Builder> {
