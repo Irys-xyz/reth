@@ -14,7 +14,7 @@ use proptest::prelude::prop_compose;
 #[cfg(any(test, feature = "arbitrary"))]
 pub use reth_primitives_traits::test_utils::{generate_valid_header, valid_header_strategy};
 use reth_primitives_traits::Requests;
-use revm_primitives::Shadows;
+use irys_primitives::Shadows;
 use serde::{Deserialize, Serialize};
 
 // HACK(onbjerg): we need this to always set `requests` to `None` since we might otherwise generate
@@ -722,6 +722,7 @@ pub(super) mod serde_bincode_compat {
     use alloy_consensus::serde_bincode_compat::Header;
     use alloy_primitives::Address;
     use reth_primitives_traits::{serde_bincode_compat::SealedHeader, Requests, Withdrawals};
+    use irys_primitives::Shadows;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use serde_with::{DeserializeAs, SerializeAs};
 
@@ -748,6 +749,7 @@ pub(super) mod serde_bincode_compat {
         ommers: Vec<Header<'a>>,
         withdrawals: Cow<'a, Option<Withdrawals>>,
         requests: Cow<'a, Option<Requests>>,
+        shadows: Cow<'a, Option<Shadows>>
     }
 
     impl<'a> From<&'a super::BlockBody> for BlockBody<'a> {
@@ -757,6 +759,7 @@ pub(super) mod serde_bincode_compat {
                 ommers: value.ommers.iter().map(Into::into).collect(),
                 withdrawals: Cow::Borrowed(&value.withdrawals),
                 requests: Cow::Borrowed(&value.requests),
+                shadows: Cow::Borrowed(&value.shadows)
             }
         }
     }
@@ -768,6 +771,7 @@ pub(super) mod serde_bincode_compat {
                 ommers: value.ommers.into_iter().map(Into::into).collect(),
                 withdrawals: value.withdrawals.into_owned(),
                 requests: value.requests.into_owned(),
+                shadows: value.shadows.into_owned()
             }
         }
     }

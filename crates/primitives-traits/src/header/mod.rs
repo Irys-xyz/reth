@@ -8,6 +8,7 @@ pub use error::HeaderError;
 pub mod test_utils;
 
 pub use alloy_consensus::Header;
+// pub use irys_primitives::header::Header;
 
 use alloy_primitives::{Address, BlockNumber, B256, U256};
 

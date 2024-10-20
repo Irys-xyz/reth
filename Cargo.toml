@@ -592,6 +592,8 @@ tikv-jemalloc-ctl = "0.6"
 tikv-jemallocator = "0.6"
 tracy-client = "0.17.3"
 
+irys-primitives = { path = "../../crates/primitives" }
+
 [patch.crates-io]
 revm = { path = "../../ext/revm/crates/revm" }
 revm-primitives = { path = "../../ext/revm/crates/primitives" }

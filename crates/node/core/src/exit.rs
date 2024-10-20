@@ -7,7 +7,7 @@ use std::{
     pin::Pin,
     task::{ready, Context, Poll},
 };
-use tokio::sync::{mpsc::UnboundedReceiver, oneshot};
+use tokio::sync::{mpsc::UnboundedReceiver};
 
 use crate::irys_ext::{NodeExitReason, ReloadPayload};
 
@@ -16,7 +16,7 @@ pub struct NodeExitFuture {
     /// The consensus engine future.
     /// This can be polled to wait for the consensus engine to exit.
     consensus_engine_fut: Option<BoxFuture<'static, eyre::Result<()>>>,
-    /// reload rx - for
+    /// reload rx - for reloading the node (notably used for updating the genesis config)
     reload_rx: UnboundedReceiver<ReloadPayload>,
     /// Flag indicating whether the node should be terminated after the pipeline sync.
     terminate: bool,
@@ -57,7 +57,7 @@ impl Future for NodeExitFuture {
             Poll::Pending => (),
         };
 
-        if let Some(rx) = this.consensus_engine_rx.as_mut() {
+        if let Some(rx) = this.consensus_engine_fut.as_mut() {
             match ready!(rx.poll_unpin(cx)) {
                 Ok(_) => {
                     this.consensus_engine_fut.take();

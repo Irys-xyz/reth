@@ -73,7 +73,9 @@ pub use transaction::{
 
 // Re-exports
 pub use reth_ethereum_forks::*;
-pub use revm_primitives::{self, payload::PayloadAttributes, Genesis, GenesisAccount, JumpTable};
+pub use revm_primitives::{self,  JumpTable};
+// payload::PayloadAttributes, Genesis, GenesisAccount,
+pub use irys_primitives::{self, Genesis, GenesisAccount};
 
 #[cfg(any(test, feature = "arbitrary"))]
 pub use arbitrary;

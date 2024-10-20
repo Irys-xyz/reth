@@ -14,7 +14,7 @@ use reth_downloaders::{bodies::noop::NoopBodiesDownloader, headers::noop::NoopHe
 use reth_evm::noop::NoopBlockExecutorProvider;
 use reth_exex::ExExManagerHandle;
 use reth_node_builder::{NodeTypesWithDB, NodeTypesWithEngine};
-use reth_node_core::args::NetworkArgs;
+use reth_node_core::{args::NetworkArgs, irys_ext::NodeExitReason};
 use reth_provider::{
     providers::ProviderNodeTypes, BlockExecutionWriter, BlockNumReader, ChainSpecProvider,
     ChainStateBlockReader, ChainStateBlockWriter, ProviderFactory, StaticFileProviderFactory,
@@ -31,7 +31,7 @@ use tokio::sync::watch;
 use tracing::info;
 
 /// `reth stage unwind` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -52,7 +52,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
     /// Execute `db stage unwind` command
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         let Environment { provider_factory, config, .. } = self.env.init::<N>(AccessRights::RW)?;
 
         let range = self.command.unwind_range(provider_factory.clone())?;
@@ -113,7 +113,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
 
         info!(target: "reth::cli", range=?range.clone(), count=range.count(), "Unwound blocks");
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 
     fn build_pipeline<N: NodeTypesWithDB<ChainSpec = C::ChainSpec>>(

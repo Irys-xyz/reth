@@ -4,8 +4,9 @@ use alloy_primitives::{keccak256, Bytes, B256, U256};
 use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use derive_more::Deref;
+use irys_primitives::{Commitments, GenesisAccount, LastTx, Stake};
 use reth_codecs::{add_arbitrary_tests, Compact};
-use revm_primitives::{commitment::{Commitments, Stake}, AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError, GenesisAccount, JumpTable, LastTx};
+use revm_primitives::{ AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError,  JumpTable, };
 use serde::{Deserialize, Serialize};
 
 /// Identifier for [`LegacyRaw`](RevmBytecode::LegacyRaw).

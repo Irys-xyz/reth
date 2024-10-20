@@ -117,7 +117,7 @@ struct DatabaseProviderMetrics {
     get_next_tx_num: Histogram,
     /// Duration of get parent TD
     get_parent_td: Histogram,
-
+    /// Duration of insert block shadows
     insert_block_shadows: Histogram
 }
 

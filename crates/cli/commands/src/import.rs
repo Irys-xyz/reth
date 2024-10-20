@@ -36,8 +36,8 @@ use tokio::sync::watch;
 use tracing::{debug, error, info};
 
 /// Syncs RLP encoded blocks from a file.
-#[derive(Debug, Parser)]
-pub struct ImportCommand<C: ChainSpecParser> {
+#[derive(Debug, Clone, Parser)]
+pub struct ImportCommand<C: ChainSpecParser + Clone> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
 

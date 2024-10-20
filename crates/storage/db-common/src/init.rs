@@ -1,6 +1,7 @@
 //! Reth genesis initialization utility functions.
 
-use alloy_genesis::GenesisAccount;
+// use alloy_genesis::GenesisAccount;
+use reth_primitives::GenesisAccount;
 use alloy_primitives::{Address, B256, U256};
 use reth_chainspec::EthChainSpec;
 use reth_codecs::Compact;

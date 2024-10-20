@@ -55,4 +55,7 @@ pub use withdrawals::*;
 mod database_provider;
 pub use database_provider::*;
 
+mod shadows;
+pub use shadows::*;
+
 pub mod noop;

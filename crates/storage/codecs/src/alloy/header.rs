@@ -33,6 +33,7 @@ pub(crate) struct Header {
     excess_blob_gas: Option<u64>,
     parent_beacon_block_root: Option<B256>,
     extra_fields: Option<HeaderExt>,
+    shadows_root: B256,
     extra_data: Bytes,
 }
 
@@ -90,6 +91,7 @@ impl Compact for AlloyHeader {
             parent_beacon_block_root: self.parent_beacon_block_root,
             extra_fields: extra_fields.into_option(),
             extra_data: self.extra_data.clone(),
+            shadows_root: self.shadows_root
         };
         header.to_compact(buf)
     }
@@ -118,6 +120,7 @@ impl Compact for AlloyHeader {
             parent_beacon_block_root: header.parent_beacon_block_root,
             requests_root: header.extra_fields.and_then(|h| h.requests_root),
             extra_data: header.extra_data,
+            shadows_root: header.shadows_root
         };
         (alloy_header, buf)
     }
@@ -126,6 +129,7 @@ impl Compact for AlloyHeader {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloy_consensus::EMPTY_ROOT_HASH;
     use alloy_primitives::{address, b256, bloom, bytes, hex};
 
     /// Holesky block #1947953
@@ -151,6 +155,7 @@ mod tests {
         parent_beacon_block_root: Some(b256!("aa1d9606b7932f2280a19b3498b9ae9eebc6a83f1afde8e45944f79d353db4c1")),
         extra_data: bytes!("726574682f76312e302e302f6c696e7578"),
         extra_fields: None,
+        shadows_root: EMPTY_ROOT_HASH
     };
 
     #[test]

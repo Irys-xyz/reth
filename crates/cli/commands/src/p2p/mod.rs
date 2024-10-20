@@ -12,14 +12,13 @@ use reth_config::Config;
 use reth_network::{BlockDownloaderProvider, NetworkConfigBuilder};
 use reth_network_p2p::bodies::client::BodiesClient;
 use reth_node_core::{
-    args::{DatabaseArgs, DatadirArgs, NetworkArgs},
-    utils::get_single_header,
+    args::{DatabaseArgs, DatadirArgs, NetworkArgs}, irys_ext::NodeExitReason, utils::get_single_header
 };
 
 mod rlpx;
 
 /// `reth p2p` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]
@@ -55,7 +54,7 @@ pub struct Command<C: ChainSpecParser> {
 }
 
 /// `reth p2p` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands {
     /// Download block header
     Header {
@@ -75,7 +74,7 @@ pub enum Subcommands {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C> {
     /// Execute `p2p` command
-    pub async fn execute(self) -> eyre::Result<()> {
+    pub async fn execute(self) -> eyre::Result<NodeExitReason> {
         let data_dir = self.datadir.clone().resolve_datadir(self.chain.chain());
         let config_path = self.config.clone().unwrap_or_else(|| data_dir.config());
 
@@ -160,6 +159,6 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
             }
         }
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

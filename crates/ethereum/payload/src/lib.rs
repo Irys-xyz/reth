@@ -29,7 +29,7 @@ use reth_primitives::{
     Block, BlockBody, EthereumHardforks, Header, Receipt, EMPTY_OMMER_ROOT_HASH,
 };
 use reth_provider::{ChainSpecProvider, StateProviderFactory};
-use reth_revm::database::StateProviderDatabase;
+use reth_revm::{database::StateProviderDatabase, state_change::apply_block_shadows};
 use reth_transaction_pool::{
     noop::NoopTransactionPool, BestTransactionsAttributes, TransactionPool,
 };
@@ -41,7 +41,7 @@ use revm::{
 };
 use revm_primitives::calc_excess_blob_gas;
 use std::sync::Arc;
-use tracing::{debug, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 /// Ethereum payload builder
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -572,7 +572,7 @@ where
     // seal the block
     let block = Block {
         header,
-        body: BlockBody { transactions: executed_txs, ommers: vec![], withdrawals, requests, Some(attributes.shadows) },
+        body: BlockBody { transactions: executed_txs, ommers: vec![], withdrawals, requests, shadows: Some(attributes.shadows) },
     };
 
     let sealed_block = block.seal_slow();
@@ -588,7 +588,7 @@ where
         trie: Arc::new(trie_output),
     };
 
-    let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees, Some(executed));
+    let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees, Some(executed), false);
 
     // extend the payload with the blob sidecars from the executed txs
     payload.extend_sidecars(blob_sidecars);

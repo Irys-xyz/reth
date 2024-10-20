@@ -131,7 +131,7 @@ pub fn validate_block_pre_execution<ChainSpec: EthereumHardforks>(
         validate_prague_request(block)?;
     }
 
-    let shadows = block.shadows.as_ref().ok_or(ConsensusError::BodyShadowsMissing)?;
+    let shadows = block.body.shadows.as_ref().ok_or(ConsensusError::BodyShadowsMissing)?;
     let shadows_root = reth_primitives::proofs::calculate_shadows_root(shadows);
     // let header_shadows_root =
     //     block.shadows_root.as_ref().ok_or(ConsensusError::ShadowsRootMissing)?;
@@ -319,8 +319,7 @@ mod tests {
     use rand::Rng;
     use reth_chainspec::ChainSpecBuilder;
     use reth_primitives::{
-        proofs, Account, BlockBody, BlockHashOrNumber, Signature, Transaction, TransactionSigned,
-        Withdrawal, Withdrawals,
+        constants::EMPTY_ROOT_HASH, proofs, Account, BlockBody, BlockHashOrNumber, Signature, Transaction, TransactionSigned, Withdrawal, Withdrawals
     };
     use reth_storage_api::{
         errors::provider::ProviderResult, AccountReader, HeaderProvider, WithdrawalsProvider,
@@ -471,7 +470,8 @@ mod tests {
             blob_gas_used: None,
             excess_blob_gas: None,
             parent_beacon_block_root: None,
-            requests_root: None
+            requests_root: None,
+            shadows_root: EMPTY_ROOT_HASH
         };
         // size: 0x9b5
 
@@ -491,7 +491,7 @@ mod tests {
         (
             SealedBlock {
                 header: SealedHeader::new(header, seal),
-                body: BlockBody { transactions, ommers, withdrawals: None, requests: None },
+                body: BlockBody { transactions, ommers, withdrawals: None, requests: None, shadows: None },
             },
             parent,
         )
@@ -564,6 +564,7 @@ mod tests {
             ommers: vec![],
             withdrawals: Some(Withdrawals::default()),
             requests: None,
+            shadows: None
         };
 
         let block = SealedBlock::new(header, body);

@@ -17,15 +17,13 @@ use reth_errors::{RethError, RethResult};
 use reth_evm::ConfigureEvmEnv;
 use reth_node_types::NodeTypesWithDB;
 use reth_primitives::{
-    Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader,
-    StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal,
-    Withdrawals,
+    irys_primitives::Shadows, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
 };
 use reth_prune_types::{PruneCheckpoint, PruneModes, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
 use reth_storage_api::TryIntoHistoricalStateProvider;
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{ BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     ops::{RangeBounds, RangeInclusive},
     path::Path,
@@ -192,12 +190,12 @@ impl<N: ProviderNodeTypes> DatabaseProviderFactory for ProviderFactory<N> {
     fn database_provider_ro(&self) -> ProviderResult<Self::Provider> {
         self.provider()
     }
-    fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
+    fn database_provider_rw(&self) -> ProviderResult<Self::ProviderRW> {
         self.provider_rw().map(|provider| provider.0)
     }
-    fn database_ref(&self) -> &DB {
-        &self.db
-    }
+    // fn database_ref(&self) -> &DB {
+    //     &self.db
+    // }
 }
 
 impl<N: NodeTypesWithDB> StaticFileProviderFactory for ProviderFactory<N> {

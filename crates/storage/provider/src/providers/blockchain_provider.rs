@@ -21,9 +21,7 @@ use reth_evm::ConfigureEvmEnv;
 use reth_execution_types::{BundleStateInit, ExecutionOutcome, RevertsInit};
 use reth_node_types::NodeTypesWithDB;
 use reth_primitives::{
-    Account, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders,
-    SealedHeader, StorageEntry, TransactionMeta, TransactionSigned, TransactionSignedNoHash,
-    Withdrawal, Withdrawals,
+    irys_primitives::Shadows, Account, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StorageEntry, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
 };
 use reth_prune_types::{PruneCheckpoint, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
@@ -234,11 +232,11 @@ impl<N: ProviderNodeTypes> BlockchainProvider2<N> {
             match state.entry(address) {
                 hash_map::Entry::Vacant(entry) => {
                     let new_info = state_provider.basic_account(address)?;
-                    entry.insert((old_info, new_info, HashMap::new()));
+                    entry.insert((old_info.clone(), new_info, HashMap::new()));
                 }
                 hash_map::Entry::Occupied(mut entry) => {
                     // overwrite old account state.
-                    entry.get_mut().0 = old_info;
+                    entry.get_mut().0 = old_info.clone();
                 }
             }
             // insert old info into reverts.
@@ -252,7 +250,7 @@ impl<N: ProviderNodeTypes> BlockchainProvider2<N> {
             let account_state = match state.entry(address) {
                 hash_map::Entry::Vacant(entry) => {
                     let present_info = state_provider.basic_account(address)?;
-                    entry.insert((present_info, present_info, HashMap::new()))
+                    entry.insert((present_info.clone(), present_info, HashMap::new()))
                 }
                 hash_map::Entry::Occupied(entry) => entry.into_mut(),
             };
@@ -853,6 +851,12 @@ impl<N: ProviderNodeTypes> BlockReader for BlockchainProvider2<N> {
                 Ok(Some(block_state.block_ref().block().body.ommers.clone()))
             },
         )
+    }
+
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.get_in_memory_or_storage_by_block(id, |db_provider| db_provider.shadows(id), |block_state| {
+            Ok(block_state.block_ref().block().body.shadows.clone())
+        })
     }
 
     fn block_body_indices(
@@ -1563,6 +1567,17 @@ where
                 // TODO: EIP-1898 question, see above
                 // here it is not handled
                 self.ommers(BlockHashOrNumber::Hash(hash.block_hash))
+            }
+        }
+    }
+
+    fn shadows_by_id(&self, id: BlockId) -> ProviderResult<Option<Shadows>> {
+        match id {
+            BlockId::Number(num) => self.shadows_by_number_or_tag(num),
+            BlockId::Hash(hash) => {
+                // TODO: EIP-1898 question, see above
+                // here it is not handled
+                self.shadows(BlockHashOrNumber::Hash(hash.block_hash))
             }
         }
     }

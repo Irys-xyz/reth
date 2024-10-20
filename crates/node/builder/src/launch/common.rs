@@ -308,6 +308,8 @@ impl<R, ChainSpec: EthChainSpec> LaunchContextWith<Attached<WithConfigs<ChainSpe
         self
     }
 
+
+
     /// Returns the container for all config types
     pub const fn configs(&self) -> &WithConfigs<ChainSpec> {
         self.attachment.left()
@@ -657,6 +659,10 @@ where
         &self.right().tree_config
     }
 
+    // pub const fn irys_ext(&self) -> IrysExtWrapped {
+    //     &self.right().irys_ext
+    // }
+
     /// Returns the `CanonStateNotificationSender`.
     pub fn canon_state_notification_sender(&self) -> CanonStateNotificationSender {
         self.right().canon_state_notification_sender.clone()
@@ -685,6 +691,7 @@ where
             self.blockchain_db().clone(),
             self.task_executor().clone(),
             self.configs().clone(),
+            // self.irys_ext().clone()
         );
 
         debug!(target: "reth::cli", "creating components");

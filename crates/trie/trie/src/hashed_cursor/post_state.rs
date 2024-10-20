@@ -82,7 +82,7 @@ where
 
         // It's an exact match, return the account from post state without looking up in the
         // database.
-        if post_state_entry.map_or(false, |entry| entry.0 == key) {
+        if post_state_entry.as_ref().map_or(false, |entry| entry.0 == key) {
             return Ok(post_state_entry)
         }
 
@@ -121,10 +121,10 @@ where
         post_state_item: Option<(B256, Account)>,
         db_item: Option<(B256, Account)>,
     ) -> Option<(B256, Account)> {
-        if let Some((post_state_entry, db_entry)) = post_state_item.zip(db_item) {
+        if let Some((post_state_entry, db_entry)) = post_state_item.as_ref().zip(db_item.clone()) {
             // If both are not empty, return the smallest of the two
             // Post state is given precedence if keys are equal
-            Some(if post_state_entry.0 <= db_entry.0 { post_state_entry } else { db_entry })
+            Some(if post_state_entry.0 <= db_entry.0 { post_state_entry.clone() } else { db_entry })
         } else {
             // Return either non-empty entry
             db_item.or(post_state_item)

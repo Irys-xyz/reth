@@ -25,8 +25,7 @@ use reth_execution_errors::{
 };
 use reth_execution_types::ExecutionOutcome;
 use reth_primitives::{
-    proofs, Block, BlockBody, BlockHashOrNumber, BlockWithSenders, Header, Requests, SealedBlock,
-    SealedHeader, TransactionSigned, Withdrawals,
+    irys_primitives::Shadows, proofs, Block, BlockBody, BlockHashOrNumber, BlockWithSenders, Header, Requests, SealedBlock, SealedHeader, TransactionSigned, Withdrawals
 };
 use reth_provider::{BlockReaderIdExt, StateProviderFactory, StateRootProvider};
 use reth_revm::database::StateProviderDatabase;

@@ -13,7 +13,6 @@ pub mod cli;
 pub mod dirs;
 pub mod exit;
 pub mod irys_ext;
-pub mod metrics;
 pub mod node_config;
 pub mod utils;
 pub mod version;

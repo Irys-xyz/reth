@@ -13,13 +13,13 @@ workspace = true
 
 [dependencies]
 # reth
+irys-primitives.workspace = true
 reth-codecs = { workspace = true, optional = true }
 reth-ethereum-forks.workspace = true
 reth-primitives-traits.workspace = true
 reth-static-file-types.workspace = true
 reth-trie-common.workspace = true
 revm-primitives = { workspace = true, features = ["serde"] }
-
 # op-reth
 reth-optimism-chainspec = { workspace = true, optional = true }
 

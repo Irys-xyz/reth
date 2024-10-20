@@ -58,7 +58,7 @@ use reth_node_metrics as _;
 /// The main op-reth cli interface.
 ///
 /// This is the entrypoint to the executable.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 #[command(author, version = SHORT_VERSION, long_version = LONG_VERSION, about = "Reth", long_about = None)]
 pub struct Cli<Spec: ChainSpecParser = OpChainSpecParser, Ext: clap::Args + fmt::Debug = NoArgs> {
     /// The command to run

@@ -69,6 +69,8 @@ pub trait BuiltPayload: Send + Sync + std::fmt::Debug {
     fn executed_block(&self) -> Option<ExecutedBlock> {
         None
     }
+    /// Returns if the payload is empty or not
+    fn is_empty(&self) -> bool;
 }
 
 /// This can be implemented by types that describe a currently running payload job.

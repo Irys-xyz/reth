@@ -8,13 +8,14 @@ use reth_cli::chainspec::ChainSpecParser;
 use reth_config::config::EtlConfig;
 use reth_db_common::init::init_from_state_dump;
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_provider::{providers::ProviderNodeTypes, ProviderFactory};
 
 use std::{fs::File, io::BufReader, path::PathBuf};
 use tracing::info;
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct InitStateCommand<C: ChainSpecParser> {
     #[command(flatten)]
     pub env: EnvironmentArgs<C>,
@@ -44,7 +45,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> InitStateC
     /// Execute the `init` command
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         info!(target: "reth::cli", "Reth init-state starting");
 
         let Environment { config, provider_factory, .. } = self.env.init::<N>(AccessRights::RW)?;
@@ -54,7 +55,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> InitStateC
         let hash = init_at_state(self.state, provider_factory, config.stages.etl)?;
 
         info!(target: "reth::cli", hash = ?hash, "Genesis block written");
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

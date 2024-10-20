@@ -35,7 +35,7 @@ pub use crate::core::cli::*;
 /// This is the entrypoint to the executable.
 #[derive(Debug, Parser, Clone)]
 #[command(author, version = SHORT_VERSION, long_version = LONG_VERSION, about = "Reth", long_about = None)]
-pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + fmt::Debug = NoArgs>
+pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + Clone + fmt::Debug = NoArgs>
 {
     /// The command to run
     #[command(subcommand)]
@@ -90,7 +90,7 @@ impl Cli {
     }
 }
 
-impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + fmt::Debug> Cli<C, Ext> {
+impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + Clone + fmt::Debug> Cli<C, Ext> {
     /// Execute the configured cli command.
     ///
     /// This accepts a closure that is used to launch the node via the
@@ -193,8 +193,8 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + fmt::Debug> Cl
 }
 
 /// Commands to be executed
-#[derive(Debug, Subcommand)]
-pub enum Commands<C: ChainSpecParser, Ext: clap::Args + fmt::Debug = NoArgs> {
+#[derive(Debug, Subcommand, Clone)]
+pub enum Commands<C: ChainSpecParser, Ext: clap::Args + Clone + fmt::Debug = NoArgs> {
     /// Start the node
     #[command(name = "node")]
     Node(Box<node::NodeCommand<C, Ext>>),

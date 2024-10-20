@@ -20,11 +20,7 @@ use reth_network::{NetworkSyncUpdater, SyncState};
 use reth_network_api::{BlockDownloaderProvider, NetworkEventListenerProvider};
 use reth_node_api::{BuiltPayload, FullNodeTypes, NodeAddOns, NodeTypesWithEngine};
 use reth_node_core::{
-    dirs::{ChainPath, DataDirPath},
-    exit::NodeExitFuture,
-    primitives::Head,
-    rpc::eth::{helpers::AddDevSigners, FullEthApiServer},
-    version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA},
+    dirs::{ChainPath, DataDirPath}, exit::NodeExitFuture, irys_ext::IrysExt, primitives::Head, rpc::eth::{helpers::AddDevSigners, FullEthApiServer}, version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA}
 };
 use reth_node_events::{cl::ConsensusLayerHealthEvents, node};
 use reth_payload_primitives::PayloadBuilder;
@@ -34,9 +30,11 @@ use reth_rpc_engine_api::{capabilities::EngineCapabilities, EngineApi};
 use reth_tasks::TaskExecutor;
 use reth_tokio_util::EventSender;
 use reth_tracing::tracing::{debug, error, info};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::{mpsc::unbounded_channel, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
+
+use reth_node_core::irys_ext::IrysExtWrapped;
 
 use crate::{
     common::{Attached, LaunchContextWith, WithConfigs},
@@ -390,6 +388,11 @@ where
             let _ = exit.send(res);
         });
 
+        let (reload_tx, reload_rx) = unbounded_channel();
+
+        // TODO: fix this.
+        let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
+
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
             block_executor: ctx.components().block_executor().clone(),
@@ -402,6 +405,7 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
+            irys_ext: irys_ext.clone()
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
@@ -409,6 +413,7 @@ where
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
                 async { rx.await? },
+                reload_rx,
                 full_node.config.debug.terminate,
             ),
             node: full_node,

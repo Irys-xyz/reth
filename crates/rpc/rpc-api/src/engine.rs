@@ -3,35 +3,21 @@
 //! This contains the `engine_` namespace and the subset of the `eth_` namespace that is exposed to
 //! the consensus client.
 
-use alloy_eips::{eip4844::BlobAndProofV1, BlockId, BlockNumberOrTag};
+use alloy_eips::{eip4844::BlobAndProofV1};
 use alloy_json_rpc::RpcObject;
 use alloy_primitives::{Address, BlockHash, Bytes, B256, U256, U64};
 use alloy_rpc_types::{
     state::StateOverride, BlockOverrides, EIP1186AccountProofResponse, Filter, Log, SyncStatus,
 };
 use alloy_rpc_types_engine::{
-    ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadBodiesV2, ExecutionPayloadInputV2,
-    ExecutionPayloadV1, ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated,
-    PayloadId, PayloadStatus, TransitionConfiguration,
+    ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadBodiesV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV1Irys, ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId, PayloadStatus, TransitionConfiguration
 };
 use alloy_rpc_types_eth::transaction::TransactionRequest;
 use alloy_serde::JsonStorageKey;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use reth_engine_primitives::EngineTypes;
 use reth_primitives::{
-    revm_primitives::shadow::Shadows, Address, BlockHash, BlockId, BlockNumberOrTag, Bytes,
-    SealedBlock, B256, U256, U64,
-};
-use reth_rpc_types::{
-    engine::{
-        ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadInputV2, ExecutionPayloadV1,
-        ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId,
-        PayloadStatus, TransitionConfiguration,
-    },
-    irys::ShadowSubmission,
-    irys_payload::ExecutionPayloadV1Irys,
-    state::StateOverride,
-    Block, BlockOverrides, Filter, Log, RichBlock, SyncStatus, TransactionRequest,
+ BlockId, BlockNumberOrTag,
 };
 
 // NOTE: We can't use associated types in the `EngineApi` trait because of jsonrpsee, so we use a
@@ -78,17 +64,18 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// Post Prague payload handler
     ///
     /// See also <https://github.com/ethereum/execution-apis/blob/main/src/engine/prague.md#engine_newpayloadv4>
-    #[method(name = "newPayloadV4")]
-    async fn new_payload_v4(
-        &self,
-        payload: ExecutionPayloadV4,
-        versioned_hashes: Vec<B256>,
-        parent_beacon_block_root: B256,
-    ) -> RpcResult<PayloadStatus>;
+    // #[method(name = "newPayloadV4")]
+    // async fn new_payload_v4(
+    //     &self,
+    //     payload: ExecutionPayloadV4,
+    //     versioned_hashes: Vec<B256>,
+    //     parent_beacon_block_root: B256,
+    // ) -> RpcResult<PayloadStatus>;
     // #[method(name = "addShadowsV1")]
     // async fn add_shadows_v1(&self, block_id: B256, shadows: Shadows)
     //     -> RpcResult<ShadowSubmission>;
 
+    /// Builds a new irys payload
     #[method(name = "buildNewPayloadV1Irys")]
     async fn build_new_payload_irys(
         &self,
@@ -98,7 +85,7 @@ pub trait EngineApi<Engine: EngineTypes> {
         parent: B256,
         payload_attributes: Engine::PayloadAttributes,
         /* RpcResult<Engine::ExecutionPayloadV1Irys> */
-    ) -> RpcResult<Engine::ExecutionPayloadEnvelopeV1Irys>;
+    ) -> RpcResult<Engine::ExecutionPayloadV1Irys>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/paris.md#engine_forkchoiceupdatedv1>
     ///
@@ -187,7 +174,7 @@ pub trait EngineApi<Engine: EngineTypes> {
     async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
-    ) -> RpcResult<Engine::ExecutionPayloadEnvelopeV1Irys>;
+    ) -> RpcResult<Engine::ExecutionPayloadV1Irys>;
 
     /// Post Prague payload handler.
     ///
@@ -196,8 +183,8 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// Returns the most recent version of the payload that is available in the corresponding
     /// payload build process at the time of receiving this call. Note:
     /// > Provider software MAY stop the corresponding build process after serving this call.
-    #[method(name = "getPayloadV4")]
-    async fn get_payload_v4(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV4>;
+    // #[method(name = "getPayloadV4")]
+    // async fn get_payload_v4(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV4>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6452a6b194d7db269bf1dbd087a267251d3cc7f8/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1>
     // #[method(name = "getPayloadBodiesByHashV1")]

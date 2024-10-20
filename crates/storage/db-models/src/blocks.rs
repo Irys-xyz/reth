@@ -1,6 +1,6 @@
 //! Block related models and types.
 
-use reth_primitives::{revm_primitives::shadow::Shadows,  Withdrawals};
+use reth_primitives::{irys_primitives::shadow::Shadows,  Withdrawals};
 use std::ops::Range;
 
 use alloy_primitives::{TxNumber, B256};

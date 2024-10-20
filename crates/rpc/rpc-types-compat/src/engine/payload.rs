@@ -4,29 +4,16 @@
 use alloy_eips::eip2718::{Decodable2718, Encodable2718};
 use alloy_primitives::{B256, U256};
 use alloy_rpc_types_engine::{
-    payload::{ExecutionPayloadBodyV1, ExecutionPayloadFieldV2, ExecutionPayloadInputV2},
-    ExecutionPayload, ExecutionPayloadBodyV2, ExecutionPayloadV1, ExecutionPayloadV2,
-    ExecutionPayloadV3, ExecutionPayloadV4, PayloadError,
+    payload::{ExecutionPayloadBodyV1, ExecutionPayloadFieldV2, ExecutionPayloadInputV2}, ExecutionPayload, ExecutionPayloadBodyV2, ExecutionPayloadV1, ExecutionPayloadV1Irys, ExecutionPayloadV2, ExecutionPayloadV3, ExecutionPayloadV4, PayloadError
 };
+
+
 use reth_primitives::{
-    constants::{EMPTY_OMMER_ROOT_HASH, MAXIMUM_EXTRA_DATA_SIZE},
+    constants::{EMPTY_OMMER_ROOT_HASH, MAXIMUM_EXTRA_DATA_SIZE, EMPTY_SHADOWS_ROOT},
     proofs::{self},
     Block, BlockBody, Header, Request, SealedBlock, TransactionSigned, Withdrawals,
-}
-use reth_primitives::{
-    constants::{
-        EMPTY_OMMER_ROOT_HASH, EMPTY_SHADOWS_ROOT, MAXIMUM_EXTRA_DATA_SIZE,
-        MIN_PROTOCOL_BASE_FEE_U256,
-    },
-    proofs,
-    revm_primitives::shadow::Shadows,
-    Block, Header, SealedBlock, TransactionSigned, UintTryTo, Withdrawals, B256, U256,
 };
-use reth_rpc_types::{
-    irys_payload::ExecutionPayloadV1Irys, ExecutionPayload, ExecutionPayloadBodyV1,
-    ExecutionPayloadFieldV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV2,
-    ExecutionPayloadV3, ExecutionPayloadV4, PayloadError,
-};
+
 
 /// Converts [`ExecutionPayloadV1`] to [`Block`]
 pub fn try_payload_v1_to_block(payload: ExecutionPayloadV1) -> Result<Block, PayloadError> {
@@ -121,7 +108,7 @@ pub fn try_payload_v1_irys_to_block(
 ) -> Result<Block, PayloadError> {
     let mut base_block = try_payload_v3_to_block(payload.payload_inner)?;
 
-    base_block.shadows = payload.shadows;
+    base_block.body.shadows = payload.shadows;
     base_block.header.shadows_root = payload.shadows_root;
     Ok(base_block)
 }
@@ -169,7 +156,7 @@ pub fn try_payload_v4_to_block(payload: ExecutionPayloadV4) -> Result<Block, Pay
 
 /// Converts [SealedBlock] to [ExecutionPayload], returning additional data (the parent beacon block
 /// root) if the block is a V3 payload
-pub fn block_to_payload(value: SealedBlock) -> (ExecutionPayload, Option<B256>) {
+pub fn block_to_payload(value: SealedBlock) -> ExecutionPayload {
     // todo(onbjerg): check for requests_root here and return payload v4
 
     // if value.header.parent_beacon_block_root.is_some() {
@@ -183,7 +170,7 @@ pub fn block_to_payload(value: SealedBlock) -> (ExecutionPayload, Option<B256>) 
     //     // otherwise V1
     //     (ExecutionPayload::V1(block_to_payload_v1(value)), None)
     // }
-    (ExecutionPayload::V1Irys(block_to_payload_v1_irys(value)), None)
+    ExecutionPayload::V1Irys(block_to_payload_v1_irys(value))
 }
 
 /// Converts [`SealedBlock`] to [`ExecutionPayloadV1`]
@@ -297,7 +284,8 @@ pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
     let transactions = value.raw_transactions();
 
     // let parent_beacon_block_root = value.header.parent_beacon_block_root;
-    let payload = ExecutionPayloadV1Irys {
+        let payload = ExecutionPayloadV1Irys {
+
         payload_inner: ExecutionPayloadV3 {
             blob_gas_used: value.blob_gas_used.unwrap_or_default(),
             excess_blob_gas: value.excess_blob_gas.unwrap_or_default(),
@@ -317,16 +305,15 @@ pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
                     base_fee_per_gas: U256::from(value.base_fee_per_gas.unwrap_or_default()),
                     block_hash: value.hash(),
                     transactions,
+                    },  
+                    withdrawals: value.body.withdrawals.clone().unwrap_or_default().into_inner(),
                 },
-                withdrawals: value.withdrawals.clone().unwrap_or_default().into_inner(),
             },
-        },
-        shadows: value.shadows.clone(),
-        shadows_root: value.shadows_root.clone(),
-    };
-
+            shadows: value.body.shadows.clone(),
+            shadows_root: value.shadows_root.clone()
+        };
+       
     // let (payload, parent_beacon_block_root) =
-
     // (payload, parent_beacon_block_root)
     payload
 }
@@ -397,10 +384,10 @@ pub fn try_into_block(
     parent_beacon_block_root: Option<B256>,
 ) -> Result<Block, PayloadError> {
     let mut base_payload = match value {
-        // ExecutionPayload::V1(payload) => try_payload_v1_to_block(payload)?,
-        // ExecutionPayload::V2(payload) => try_payload_v2_to_block(payload)?,
-        // ExecutionPayload::V3(payload) => try_payload_v3_to_block(payload)?,
-        // ExecutionPayload::V4(payload) => try_payload_v4_to_block(payload)?,
+        ExecutionPayload::V1(payload) => try_payload_v1_to_block(payload)?,
+        ExecutionPayload::V2(payload) => try_payload_v2_to_block(payload)?,
+        ExecutionPayload::V3(payload) => try_payload_v3_to_block(payload)?,
+        ExecutionPayload::V4(payload) => try_payload_v4_to_block(payload)?,
         ExecutionPayload::V1Irys(payload) => try_payload_v1_irys_to_block(payload)?,
     };
 

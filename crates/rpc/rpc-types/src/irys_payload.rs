@@ -1,12 +1,12 @@
 use crate::{BlobsBundleV1, ExecutionPayloadV3};
 
 use revm_primitives::U256;
-use revm_primitives::{shadow::Shadows, B256};
+use irys_primitives::{shadow::Shadows, B256};
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExecutionPayloadEnvelopeV1Irys {
-    /// Execution payload V3
+    /// Execution payload V1 Irys
     pub execution_payload: ExecutionPayloadV1Irys,
     /// The expected value to be received by the feeRecipient in wei
     pub block_value: U256,
@@ -25,14 +25,6 @@ pub struct ExecutionPayloadV1Irys {
     #[serde(flatten)]
     pub payload_inner: ExecutionPayloadV3,
 
-    // /// Array of hex [`u64`] representing blob gas used, enabled with V3
-    // /// See <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#ExecutionPayloadV3>
-    // #[serde(with = "alloy_serde::u64_via_ruint")]
-    // pub blob_gas_used: u64,
-    // /// Array of hex[`u64`] representing excess blob gas, enabled with V3
-    // /// See <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#ExecutionPayloadV3>
-    // #[serde(with = "alloy_serde::u64_via_ruint")]
-    // pub excess_blob_gas: u64,
     /// shadows
     pub shadows: Option<Shadows>,
     /// RLP proof root for shadows for quick payload validation

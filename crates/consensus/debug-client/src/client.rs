@@ -72,79 +72,81 @@ impl<P: BlockProvider + Clone> DebugConsensusClient<P> {
     /// Spawn the client to start sending FCUs and new payloads by periodically fetching recent
     /// blocks.
     pub async fn run<T: EngineTypes>(self) {
-        let execution_client = self.auth_server.http_client();
-        let mut previous_block_hashes = AllocRingBuffer::new(64);
+        todo!();
 
-        let mut block_stream = {
-            let (tx, rx) = mpsc::channel::<Block>(64);
-            let block_provider = self.block_provider.clone();
-            tokio::spawn(async move {
-                block_provider.subscribe_blocks(tx).await;
-            });
-            rx
-        };
+        // let execution_client = self.auth_server.http_client();
+        // let mut previous_block_hashes = AllocRingBuffer::new(64);
 
-        while let Some(block) = block_stream.recv().await {
-            let payload = block_to_execution_payload_v3(block);
+        // let mut block_stream = {
+        //     let (tx, rx) = mpsc::channel::<Block>(64);
+        //     let block_provider = self.block_provider.clone();
+        //     tokio::spawn(async move {
+        //         block_provider.subscribe_blocks(tx).await;
+        //     });
+        //     rx
+        // };
 
-            let block_hash = payload.block_hash();
-            let block_number = payload.block_number();
+        // while let Some(block) = block_stream.recv().await {
+        //     let payload = block_to_execution_payload_v3(block);
 
-            previous_block_hashes.push(block_hash);
+        //     let block_hash = payload.block_hash();
+        //     let block_number = payload.block_number();
 
-            // Send new events to execution client
-            let _ = reth_rpc_api::EngineApiClient::<T>::new_payload_v3(
-                &execution_client,
-                payload.execution_payload_v3,
-                payload.versioned_hashes,
-                payload.parent_beacon_block_root,
-            )
-            .await
-                .inspect_err(|err|  {
-                    warn!(target: "consensus::debug-client", %err, %block_hash,  %block_number, "failed to submit new payload to execution client");
-                });
+        //     previous_block_hashes.push(block_hash);
+        //     // Send new events to execution client
+        //     let _ = <dyn reth_rpc_api::EngineApiClient::<T>>::new_payload_v3(
+        //         &execution_client,
+        //         payload.execution_payload_v3,
+        //         payload.versioned_hashes,
+        //         payload.parent_beacon_block_root,
+        //     )
+        //     .await
+        //         .inspect_err(|err|  {
+        //             warn!(target: "consensus::debug-client", %err, %block_hash,  %block_number, "failed to submit new payload to execution client");
+        //         });
 
-            // Load previous block hashes. We're using (head - 32) and (head - 64) as the safe and
-            // finalized block hashes.
-            let safe_block_hash = self.block_provider.get_or_fetch_previous_block(
-                &previous_block_hashes,
-                block_number,
-                32,
-            );
-            let finalized_block_hash = self.block_provider.get_or_fetch_previous_block(
-                &previous_block_hashes,
-                block_number,
-                64,
-            );
-            let (safe_block_hash, finalized_block_hash) =
-                tokio::join!(safe_block_hash, finalized_block_hash);
-            let (safe_block_hash, finalized_block_hash) = match (
-                safe_block_hash,
-                finalized_block_hash,
-            ) {
-                (Ok(safe_block_hash), Ok(finalized_block_hash)) => {
-                    (safe_block_hash, finalized_block_hash)
-                }
-                (safe_block_hash, finalized_block_hash) => {
-                    warn!(target: "consensus::debug-client", ?safe_block_hash, ?finalized_block_hash, "failed to fetch safe or finalized hash from etherscan");
-                    continue;
-                }
-            };
-            let state = alloy_rpc_types_engine::ForkchoiceState {
-                head_block_hash: block_hash,
-                safe_block_hash,
-                finalized_block_hash,
-            };
-            let _ = reth_rpc_api::EngineApiClient::<T>::fork_choice_updated_v3(
-                &execution_client,
-                state,
-                None,
-            )
-            .await
-            .inspect_err(|err|  {
-                warn!(target: "consensus::debug-client", %err, ?state, "failed to submit fork choice update to execution client");
-            });
-        }
+        //     // Load previous block hashes. We're using (head - 32) and (head - 64) as the safe and
+        //     // finalized block hashes.
+        //     let safe_block_hash = self.block_provider.get_or_fetch_previous_block(
+        //         &previous_block_hashes,
+        //         block_number,
+        //         32,
+        //     );
+        //     let finalized_block_hash = self.block_provider.get_or_fetch_previous_block(
+        //         &previous_block_hashes,
+        //         block_number,
+        //         64,
+        //     );
+        //     let (safe_block_hash, finalized_block_hash) =
+        //         tokio::join!(safe_block_hash, finalized_block_hash);
+        //     let (safe_block_hash, finalized_block_hash) = match (
+        //         safe_block_hash,
+        //         finalized_block_hash,
+        //     ) {
+        //         (Ok(safe_block_hash), Ok(finalized_block_hash)) => {
+        //             (safe_block_hash, finalized_block_hash)
+        //         }
+        //         (safe_block_hash, finalized_block_hash) => {
+        //             warn!(target: "consensus::debug-client", ?safe_block_hash, ?finalized_block_hash, "failed to fetch safe or finalized hash from etherscan");
+        //             continue;
+        //         }
+        //     };
+        //     let state = alloy_rpc_types_engine::ForkchoiceState {
+        //         head_block_hash: block_hash,
+        //         safe_block_hash,
+        //         finalized_block_hash,
+        //     };
+
+        //     let _ = <dyn reth_rpc_api::EngineApiClient::<T>>::fork_choice_updated_v3(
+        //         &execution_client,
+        //         state,
+        //         None,
+        //     )
+        //     .await
+        //     .inspect_err(|err|  {
+        //         warn!(target: "consensus::debug-client", %err, ?state, "failed to submit fork choice update to execution client");
+        //     });
+        // }
     }
 }
 

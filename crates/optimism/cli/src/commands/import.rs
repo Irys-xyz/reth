@@ -23,7 +23,7 @@ use tracing::{debug, error, info};
 use crate::commands::build_pipeline::build_import_pipeline;
 
 /// Syncs RLP encoded blocks from a file.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct ImportOpCommand<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,

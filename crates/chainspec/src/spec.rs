@@ -1,14 +1,13 @@
 
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
-use std::
-
-    sync::Arc,
+use reth_primitives::Genesis;
+use std::sync::Arc;
 
 pub use alloy_eips::eip1559::BaseFeeParams;
 
 use alloc::{boxed::Box, vec::Vec};
-use alloy_chains::{Chain, };
+use alloy_chains::{Chain, NamedChain};
+
 use alloy_primitives::{address, b256, Address, BlockNumber, B256, U256};
 use alloy_trie::EMPTY_ROOT_HASH;
 use derive_more::From;
@@ -24,10 +23,12 @@ use reth_network_peers::{
 use reth_primitives_traits::{
     constants::{
         DEV_GENESIS_HASH, EIP1559_INITIAL_BASE_FEE, EMPTY_WITHDRAWALS, ETHEREUM_BLOCK_GAS_LIMIT,
-        HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
+        HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH, EMPTY_SHADOWS_ROOT
     },
     Header, SealedHeader,
 };
+
+use reth_primitives::proofs::calculate_shadows_root;
 use reth_trie_common::root::state_root_ref_unhashed;
 
 use crate::{constants::MAINNET_DEPOSIT_CONTRACT, once_cell_set, EthChainSpec};

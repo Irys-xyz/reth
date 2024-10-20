@@ -5,10 +5,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 use reth_node_api::{EngineTypes, FullNodeComponents};
 use reth_node_core::{
-    dirs::{ChainPath, DataDirPath},
-    irys_ext::IrysExtWrapped,
-    node_config::NodeConfig,
-    rpc::api::EngineApiClient,
+    dirs::{ChainPath, DataDirPath}, irys_ext::IrysExtWrapped, node_config::NodeConfig, rpc::api::EngineApiClient
 };
 use reth_payload_builder::PayloadBuilderHandle;
 use reth_provider::ChainSpecProvider;
@@ -126,10 +123,8 @@ pub struct FullNode<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> {
     pub config: NodeConfig<<Node::Types as NodeTypes>::ChainSpec>,
     /// The data dir of the node.
     pub data_dir: ChainPath<DataDirPath>,
-    /// The top-level database provider for the node
-    pub db: BlockchainProvider<Node::DB>,
     /// custom extension (mainly for debug reloading)
-    pub ext: IrysExtWrapped,
+    pub irys_ext: IrysExtWrapped,
 }
 
 impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Clone for FullNode<Node, AddOns> {
@@ -146,8 +141,7 @@ impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Clone for FullNode<Node
             rpc_registry: self.rpc_registry.clone(),
             config: self.config.clone(),
             data_dir: self.data_dir.clone(),
-            db: self.db.clone(),
-            ext: self.ext.clone(),
+            irys_ext: self.irys_ext.clone(),
         }
     }
 }

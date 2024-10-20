@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use reth_primitives::ChainSpec;
+use reth_chainspec::ChainSpec;
 use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Debug, Default, Clone)]

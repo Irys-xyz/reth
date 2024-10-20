@@ -1,6 +1,6 @@
 //! A generic [`NodeComponentsBuilder`]
 
-use std::{future::Future, marker::PhantomData, sync::RwLock};
+use std::{future::Future, marker::PhantomData, sync::{Arc, RwLock}};
 
 use reth_consensus::Consensus;
 use reth_evm::execute::BlockExecutorProvider;
@@ -398,7 +398,7 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
-            irys_ext: _,
+            irys_ext,
             _marker,
         } = self;
 
@@ -417,7 +417,7 @@ where
             executor,
             consensus,
             engine_validator,
-            irys_ext: context.irys_ext.clone(),
+            irys_ext: irys_ext.clone(),
         })
     }
 }
@@ -432,7 +432,6 @@ impl Default for ComponentsBuilder<(), (), (), (), (), (), ()> {
             consensus_builder: (),
             engine_validator_builder: (),
             irys_ext: IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: None }))),
-
             _marker: Default::default(),
         }
     }

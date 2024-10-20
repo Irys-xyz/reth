@@ -1,6 +1,7 @@
 use crate::Compact;
 use alloc::vec::Vec;
 use alloy_genesis::GenesisAccount as AlloyGenesisAccount;
+// use reth_primitives::GenesisAccount;
 use alloy_primitives::{Bytes, B256, U256};
 use reth_codecs_derive::add_arbitrary_tests;
 

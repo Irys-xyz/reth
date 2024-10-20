@@ -9,7 +9,7 @@ use alloy_primitives::{Sealable, B256};
 use reth_consensus::{Consensus, ConsensusError};
 use reth_eth_wire_types::HeadersDirection;
 use reth_network_peers::WithPeerId;
-use reth_primitives::{BlockBody, GotExpected, Header, SealedBlock, SealedHeader};
+use reth_primitives::{constants::EMPTY_SHADOWS_ROOT, BlockBody, GotExpected, Header, SealedBlock, SealedHeader};
 use std::{
     cmp::Reverse,
     collections::{HashMap, VecDeque},

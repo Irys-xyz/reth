@@ -82,6 +82,7 @@ pub trait NodeComponents<T: FullNodeTypes>: Clone + Unpin + Send + Sync + 'stati
     fn engine_validator(&self) -> &Self::EngineValidator;
 
     fn irys_ext(&self) -> IrysExtWrapped;
+
 }
 
 /// All the components of the node.

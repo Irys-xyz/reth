@@ -11,7 +11,7 @@ mod new_payload_only;
 mod output;
 
 /// `reth bench` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct BenchmarkCommand {
     #[command(subcommand)]
     command: Subcommands,

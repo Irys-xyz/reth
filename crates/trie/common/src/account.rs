@@ -3,8 +3,9 @@ use alloy_consensus::constants::KECCAK_EMPTY;
 use alloy_primitives::{keccak256, B256, U256};
 use alloy_rlp::{RlpDecodable, RlpEncodable};
 use alloy_trie::EMPTY_ROOT_HASH;
+use irys_primitives::{Commitments, GenesisAccount, LastTx, Stake};
 use reth_primitives_traits::Account;
-use revm_primitives::{AccountInfo, Commitments, GenesisAccount, LastTx, Stake};
+use revm_primitives::AccountInfo;
 
 /// An Ethereum account as represented in the trie.
 #[derive(Clone, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]

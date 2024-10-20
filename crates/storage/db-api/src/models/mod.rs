@@ -4,10 +4,12 @@ use crate::{
     table::{Compress, Decode, Decompress, Encode},
     DatabaseError,
 };
-use alloy_genesis::GenesisAccount;
+// use alloy_genesis::GenesisAccount;
+
 use alloy_primitives::{Address, Bytes, Log, B256, U256};
 use reth_codecs::{add_arbitrary_tests, Compact};
 use reth_primitives::{
+    GenesisAccount,
     Account, Bytecode, Header, Receipt, Requests, StorageEntry, TransactionSignedNoHash, TxType,
 };
 use reth_prune_types::{PruneCheckpoint, PruneSegment};

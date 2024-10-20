@@ -31,7 +31,6 @@ use reth_node_core::{
     dirs::{ChainPath, DataDirPath},
     exit::NodeExitFuture,
     rpc::eth::{helpers::AddDevSigners, FullEthApiServer},
-    irys_ext::{IrysExt, IrysExtWrapped},
     version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA},
 };
 use reth_node_events::{cl::ConsensusLayerHealthEvents, node};
@@ -40,10 +39,6 @@ use reth_rpc_engine_api::{capabilities::EngineCapabilities, EngineApi};
 use reth_tasks::TaskExecutor;
 use reth_tracing::tracing::{debug, info};
 use reth_transaction_pool::TransactionPool;
-use std::{
-    future::Future,
-    sync::{Arc, Mutex},
-};
 use tokio::sync::{mpsc::unbounded_channel, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -55,6 +50,9 @@ use crate::{
     rpc::EthApiBuilderProvider,
     AddOns, NodeBuilderWithComponents, NodeHandle,
 };
+
+use reth_node_core::irys_ext::{IrysExt, IrysExtWrapped};
+use std::sync::RwLock;
 
 /// Alias for [`reth_rpc_eth_types::EthApiBuilderCtx`], adapter for [`FullNodeComponents`].
 pub type EthApiBuilderCtx<N, Eth> = reth_rpc_eth_types::EthApiBuilderCtx<
@@ -180,54 +178,6 @@ where
                 Ok(BlockchainProvider::new(provider_factory, tree)?)
             }, tree_config, canon_state_notification_sender)?
             .with_components(components_builder, on_component_initialized).await?;
-        // let (reload_tx, reload_rx) = unbounded_channel();
-
-        // // TODO: fix this.
-        // let irys_ext = IrysExtWrapped(Arc::new(Mutex::new(IrysExt { reload: Some(reload_tx) })));
-
-        // let builder_ctx = BuilderContext::new(
-        //     head,
-        //     blockchain_db.clone(),
-        //     ctx.task_executor().clone(),
-        //     ctx.data_dir().clone(),
-        //     ctx.node_config().clone(),
-        //     ctx.toml_config().clone(),
-        //     irys_ext.clone(),
-        // );
-
-        // debug!(target: "reth::cli", "creating components");
-        // let components = components_builder.build_components(&builder_ctx).await?;
-
-        // let tree_externals = TreeExternals::new(
-        //     ctx.provider_factory().clone(),
-        //     consensus.clone(),
-        //     components.block_executor().clone(),
-        // );
-        // let tree = BlockchainTree::new(tree_externals, tree_config, ctx.prune_modes())?
-        //     .with_sync_metrics_tx(sync_metrics_tx.clone())
-        //     // Note: This is required because we need to ensure that both the components and the
-        //     // tree are using the same channel for canon state notifications. This will be removed
-        //     // once the Blockchain provider no longer depends on an instance of the tree
-        //     .with_canon_state_notification_sender(canon_state_notification_sender);
-
-        // let canon_state_notification_sender = tree.canon_state_notification_sender();
-        // let blockchain_tree = Arc::new(ShareableBlockchainTree::new(tree));
-
-        // // Replace the tree component with the actual tree
-        // let blockchain_db = blockchain_db.with_tree(blockchain_tree);
-
-        // debug!(target: "reth::cli", "configured blockchain tree");
-
-        // let NodeHooks { on_component_initialized, on_node_started, .. } = hooks;
-
-        // let node_adapter = NodeAdapter {
-        //     components,
-        //     task_executor: ctx.task_executor().clone(),
-        //     provider: blockchain_db.clone(),
-        // };
-
-        // debug!(target: "reth::cli", "calling on_component_initialized hook");
-        // on_component_initialized.on_event(node_adapter.clone())?;
 
         // spawn exexs
         let exex_manager_handle = ExExLauncher::new(
@@ -476,6 +426,11 @@ where
             });
         }
 
+        let (reload_tx, reload_rx) = unbounded_channel();
+
+        // TODO: fix this.
+        let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
+
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
             block_executor: ctx.components().block_executor().clone(),
@@ -488,13 +443,17 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
-            ext: irys_ext,
+            irys_ext: irys_ext.clone()
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
 
         let handle = NodeHandle {
-            node_exit_future: NodeExitFuture::new(rx, reload_rx, full_node.config.debug.terminate),
+            node_exit_future: NodeExitFuture::new(
+                async { Ok(rx.await??) },
+                reload_rx,
+                full_node.config.debug.terminate,
+            ),
             node: full_node,
         };
 

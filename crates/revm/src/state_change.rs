@@ -1,22 +1,20 @@
+use core::fmt::Display;
+
 use alloy_primitives::{map::HashMap, Address, U256};
 use reth_chainspec::EthereumHardforks;
 use reth_consensus_common::calc;
-use reth_primitives::{Block, Withdrawal, Withdrawals};
 use reth_execution_errors::{BlockExecutionError, BlockValidationError};
-use reth_primitives::{
-    revm::env::fill_tx_env_with_beacon_root_contract_call, Address, ChainSpec, Header,
-    ShadowReceipt, ShadowResult, Withdrawal, B256, U256,
-};
+use reth_primitives::{irys_primitives::{ShadowTx, ShadowTxType, Shadows}, Block, ShadowReceipt, ShadowResult, Withdrawal, Withdrawals};
+// use reth_primitives::{
+//     revm::env::fill_tx_env_with_beacon_root_contract_call, Address, ChainSpec, Header,
+//     ShadowReceipt, ShadowResult, Withdrawal, B256, U256,
+// };
 use revm::{
-    interpreter::Host,
     primitives::{
-        commitment::{CommitmentStatus, IrysTxId, Stake},
-        shadow::{ShadowTx, ShadowTxType, Shadows, TransferShadow},
-        AccountInfo, EVMError, LastTx, ShadowTxTypeId,
+        AccountInfo, EVMError, 
     },
     Database, DatabaseCommit, Evm, JournalEntry, JournaledState,
 };
-use std::collections::HashMap;
 use tracing::{info, trace};
 
 /// Collect all balance changes at the end of the block.
@@ -58,7 +56,7 @@ pub fn post_block_balance_increments<ChainSpec: EthereumHardforks>(
 }
 
 
-/ Applies the pre-block Irys transaction shadows, using the given block,
+// Applies the pre-block Irys transaction shadows, using the given block,
 /// [ChainSpec], EVM.
 ///
 
@@ -70,7 +68,8 @@ pub fn apply_block_shadows<EXT, DB: Database + DatabaseCommit>(
     evm: &mut Evm<'_, EXT, DB>,
 ) -> Result<Option<Vec<ShadowReceipt>>, EVMError<DB::Error>>
 where
-    DB::Error: std::fmt::Display + std::fmt::Debug,
+    DB: Database + DatabaseCommit,
+    DB::Error: Display,
 {
     // skip if the are no shadows
     let Some(shadows) = shadows else { return Ok(None) };
@@ -146,7 +145,7 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
 ) -> Result<ShadowReceipt, EVMError<DB::Error>> {
     let address = shadow.address.clone();
     // account load procedure: load, then touch/get
-    journaled_state.load_account(address, db)?;
+    journaled_state.load_account(address, db)?; //.map_err(|e| BlockExecutionError::Validation(BlockValidationError::EVM{hash: Default::default(), error: Box::new(e)}))?;
     // load primary account
     // accounts need to be marked as `touched` if any state change happens to/from them
     // if they're purely read-only, they can be left untouched.

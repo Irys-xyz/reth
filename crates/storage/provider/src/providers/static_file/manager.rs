@@ -26,18 +26,15 @@ use reth_db_api::{
 };
 use reth_nippy_jar::{NippyJar, NippyJarChecker, CONFIG_FILE_EXTENSION};
 use reth_primitives::{
-    static_file::{
+    irys_primitives::Shadows, static_file::{
         find_fixed_range, HighestStaticFiles, SegmentHeader, SegmentRangeInclusive,
         DEFAULT_BLOCKS_PER_STATIC_FILE,
-    },
-    Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader,
-    StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal,
-    Withdrawals,
+    }, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
 };
 use reth_stages_types::{PipelineTarget, StageId};
 use reth_storage_api::DBProvider;
 use reth_storage_errors::provider::{ProviderError, ProviderResult};
-use revm::primitives::shadow::Shadows;
+
 use std::{
     collections::{hash_map::Entry, BTreeMap, HashMap},
     ops::{Deref, Range, RangeBounds, RangeInclusive},

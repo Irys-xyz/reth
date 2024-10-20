@@ -20,20 +20,14 @@ use reth_db_api::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;
 use reth_node_types::NodeTypesWithDB;
 use reth_primitives::{
-    Account, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders,
-    SealedHeader, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal,
-    Withdrawals,
+    irys_primitives::Shadows, Account, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
 };
 use reth_prune_types::{PruneCheckpoint, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
-use reth_rpc_types::irys::ShadowSubmission;
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{shadow::Shadows, BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{ BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
-    collections::BTreeMap,
-    ops::{RangeBounds, RangeInclusive},
-    sync::Arc,
-    time::Instant,
+    collections::BTreeMap, fmt, ops::{RangeBounds, RangeInclusive}, sync::Arc, time::Instant
 };
 use tracing::trace;
 
@@ -77,19 +71,9 @@ pub struct BlockchainProvider<N: NodeTypesWithDB> {
     /// Provider type used to access the database.
     database: ProviderFactory<N>,
     /// The blockchain tree instance.
-    pub tree: Arc<dyn TreeViewer>,
+    tree: Arc<dyn TreeViewer>,
     /// Tracks the chain info wrt forkchoice updates
-    pub chain_info: ChainInfoTracker,
-}
-
-impl<DB> fmt::Debug for BlockchainProvider<DB> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BlockchainProvider")
-            .field("database", &"fixme".to_string())
-            .field("tree", &"fixme".to_string())
-            .field("chain_info", &"fixme".to_string())
-            .finish()
-    }
+    chain_info: ChainInfoTracker,
 }
 
 impl<N: ProviderNodeTypes> Clone for BlockchainProvider<N> {
@@ -191,12 +175,6 @@ where
         let state_provider = self.history_by_block_hash(canonical_fork.hash)?;
         let bundle_state_provider = BundleStateProvider::new(state_provider, bundle_state_data);
         Ok(Box::new(bundle_state_provider))
-    }
-    fn database_provider_rw(&self) -> ProviderResult<DatabaseProviderRW<DB>> {
-        self.database.provider_rw()
-    }
-    fn database_ref(&self) -> &DB {
-        self.database.db_ref()
     }
 }
 
@@ -920,6 +898,17 @@ where
                 // TODO: EIP-1898 question, see above
                 // here it is not handled
                 self.ommers(BlockHashOrNumber::Hash(hash.block_hash))
+            }
+        }
+    }
+
+    fn shadows_by_id(&self, id: BlockId) -> ProviderResult<Option<Shadows>> {
+        match id {
+            BlockId::Number(num) => self.shadows_by_number_or_tag(num),
+            BlockId::Hash(hash) => {
+                // TODO: EIP-1898 question, see above
+                // here it is not handled
+                self.shadows(BlockHashOrNumber::Hash(hash.block_hash))
             }
         }
     }

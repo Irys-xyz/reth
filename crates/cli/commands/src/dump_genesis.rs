@@ -4,9 +4,10 @@ use std::sync::Arc;
 use clap::Parser;
 use reth_chainspec::EthChainSpec;
 use reth_cli::chainspec::ChainSpecParser;
+use reth_node_core::irys_ext::NodeExitReason;
 
 /// Dumps genesis block JSON configuration to stdout
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct DumpGenesisCommand<C: ChainSpecParser> {
     /// The chain this node is running.
     ///

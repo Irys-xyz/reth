@@ -5,6 +5,7 @@ use reth_cli::chainspec::ChainSpecParser;
 use reth_db::version::{get_db_version, DatabaseVersionError, DB_VERSION};
 use reth_db_common::DbTool;
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 use std::io::{self, Write};
 
 mod checksum;
@@ -17,8 +18,8 @@ mod stats;
 mod tui;
 
 /// `reth db` command
-#[derive(Debug, Parser)]
-pub struct Command<C: ChainSpecParser> {
+#[derive(Debug, Clone, Parser)]
+pub struct Command<C: ChainSpecParser + Clone> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
 
