@@ -1,6 +1,7 @@
 
 use once_cell::sync::Lazy;
 use reth_primitives::Genesis;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::Arc;
 
 pub use alloy_eips::eip1559::BaseFeeParams;
@@ -170,6 +171,58 @@ impl core::ops::Deref for ChainSpec {
     }
 }
 
+// impl<'de, T: Deserialize<'de>> Deserialize<'de> for core::lazy::OnceCell<T> {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         Ok(match Option::<T>::deserialize(deserializer)? {
+//             Some(value) => core::lazy::OnceCell::from(value),
+//             None => core::lazy::OnceCell::new(),
+//         })
+//     }
+// }
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for WrappedOnceCell<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(match Option::<T>::deserialize(deserializer)? {
+            Some(value) => WrappedOnceCell(OnceCell::from(value)),
+            None => WrappedOnceCell(OnceCell::new()),
+        })
+    }
+}
+
+
+// impl<T: Serialize> Serialize for core::lazy::OnceCell<T> {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         match self.get() {
+//             Some(value) => serializer.serialize_some(value),
+//             None => serializer.serialize_none(),
+//         }
+//     }
+// }
+
+impl<T: Serialize> Serialize for WrappedOnceCell<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self.0.get() {
+            Some(value) => serializer.serialize_some(value),
+            None => serializer.serialize_none(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct WrappedOnceCell<T>(pub OnceCell<T>);
+
 /// An Ethereum chain specification.
 ///
 /// A chain specification describes:
@@ -178,6 +231,7 @@ impl core::ops::Deref for ChainSpec {
 /// - The genesis block of the chain ([`Genesis`])
 /// - What hardforks are activated, and under which conditions
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize)]
 pub struct ChainSpec {
     /// The chain ID
     pub chain: Chain,
@@ -189,25 +243,29 @@ pub struct ChainSpec {
     ///
     /// This is either stored at construction time if it is known using [`once_cell_set`], or
     /// computed once on the first access.
+    #[serde(skip_deserializing, skip_serializing)]
     pub genesis_hash: OnceCell<B256>,
 
     /// The header corresponding to the genesis block.
     ///
     /// This is either stored at construction time if it is known using [`once_cell_set`], or
     /// computed once on the first access.
+    #[serde(skip_deserializing, skip_serializing)]
     pub genesis_header: OnceCell<Header>,
 
     /// The block at which [`EthereumHardfork::Paris`] was activated and the final difficulty at
     /// this block.
     pub paris_block_and_final_difficulty: Option<(u64, U256)>,
-
+    
     /// The active hard forks and their activation conditions
+    #[serde(skip_deserializing, skip_serializing)]
     pub hardforks: ChainHardforks,
 
     /// The deposit contract deployed for `PoS`
     pub deposit_contract: Option<DepositContract>,
 
     /// The parameters that configure how a block's base fee is computed
+    #[serde(skip_deserializing, skip_serializing)]
     pub base_fee_params: BaseFeeParamsKind,
 
     /// The maximum gas limit
@@ -985,6 +1043,8 @@ impl From<&Arc<ChainSpec>> for ChainSpecBuilder {
 
 /// `PoS` deposit contract details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deserialize, Serialize)]
+
 pub struct DepositContract {
     /// Deposit Contract Address
     pub address: Address,

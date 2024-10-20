@@ -104,6 +104,7 @@ pub struct Components<Node: FullNodeTypes, Pool, EVM, Executor, Consensus, Valid
     pub payload_builder: PayloadBuilderHandle<<Node::Types as NodeTypesWithEngine>::Engine>,
     /// The validator for the engine API.
     pub engine_validator: Validator,
+    /// Custom Irys extension
     pub irys_ext: IrysExtWrapped
 }
 

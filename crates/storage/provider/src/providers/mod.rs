@@ -69,11 +69,11 @@ impl<T> ProviderNodeTypes for T where T: NodeTypesWithDB<ChainSpec: EthereumHard
 #[allow(missing_debug_implementations)]
 pub struct BlockchainProvider<N: NodeTypesWithDB> {
     /// Provider type used to access the database.
-    database: ProviderFactory<N>,
+    pub database: ProviderFactory<N>,
     /// The blockchain tree instance.
-    tree: Arc<dyn TreeViewer>,
+    pub tree: Arc<dyn TreeViewer>,
     /// Tracks the chain info wrt forkchoice updates
-    chain_info: ChainInfoTracker,
+    pub chain_info: ChainInfoTracker,
 }
 
 impl<N: ProviderNodeTypes> Clone for BlockchainProvider<N> {

@@ -54,7 +54,7 @@ impl<E: EngineTypes> PayloadTestContext<E> {
             match self.payload_builder.best_payload(payload_id).await {
                 Some(v) => match v {
                     Ok(v) => {
-                        if v.block().body.is_empty() {
+                        if v.block().is_empty() {
                             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
                             continue;
                         } else {

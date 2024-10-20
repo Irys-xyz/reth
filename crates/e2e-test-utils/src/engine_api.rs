@@ -5,8 +5,7 @@ use jsonrpsee::{
     http_client::{transport::HttpBackend, HttpClient},
 };
 use reth::{
-    api::{EngineTypes, PayloadBuilderAttributes},
-    payload,
+    api::EngineTypes,
     providers::CanonStateNotificationStream,
     rpc::{
         api::EngineApiClient,
@@ -14,7 +13,6 @@ use reth::{
     },
 };
 use reth_payload_builder::PayloadId;
-use reth_primitives::{revm_primitives::shadow::Shadows, B256};
 use reth_rpc_layer::AuthClientService;
 use std::marker::PhantomData;
 
@@ -31,7 +29,7 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
     pub async fn get_payload_v3(
         &self,
         payload_id: PayloadId,
-    ) -> eyre::Result<E::ExecutionPayloadEnvelopeV1Irys> {
+    ) -> eyre::Result<E::ExecutionPayloadV1Irys> {
         Ok(EngineApiClient::<E>::get_payload_v1_irys(&self.engine_api_client, payload_id).await?)
     }
 
@@ -52,10 +50,10 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
         versioned_hashes: Vec<B256>,
     ) -> eyre::Result<B256>
     where
-        E::ExecutionPayloadEnvelopeV1Irys: From<E::BuiltPayload> + PayloadEnvelopeExt,
+        E::ExecutionPayloadV1Irys: From<E::BuiltPayload> + PayloadEnvelopeExt,
     {
         // setup payload for submission
-        let envelope_v3: <E as EngineTypes>::ExecutionPayloadEnvelopeV1Irys = payload.into();
+        let envelope_v3: <E as EngineTypes>::ExecutionPayloadV1Irys = payload.into();
 
         // submit payload to engine api
         let submission = EngineApiClient::<E>::submit_new_payload_irys(

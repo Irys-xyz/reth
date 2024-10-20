@@ -88,7 +88,7 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes + Copy,
     ) -> eyre::Result<Vec<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>>
     where
-        Engine::ExecutionPayloadEnvelopeV1Irys: From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+        Engine::ExecutionPayloadV1Irys: From<Engine::BuiltPayload> + PayloadEnvelopeExt,
         AddOns::EthApi: EthApiSpec + EthTransactions + TraceExt + FullEthApiTypes,
     {
         let mut chain = Vec::with_capacity(length as usize);
@@ -113,8 +113,8 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
     ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
     where
-        <Node::Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
-            From<<Node::Engine as EngineTypes>::BuiltPayload> + PayloadEnvelopeExt,
+    <Engine as EngineTypes>::ExecutionPayloadV1Irys:
+    From<Engine::BuiltPayload> + PayloadEnvelopeExt,
     {
         // trigger new payload building draining the pool
         let eth_attr = self.payload.new_payload(attributes_generator).await.unwrap();
@@ -136,7 +136,7 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
     ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
     where
-        <Engine as EngineTypes>::ExecutionPayloadEnvelopeV1Irys:
+        <Engine as EngineTypes>::ExecutionPayloadV1Irys:
             From<Engine::BuiltPayload> + PayloadEnvelopeExt,
     {
         let (payload, eth_attr) = self.new_payload(attributes_generator).await?;

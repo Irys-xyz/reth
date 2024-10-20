@@ -139,7 +139,7 @@ impl<
     pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>, C::ChainSpec>>, Ext) -> Fut,
-        Fut: Future<Output = eyre::Result<()>>,
+        Fut: Future<Output = eyre::Result<NodeExitReason>>,
     {
         tracing::info!(target: "reth::cli", version = ?version::SHORT_VERSION, "Starting reth");
 

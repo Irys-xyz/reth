@@ -39,7 +39,7 @@ pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + C
 {
     /// The command to run
     #[command(subcommand)]
-    command: Commands<C, Ext>,
+    pub command: Commands<C, Ext>,
 
     /// The chain this node is running.
     ///
@@ -137,7 +137,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>, Ext: clap::Args + Clone + fmt::D
     pub fn run<L, Fut>(mut self, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>, C::ChainSpec>>, Ext) -> Fut,
-        Fut: Future<Output = eyre::Result<()>>,
+        Fut: Future<Output = eyre::Result<NodeExitReason>>,
     {
         // add network name to logs dir
         self.logs.log_file_directory =

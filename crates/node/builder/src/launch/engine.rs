@@ -85,6 +85,11 @@ where
         self,
         target: NodeBuilderWithComponents<T, CB, AO>,
     ) -> eyre::Result<Self::Node> {
+        
+        let (reload_tx, reload_rx) = unbounded_channel();
+        // TODO: fix this.
+        let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
+
         let Self { ctx, engine_tree_config } = self;
         let NodeBuilderWithComponents {
             adapter: NodeTypesAdapter { database },
@@ -388,10 +393,6 @@ where
             let _ = exit.send(res);
         });
 
-        let (reload_tx, reload_rx) = unbounded_channel();
-
-        // TODO: fix this.
-        let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
 
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
