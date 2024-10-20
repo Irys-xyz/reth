@@ -103,6 +103,7 @@ fn generate_from_compact(fields: &FieldList, ident: &Ident, is_zstd: bool) -> To
         "H256List",
         "Base64",
         "PoaData",
+        "IrysSignature",
     ];
 
     // Only types without `Bytes` should be added here. It's currently manually added, since
