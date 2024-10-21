@@ -19,7 +19,7 @@ pub use raw::{RawDupSort, RawKey, RawTable, RawValue, TableRawRow};
 #[cfg(feature = "mdbx")]
 pub(crate) mod utils;
 
-use crate::HasName;
+use crate::{HasName, HasTableType};
 use alloy_primitives::{Address, BlockHash, BlockNumber, TxHash, TxNumber, B256};
 use reth_db_api::{
     models::{
@@ -164,6 +164,23 @@ macro_rules! tables {
                 match self {
                     $(
                         Tables::$name => table_names::$name,
+                    )*
+                }
+            }
+        }
+
+         // Implement the HasTableType trait for the Tables enum
+         impl HasTableType for Tables {
+            fn table_type(&self) -> TableType {
+                match self {
+                    $(
+                        Tables::$name => {
+                            if Tables::$name.is_dupsort() {
+                                TableType::DupSort
+                            } else {
+                                TableType::Table
+                            }
+                        }
                     )*
                 }
             }

@@ -45,6 +45,10 @@ pub trait HasName {
     fn name(&self) -> &'static str;
 }
 
+pub trait HasTableType {
+    fn table_type(&self) -> TableType;
+}
+
 /// Collection of database test utilities
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils {

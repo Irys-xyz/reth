@@ -5,7 +5,7 @@ use crate::{
     metrics::DatabaseEnvMetrics,
     tables::{self, TableType, Tables},
     utils::default_page_size,
-    DatabaseError, HasName,
+    DatabaseError, HasName, HasTableType,
 };
 use eyre::Context;
 use metrics::{gauge, Label};
@@ -394,7 +394,7 @@ impl DatabaseEnv {
                     LogLevel::Extra => 7,
                 });
             } else {
-                return Err(DatabaseError::LogLevelUnavailable(log_level))
+                return Err(DatabaseError::LogLevelUnavailable(log_level));
             }
         }
 
@@ -418,13 +418,33 @@ impl DatabaseEnv {
     }
 
     /// Enables metrics on the database including additional table definitions
-    pub fn with_metrics_and_tables<T: HasName>(mut self, tables: &[T]) -> Self {
+    pub fn with_metrics_and_tables<T: HasName + HasTableType>(mut self, tables: &[T]) -> Self {
         self.metrics = Some(DatabaseEnvMetrics::new_with_tables(tables).into());
+        let _ = self.add_tables(&tables);
         self
     }
 
     /// Creates all the defined tables, if necessary.
     pub fn create_tables(&self) -> Result<(), DatabaseError> {
+        let tx = self.inner.begin_rw_txn().map_err(|e| DatabaseError::InitTx(e.into()))?;
+
+        for table in Tables::ALL {
+            let flags = match table.table_type() {
+                TableType::Table => DatabaseFlags::default(),
+                TableType::DupSort => DatabaseFlags::DUP_SORT,
+            };
+
+            tx.create_db(Some(table.name()), flags)
+                .map_err(|e| DatabaseError::CreateTable(e.into()))?;
+        }
+
+        tx.commit().map_err(|e| DatabaseError::Commit(e.into()))?;
+
+        Ok(())
+    }
+
+    /// Allows additional (create external) tables to be added to the database schema
+    pub fn add_tables<T: HasName + HasTableType>(&self, tables: &[T]) -> Result<(), DatabaseError> {
         let tx = self.inner.begin_rw_txn().map_err(|e| DatabaseError::InitTx(e.into()))?;
 
         for table in Tables::ALL {
