@@ -447,7 +447,7 @@ impl DatabaseEnv {
     pub fn add_tables<T: HasName + HasTableType>(&self, tables: &[T]) -> Result<(), DatabaseError> {
         let tx = self.inner.begin_rw_txn().map_err(|e| DatabaseError::InitTx(e.into()))?;
 
-        for table in Tables::ALL {
+        for table in tables {
             let flags = match table.table_type() {
                 TableType::Table => DatabaseFlags::default(),
                 TableType::DupSort => DatabaseFlags::DUP_SORT,
