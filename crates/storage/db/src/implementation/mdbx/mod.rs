@@ -5,7 +5,7 @@ use crate::{
     metrics::DatabaseEnvMetrics,
     tables::{self, TableType, Tables},
     utils::default_page_size,
-    DatabaseError,
+    DatabaseError, HasName,
 };
 use eyre::Context;
 use metrics::{gauge, Label};
@@ -417,6 +417,12 @@ impl DatabaseEnv {
         self
     }
 
+    /// Enables metrics on the database including additional table definitions
+    pub fn with_metrics_and_tables<T: HasName>(mut self, tables: &[T]) -> Self {
+        self.metrics = Some(DatabaseEnvMetrics::new_with_tables(tables).into());
+        self
+    }
+
     /// Creates all the defined tables, if necessary.
     pub fn create_tables(&self) -> Result<(), DatabaseError> {
         let tx = self.inner.begin_rw_txn().map_err(|e| DatabaseError::InitTx(e.into()))?;
@@ -439,7 +445,7 @@ impl DatabaseEnv {
     /// Records version that accesses the database with write privileges.
     pub fn record_client_version(&self, version: ClientVersion) -> Result<(), DatabaseError> {
         if version.is_empty() {
-            return Ok(())
+            return Ok(());
         }
 
         let tx = self.tx_mut()?;

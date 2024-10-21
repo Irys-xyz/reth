@@ -39,6 +39,12 @@ pub use mdbx::{create_db, init_db, open_db, open_db_read_only, DatabaseEnv, Data
 pub use models::ClientVersion;
 pub use reth_db_api::*;
 
+/// Used to get custom tables registered with metrics
+pub trait HasName {
+    /// Allows a type to expose its name as a static string
+    fn name(&self) -> &'static str;
+}
+
 /// Collection of database test utilities
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils {

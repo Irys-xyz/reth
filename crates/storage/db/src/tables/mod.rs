@@ -19,6 +19,7 @@ pub use raw::{RawDupSort, RawKey, RawTable, RawValue, TableRawRow};
 #[cfg(feature = "mdbx")]
 pub(crate) mod utils;
 
+use crate::HasName;
 use alloy_primitives::{Address, BlockHash, BlockNumber, TxHash, TxNumber, B256};
 use reth_db_api::{
     models::{
@@ -155,6 +156,17 @@ macro_rules! tables {
                 #[doc = concat!("The [`", stringify!($name), "`] database table.")]
                 $name,
             )*
+        }
+
+        // Implement the HasName trait for the Tables enum
+        impl HasName for Tables {
+            fn name(&self) -> &'static str {
+                match self {
+                    $(
+                        Tables::$name => table_names::$name,
+                    )*
+                }
+            }
         }
 
         impl Tables {
