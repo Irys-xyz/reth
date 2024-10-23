@@ -12,8 +12,8 @@
 
 use reth_node_core::irys_ext::NodeExitReason;
 use reth_tasks::{TaskExecutor, TaskManager};
-use tokio::runtime::Runtime;
 use std::{future::Future, pin::pin, sync::mpsc, time::Duration};
+use tokio::runtime::Runtime;
 use tracing::{debug, error, trace};
 
 /// Executes CLI commands.
@@ -117,8 +117,8 @@ impl CliRunner {
 /// [CliRunner] configuration when executing commands asynchronously
 pub struct AsyncCliRunner {
     pub context: CliContext,
-    task_manager: TaskManager,
-    tokio_runtime: tokio::runtime::Runtime,
+    pub task_manager: TaskManager,
+    pub tokio_runtime: tokio::runtime::Runtime,
 }
 
 // === impl AsyncCliRunner ===
@@ -150,7 +150,7 @@ pub fn tokio_runtime() -> Result<tokio::runtime::Runtime, std::io::Error> {
 /// Runs the given future to completion or until a critical task panicked.
 ///
 /// Returns the error if a task panicked, or the given future returned an error.
-async fn run_to_completion_or_panic<F, E>(
+pub async fn run_to_completion_or_panic<F, E>(
     tasks: &mut TaskManager,
     fut: F,
 ) -> Result<NodeExitReason, E>
@@ -173,7 +173,7 @@ where
 /// Runs the future to completion or until:
 /// - `ctrl-c` is received.
 /// - `SIGTERM` is received (unix only).
-async fn run_until_ctrl_c<F, E>(fut: F) -> Result<NodeExitReason, E>
+pub async fn run_until_ctrl_c<F, E>(fut: F) -> Result<NodeExitReason, E>
 where
     F: Future<Output = Result<NodeExitReason, E>>,
     E: Send + Sync + 'static + From<std::io::Error>,
