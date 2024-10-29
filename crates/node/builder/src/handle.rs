@@ -7,6 +7,7 @@ use crate::node::FullNode;
 
 /// A Handle to the launched node.
 #[must_use = "Needs to await the node exit future"]
+
 pub struct NodeHandle<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> {
     /// All node components.
     pub node: FullNode<Node, AddOns>,

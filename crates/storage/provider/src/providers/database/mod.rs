@@ -17,13 +17,15 @@ use reth_errors::{RethError, RethResult};
 use reth_evm::ConfigureEvmEnv;
 use reth_node_types::NodeTypesWithDB;
 use reth_primitives::{
-    irys_primitives::Shadows, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
+    irys_primitives::Shadows, Block, BlockWithSenders, Header, Receipt, SealedBlock,
+    SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta, TransactionSigned,
+    TransactionSignedNoHash, Withdrawal, Withdrawals,
 };
 use reth_prune_types::{PruneCheckpoint, PruneModes, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
 use reth_storage_api::TryIntoHistoricalStateProvider;
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{ BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
     ops::{RangeBounds, RangeInclusive},
     path::Path,
@@ -44,7 +46,7 @@ mod metrics;
 /// This provider implements most provider or provider factory traits.
 pub struct ProviderFactory<N: NodeTypesWithDB> {
     /// Database
-    db: N::DB,
+    pub db: N::DB,
     /// Chain spec
     chain_spec: Arc<N::ChainSpec>,
     /// Static File Provider

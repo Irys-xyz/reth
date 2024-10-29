@@ -138,7 +138,7 @@ where
             .with_blockchain_db::<T, _>(move |provider_factory| {
                 Ok(BlockchainProvider2::new(provider_factory)?)
             }, tree_config, canon_state_notification_sender)?
-            .with_components(components_builder, on_component_initialized).await?;
+            .with_components(components_builder, on_component_initialized, None).await?;
 
         // spawn exexs
         let exex_manager_handle = ExExLauncher::new(

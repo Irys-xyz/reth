@@ -1,6 +1,10 @@
 //! A generic [`NodeComponentsBuilder`]
 
-use std::{future::Future, marker::PhantomData, sync::{Arc, RwLock}};
+use std::{
+    future::Future,
+    marker::PhantomData,
+    sync::{Arc, RwLock},
+};
 
 use reth_consensus::Consensus;
 use reth_evm::execute::BlockExecutorProvider;
@@ -18,7 +22,6 @@ use crate::{
 
 use super::EngineValidatorBuilder;
 use reth_node_core::irys_ext::{IrysExt, IrysExtWrapped};
-
 
 /// A generic, general purpose and customizable [`NodeComponentsBuilder`] implementation.
 ///
@@ -398,8 +401,8 @@ where
             executor_builder: evm_builder,
             consensus_builder,
             engine_validator_builder,
-            irys_ext,
             _marker,
+            ..
         } = self;
 
         let (evm_config, executor) = evm_builder.build_evm(context).await?;
@@ -417,7 +420,7 @@ where
             executor,
             consensus,
             engine_validator,
-            irys_ext: irys_ext.clone(),
+            irys_ext: context.irys_ext.clone(),
         })
     }
 }

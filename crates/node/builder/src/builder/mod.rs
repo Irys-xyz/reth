@@ -528,7 +528,7 @@ pub struct BuilderContext<Node: FullNodeTypes> {
     /// Config container
     pub(crate) config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
 
-    // pub(crate) irys_ext: IrysExtWrapped,
+    pub(crate) irys_ext: IrysExtWrapped,
 
 }
 
@@ -539,9 +539,9 @@ impl<Node: FullNodeTypes> BuilderContext<Node> {
         provider: Node::Provider,
         executor: TaskExecutor,
         config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
-        // irys_ext: IrysExtWrapped
+        irys_ext: IrysExtWrapped
     ) -> Self {
-        Self { head, provider, executor, config_container }
+        Self { head, provider, executor, config_container, irys_ext }
     }
 
     /// Returns the configured provider to interact with the blockchain.

@@ -7,7 +7,8 @@ use std::{
     pin::Pin,
     task::{ready, Context, Poll},
 };
-use tokio::sync::{mpsc::UnboundedReceiver};
+use tokio::sync::mpsc::UnboundedReceiver;
+use tracing::error;
 
 use crate::irys_ext::{NodeExitReason, ReloadPayload};
 
@@ -33,7 +34,11 @@ impl fmt::Debug for NodeExitFuture {
 
 impl NodeExitFuture {
     /// Create a new `NodeExitFuture`.
-    pub fn new<F>(consensus_engine_fut: F, reload_rx: UnboundedReceiver<ReloadPayload>, terminate: bool) -> Self
+    pub fn new<F>(
+        consensus_engine_fut: F,
+        reload_rx: UnboundedReceiver<ReloadPayload>,
+        terminate: bool,
+    ) -> Self
     where
         F: Future<Output = eyre::Result<()>> + 'static + Send,
     {

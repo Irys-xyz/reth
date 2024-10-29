@@ -25,6 +25,7 @@ use reth_node_api::{FullNodeTypes, NodeTypes, NodeTypesWithDB};
 use reth_node_core::{
     args::InvalidBlockHookType,
     dirs::{ChainPath, DataDirPath},
+    irys_ext::IrysExtWrapped,
     node_config::NodeConfig,
     version::{
         BUILD_PROFILE_NAME, CARGO_PKG_VERSION, VERGEN_BUILD_TIMESTAMP, VERGEN_CARGO_FEATURES,
@@ -307,8 +308,6 @@ impl<R, ChainSpec: EthChainSpec> LaunchContextWith<Attached<WithConfigs<ChainSpe
         self.node_config_mut().adjust_instance_ports();
         self
     }
-
-
 
     /// Returns the container for all config types
     pub const fn configs(&self) -> &WithConfigs<ChainSpec> {
@@ -675,6 +674,7 @@ where
         on_component_initialized: Box<
             dyn OnComponentInitializedHook<NodeAdapter<T, CB::Components>>,
         >,
+        irys_ext: Option<IrysExtWrapped>,
     ) -> eyre::Result<
         LaunchContextWith<
             Attached<WithConfigs<<T::Types as NodeTypes>::ChainSpec>, WithComponents<T, CB>>,
@@ -691,15 +691,18 @@ where
             self.blockchain_db().clone(),
             self.task_executor().clone(),
             self.configs().clone(),
-            // self.irys_ext().clone()
+            irys_ext.clone().unwrap_or_default(),
         );
 
         debug!(target: "reth::cli", "creating components");
         let components = components_builder.build_components(&builder_ctx).await?;
-
+        // components.irys_ext
         let consensus: Arc<dyn Consensus> = Arc::new(components.consensus().clone());
 
-        let tree_externals = TreeExternals::new(
+        let tree_externals: TreeExternals<
+            <T as FullNodeTypes>::Types,
+            <<CB as NodeComponentsBuilder<T>>::Components as NodeComponents<T>>::Executor,
+        > = TreeExternals::new(
             self.provider_factory().clone().with_prune_modes(self.prune_modes()),
             consensus.clone(),
             components.block_executor().clone(),
@@ -894,7 +897,7 @@ where
     /// Returns the [`InvalidBlockHook`] to use for the node.
     pub fn invalid_block_hook(&self) -> eyre::Result<Box<dyn InvalidBlockHook>> {
         let Some(ref hook) = self.node_config().debug.invalid_block_hook else {
-            return Ok(Box::new(NoopInvalidBlockHook::default()))
+            return Ok(Box::new(NoopInvalidBlockHook::default()));
         };
         let healthy_node_rpc_client = self.get_healthy_node_client()?;
 

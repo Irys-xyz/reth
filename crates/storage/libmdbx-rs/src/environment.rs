@@ -31,7 +31,7 @@ const DEFAULT_MAX_READ_TRANSACTION_DURATION: Duration = Duration::from_secs(5 * 
 /// The environment will be closed when the last instance of this type is dropped.
 #[derive(Clone)]
 pub struct Environment {
-    inner: Arc<EnvironmentInner>,
+    pub inner: Arc<EnvironmentInner>,
 }
 
 impl Environment {
@@ -118,10 +118,10 @@ impl Environment {
                     warn!(target: "libmdbx", "Process stalled, awaiting read-write transaction lock.");
                 }
                 sleep(Duration::from_millis(250));
-                continue
+                continue;
             }
 
-            break res
+            break res;
         }?;
         Ok(Transaction::new_from_ptr(self.clone(), txn.0))
     }
@@ -216,7 +216,7 @@ impl Environment {
         for result in cursor.iter_slices() {
             let (_key, value) = result?;
             if value.len() < size_of::<usize>() {
-                return Err(Error::Corrupted)
+                return Err(Error::Corrupted);
             }
 
             let s = &value[..size_of::<usize>()];
@@ -231,11 +231,11 @@ impl Environment {
 ///
 /// This holds the raw pointer to the MDBX environment and the transaction manager.
 /// The env is opened via [`mdbx_env_create`](ffi::mdbx_env_create) and closed when this type drops.
-struct EnvironmentInner {
+pub struct EnvironmentInner {
     /// The raw pointer to the MDBX environment.
     ///
     /// Accessing the environment is thread-safe as long as long as this type exists.
-    env: *mut ffi::MDBX_env,
+    pub env: *mut ffi::MDBX_env,
     /// Whether the environment was opened as WRITEMAP.
     env_kind: EnvironmentKind,
     /// Transaction manager
@@ -709,7 +709,7 @@ impl EnvironmentBuilder {
             })() {
                 ffi::mdbx_env_close_ex(env, false);
 
-                return Err(e)
+                return Err(e);
             }
         }
 
