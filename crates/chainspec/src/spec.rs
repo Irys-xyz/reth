@@ -1,4 +1,3 @@
-
 use once_cell::sync::Lazy;
 use reth_primitives::Genesis;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -23,8 +22,8 @@ use reth_network_peers::{
 };
 use reth_primitives_traits::{
     constants::{
-        DEV_GENESIS_HASH, EIP1559_INITIAL_BASE_FEE, EMPTY_WITHDRAWALS, ETHEREUM_BLOCK_GAS_LIMIT,
-        HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH, EMPTY_SHADOWS_ROOT
+        DEV_GENESIS_HASH, EIP1559_INITIAL_BASE_FEE, EMPTY_SHADOWS_ROOT, EMPTY_WITHDRAWALS,
+        ETHEREUM_BLOCK_GAS_LIMIT, HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
     },
     Header, SealedHeader,
 };
@@ -195,7 +194,6 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for WrappedOnceCell<T> {
     }
 }
 
-
 // impl<T: Serialize> Serialize for core::lazy::OnceCell<T> {
 //     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 //     where
@@ -230,8 +228,7 @@ struct WrappedOnceCell<T>(pub OnceCell<T>);
 /// - Meta-information about the chain (the chain ID)
 /// - The genesis block of the chain ([`Genesis`])
 /// - What hardforks are activated, and under which conditions
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChainSpec {
     /// The chain ID
     pub chain: Chain,
@@ -256,7 +253,7 @@ pub struct ChainSpec {
     /// The block at which [`EthereumHardfork::Paris`] was activated and the final difficulty at
     /// this block.
     pub paris_block_and_final_difficulty: Option<(u64, U256)>,
-    
+
     /// The active hard forks and their activation conditions
     #[serde(skip_deserializing, skip_serializing)]
     pub hardforks: ChainHardforks,
@@ -308,8 +305,8 @@ impl ChainSpec {
     #[inline]
     #[cfg(feature = "optimism")]
     pub fn is_optimism(&self) -> bool {
-        self.chain.is_optimism() ||
-            self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
+        self.chain.is_optimism()
+            || self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
     }
 
     /// Returns `true` if this chain contains Optimism configuration.
@@ -417,7 +414,7 @@ impl ChainSpec {
                 // given timestamp.
                 for (fork, params) in bf_params.iter().rev() {
                     if self.hardforks.is_fork_active_at_timestamp(fork.clone(), timestamp) {
-                        return *params
+                        return *params;
                     }
                 }
 
@@ -436,7 +433,7 @@ impl ChainSpec {
                 // given timestamp.
                 for (fork, params) in bf_params.iter().rev() {
                     if self.hardforks.is_fork_active_at_block(fork.clone(), block_number) {
-                        return *params
+                        return *params;
                     }
                 }
 
@@ -521,8 +518,8 @@ impl ChainSpec {
             // We filter out TTD-based forks w/o a pre-known block since those do not show up in the
             // fork filter.
             Some(match condition {
-                ForkCondition::Block(block) |
-                ForkCondition::TTD { fork_block: Some(block), .. } => ForkFilterKey::Block(block),
+                ForkCondition::Block(block)
+                | ForkCondition::TTD { fork_block: Some(block), .. } => ForkFilterKey::Block(block),
                 ForkCondition::Timestamp(time) => ForkFilterKey::Time(time),
                 _ => return None,
             })
@@ -795,9 +792,9 @@ pub trait ChainSpecProvider: Send + Sync {
 /// A helper to build custom chain specs
 #[derive(Debug, Default, Clone)]
 pub struct ChainSpecBuilder {
-    chain: Option<Chain>,
-    genesis: Option<Genesis>,
-    hardforks: ChainHardforks,
+    pub chain: Option<Chain>,
+    pub genesis: Option<Genesis>,
+    pub hardforks: ChainHardforks,
 }
 
 impl ChainSpecBuilder {
@@ -1042,8 +1039,7 @@ impl From<&Arc<ChainSpec>> for ChainSpecBuilder {
 }
 
 /// `PoS` deposit contract details.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 
 pub struct DepositContract {
     /// Deposit Contract Address
