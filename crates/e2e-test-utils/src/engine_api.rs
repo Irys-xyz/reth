@@ -26,7 +26,7 @@ pub struct EngineApiTestContext<E> {
 
 impl<E: EngineTypes> EngineApiTestContext<E> {
     /// Retrieves a v3 payload from the engine api
-    pub async fn get_payload_v3(
+    pub async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
     ) -> eyre::Result<E::ExecutionPayloadV1Irys> {

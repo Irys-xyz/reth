@@ -113,8 +113,8 @@ where
         attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
     ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
     where
-    <Engine as EngineTypes>::ExecutionPayloadV1Irys:
-    From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+        <Engine as EngineTypes>::ExecutionPayloadV1Irys:
+            From<Engine::BuiltPayload> + PayloadEnvelopeExt,
     {
         // trigger new payload building draining the pool
         let eth_attr = self.payload.new_payload(attributes_generator).await.unwrap();
