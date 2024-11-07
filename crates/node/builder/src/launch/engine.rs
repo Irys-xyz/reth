@@ -20,7 +20,12 @@ use reth_network::{NetworkSyncUpdater, SyncState};
 use reth_network_api::{BlockDownloaderProvider, NetworkEventListenerProvider};
 use reth_node_api::{BuiltPayload, FullNodeTypes, NodeAddOns, NodeTypesWithEngine};
 use reth_node_core::{
-    dirs::{ChainPath, DataDirPath}, exit::NodeExitFuture, irys_ext::IrysExt, primitives::Head, rpc::eth::{helpers::AddDevSigners, FullEthApiServer}, version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA}
+    dirs::{ChainPath, DataDirPath},
+    exit::NodeExitFuture,
+    irys_ext::IrysExt,
+    primitives::Head,
+    rpc::eth::{helpers::AddDevSigners, FullEthApiServer},
+    version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA},
 };
 use reth_node_events::{cl::ConsensusLayerHealthEvents, node};
 use reth_payload_primitives::PayloadBuilder;
@@ -85,7 +90,6 @@ where
         self,
         target: NodeBuilderWithComponents<T, CB, AO>,
     ) -> eyre::Result<Self::Node> {
-        
         let (reload_tx, reload_rx) = unbounded_channel();
         // TODO: fix this.
         let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
@@ -393,7 +397,6 @@ where
             let _ = exit.send(res);
         });
 
-
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
             block_executor: ctx.components().block_executor().clone(),
@@ -406,14 +409,14 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
-            irys_ext: irys_ext.clone()
+            irys_ext: irys_ext.clone(),
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
 
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
-                async { rx.await? },
+                // async { rx.await? },
                 reload_rx,
                 full_node.config.debug.terminate,
             ),

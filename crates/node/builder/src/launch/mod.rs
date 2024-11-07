@@ -443,14 +443,14 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
-            irys_ext: irys_ext.clone()
+            irys_ext: irys_ext.clone(),
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
 
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
-                async { Ok(rx.await??) },
+                // async { Ok(rx.await??) },
                 reload_rx,
                 full_node.config.debug.terminate,
             ),
