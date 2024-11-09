@@ -9,7 +9,10 @@ use alloy_rpc_types_engine::{
 };
 use reth_chain_state::ExecutedBlock;
 use reth_payload_primitives::{BuiltPayload, PayloadBuilderAttributes};
-use reth_primitives::{irys_primitives::Shadows, SealedBlock, Withdrawals};
+use reth_primitives::{
+    irys_primitives::{ShadowReceipt, Shadows},
+    SealedBlock, Withdrawals,
+};
 use reth_rpc_types_compat::engine::payload::{
     block_to_payload_v1, block_to_payload_v1_irys, block_to_payload_v3, block_to_payload_v4,
     convert_block_to_payload_field_v2,
@@ -34,6 +37,8 @@ pub struct EthBuiltPayload {
     /// The blobs, proofs, and commitments in the block. If the block is pre-cancun, this will be
     /// empty.
     pub(crate) sidecars: Vec<BlobTransactionSidecar>,
+    /// shadow execution results ('receipts')
+    pub shadow_receipts: Vec<ShadowReceipt>,
     pub(crate) is_empty: bool,
 }
 
@@ -46,9 +51,10 @@ impl EthBuiltPayload {
         block: SealedBlock,
         fees: U256,
         executed_block: Option<ExecutedBlock>,
+        shadow_receipts: Vec<ShadowReceipt>,
         is_empty: bool,
     ) -> Self {
-        Self { id, block, fees, sidecars: Vec::new(), executed_block, is_empty }
+        Self { id, block, fees, sidecars: Vec::new(), executed_block, shadow_receipts, is_empty }
     }
 
     /// Returns the identifier of the payload.
@@ -93,6 +99,10 @@ impl BuiltPayload for EthBuiltPayload {
     fn is_empty(&self) -> bool {
         self.is_empty
     }
+
+    fn shadow_receipts(&self) -> Vec<ShadowReceipt> {
+        self.shadow_receipts.clone()
+    }
 }
 
 impl BuiltPayload for &EthBuiltPayload {
@@ -110,6 +120,10 @@ impl BuiltPayload for &EthBuiltPayload {
 
     fn is_empty(&self) -> bool {
         (**self).is_empty()
+    }
+
+    fn shadow_receipts(&self) -> Vec<ShadowReceipt> {
+        (**self).shadow_receipts()
     }
 }
 
@@ -173,7 +187,7 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV4 {
 
 impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
     fn from(value: EthBuiltPayload) -> Self {
-        let EthBuiltPayload { block, fees, sidecars /*  is_empty, */, .. } = value;
+        let EthBuiltPayload { block, fees, sidecars, shadow_receipts /*  is_empty, */, .. } = value;
         ExecutionPayloadEnvelopeV1Irys {
             execution_payload: block_to_payload_v1_irys(block.clone()),
             block_value: fees,
@@ -187,7 +201,7 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
             // <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#specification-2>
             should_override_builder: false,
             blobs_bundle: sidecars.clone().into_iter().map(Into::into).collect::<Vec<_>>().into(),
-            // is_empty, // shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
+            shadow_receipts, // is_empty, // shadows: block.shadows.unwrap_or(Shadows::new(vec![])),
         }
     }
 }

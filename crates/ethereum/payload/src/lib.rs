@@ -332,10 +332,10 @@ where
         ))
         .build();
 
-    let shadow_exec =
+    let shadow_receipts =
         apply_block_shadows(Some(&attributes.shadows), &mut evm).expect("shadow exec failed :c");
     // commit changes
-    info!("shadow exec: {:#?}", &shadow_exec);
+    info!("shadow exec: {:#?}", &shadow_receipts);
 
     let ss = evm.context.evm.inner.journaled_state.state.clone();
     // evm.db_mut().commit(ss);
@@ -572,7 +572,13 @@ where
     // seal the block
     let block = Block {
         header,
-        body: BlockBody { transactions: executed_txs, ommers: vec![], withdrawals, requests, shadows: Some(attributes.shadows) },
+        body: BlockBody {
+            transactions: executed_txs,
+            ommers: vec![],
+            withdrawals,
+            requests,
+            shadows: Some(attributes.shadows),
+        },
     };
 
     let sealed_block = block.seal_slow();
@@ -588,7 +594,14 @@ where
         trie: Arc::new(trie_output),
     };
 
-    let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees, Some(executed), false);
+    let mut payload = EthBuiltPayload::new(
+        attributes.id,
+        sealed_block,
+        total_fees,
+        Some(executed),
+        shadow_receipts,
+        false,
+    );
 
     // extend the payload with the blob sidecars from the executed txs
     payload.extend_sidecars(blob_sidecars);

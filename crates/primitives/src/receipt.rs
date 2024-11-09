@@ -8,9 +8,9 @@ use alloc::{vec, vec::Vec};
 use alloy_primitives::{Bloom, Bytes, Log, B256};
 use alloy_rlp::{length_of_length, Decodable, Encodable, RlpDecodable, RlpEncodable};
 use bytes::{Buf, BufMut};
-use irys_primitives::{IrysTxId, ShadowTxType};
 use core::{cmp::Ordering, ops::Deref};
 use derive_more::{DerefMut, From, IntoIterator};
+use irys_primitives::{IrysTxId, ShadowTxType};
 #[cfg(feature = "reth-codec")]
 use reth_codecs::{Compact, CompactZstd};
 use serde::{Deserialize, Serialize};
@@ -44,37 +44,6 @@ pub struct Receipt {
     /// ensures this is only set for post-Canyon deposit transactions.
     #[cfg(feature = "optimism")]
     pub deposit_receipt_version: Option<u64>,
-}
-
-// #[cfg_attr(feature = "zstd-codec", main_codec(no_arbitrary, zstd))]
-// #[cfg_attr(not(feature = "zstd-codec"), main_codec(no_arbitrary))]
-// #[add_arbitrary_tests]
-// #[derive(Clone, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
-// #[rlp(trailing)]
-// pub struct ShadowReceipt {
-//     pub tx_type: ShadowTxType,
-//     pub success: bool,
-// }
-
-#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
-// #[rlp(trailing)]
-pub struct ShadowReceipt {
-    pub tx_id: IrysTxId,
-    pub tx_type: ShadowTxType,
-    pub result: ShadowResult,
-}
-
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub enum ShadowResult {
-    #[default]
-    Success,
-    OutOfFunds,
-    OverflowPayment,
-    Failure,
-    AlreadyStaked,
-    NoPledges,
-    NoMatchingPledge,
-    AlreadyPledged,
 }
 
 impl Receipt {

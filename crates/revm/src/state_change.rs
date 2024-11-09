@@ -5,8 +5,11 @@ use reth_chainspec::EthereumHardforks;
 use reth_consensus_common::calc;
 use reth_execution_errors::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
-    irys_primitives::{LastTx, ShadowTx, ShadowTxType, ShadowTxTypeId, Shadows, TransferShadow},
-    Block, ShadowReceipt, ShadowResult, Withdrawal, Withdrawals,
+    irys_primitives::{
+        LastTx, ShadowReceipt, ShadowResult, ShadowTx, ShadowTxType, ShadowTxTypeId, Shadows,
+        TransferShadow,
+    },
+    Block, Withdrawal, Withdrawals,
 };
 // use reth_primitives::{
 //     revm::env::fill_tx_env_with_beacon_root_contract_call, Address, ChainSpec, Header,
@@ -66,13 +69,13 @@ pub fn apply_block_shadows<EXT, DB: Database + DatabaseCommit>(
     // block: &BlockWithSenders,
     shadows: Option<&Shadows>,
     evm: &mut Evm<'_, EXT, DB>,
-) -> Result<Option<Vec<ShadowReceipt>>, EVMError<DB::Error>>
+) -> Result<Vec<ShadowReceipt>, EVMError<DB::Error>>
 where
     DB: Database + DatabaseCommit,
     DB::Error: Display,
 {
     // skip if the are no shadows
-    let Some(shadows) = shadows else { return Ok(None) };
+    let Some(shadows) = shadows else { return Ok(Vec::new()) };
     let mut receipts = Vec::with_capacity(shadows.len());
 
     // TODO: fix this clone
@@ -107,7 +110,7 @@ where
         }
     }
 
-    Ok(Some(receipts))
+    Ok(receipts)
 }
 
 pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
@@ -117,7 +120,7 @@ pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
     // create a checkpoint, try to apply the shadow, and always revert
     let checkpoint = evm.context.evm.inner.journaled_state.checkpoint();
     // let result = apply_shadow(shadow, evm);
-    let result = apply_shadow(
+    let result: Result<ShadowReceipt, EVMError<<DB as Database>::Error>> = apply_shadow(
         shadow,
         &mut evm.context.evm.inner.journaled_state,
         &mut evm.context.evm.inner.db,

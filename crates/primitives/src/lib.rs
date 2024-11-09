@@ -47,7 +47,6 @@ pub mod irys;
 pub use irys::*;
 pub use receipt::{
     gas_spent_by_transactions, Receipt, ReceiptWithBloom, ReceiptWithBloomRef, Receipts,
-    ShadowReceipt, ShadowResult,
 };
 pub use reth_primitives_traits::{
     logs_bloom, Account, Bytecode, GotExpected, GotExpectedBoxed, Header, HeaderError, Log,
@@ -73,7 +72,7 @@ pub use transaction::{
 
 // Re-exports
 pub use reth_ethereum_forks::*;
-pub use revm_primitives::{self,  JumpTable};
+pub use revm_primitives::{self, JumpTable};
 // payload::PayloadAttributes, Genesis, GenesisAccount,
 pub use irys_primitives::{self, Genesis, GenesisAccount};
 

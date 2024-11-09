@@ -4,7 +4,10 @@ use crate::{
 use alloy_eips::eip4844::BlobAndProofV1;
 use alloy_primitives::{BlockHash, BlockNumber, B256, U64};
 use alloy_rpc_types_engine::{
-    CancunPayloadFields, ClientVersionV1, ExecutionPayload, ExecutionPayloadBodiesV1, ExecutionPayloadBodiesV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV1Irys, ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId, PayloadStatus, TransitionConfiguration
+    CancunPayloadFields, ClientVersionV1, ExecutionPayload, ExecutionPayloadBodiesV1,
+    ExecutionPayloadBodiesV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV1Irys,
+    ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId,
+    PayloadStatus, TransitionConfiguration,
 };
 use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
@@ -13,15 +16,16 @@ use reth_chainspec::{EthereumHardforks, Hardforks};
 use reth_engine_primitives::{BuiltPayload, EngineTypes, EngineValidator, PayloadTypes};
 use reth_evm::provider::EvmEnvProvider;
 use reth_payload_builder::PayloadStore;
+use reth_payload_primitives::PayloadBuilder;
 use reth_payload_primitives::{
     validate_payload_timestamp, EngineApiMessageVersion, PayloadBuilderAttributes,
     PayloadOrAttributes,
 };
-use reth_payload_primitives::PayloadBuilder;
 use reth_primitives::{Block, BlockHashOrNumber, EthereumHardfork};
 use reth_rpc_api::EngineApiServer;
 use reth_rpc_types_compat::engine::payload::{
-    convert_payload_input_v2_to_payload, convert_to_payload_body_v1, convert_to_payload_body_v2, block_to_payload_v1_irys
+    block_to_payload_v1_irys, convert_payload_input_v2_to_payload, convert_to_payload_body_v1,
+    convert_to_payload_body_v2,
 };
 use reth_storage_api::{BlockReader, HeaderProvider, StateProviderFactory};
 use reth_tasks::TaskSpawner;
@@ -222,13 +226,11 @@ where
                 &payload, None,
             );
 
-            self.inner
+        self.inner
             .validator
             .validate_version_specific_fields(EngineApiMessageVersion::V1Irys, payload_or_attrs)?;
         Ok(self.inner.beacon_consensus.new_payload(payload, None).await?)
     }
-
-
 
     // /// See also <https://github.com/ethereum/execution-apis/blob/584905270d8ad665718058060267061ecfd79ca5/src/engine/shanghai.md#engine_newpayloadv2>
     // pub async fn new_payload_v2(
@@ -354,11 +356,11 @@ where
             //         payload_attributes.clone(),
             //     )
             let payload_builder_attributes =
-            <EngineT as PayloadTypes>::PayloadBuilderAttributes::try_new(
-                parent,
-                payload_attributes.clone(),
-            )
-            // .map_err(|_| eyre::eyre!("failed to fetch payload attributes"))?;
+                <EngineT as PayloadTypes>::PayloadBuilderAttributes::try_new(
+                    parent,
+                    payload_attributes.clone(),
+                )
+                // .map_err(|_| eyre::eyre!("failed to fetch payload attributes"))?;
                 // TODO: fix
                 .expect("unable to build PayloadBuilderAttributes");
 
@@ -403,8 +405,6 @@ where
                 // break;
                 // }
             };
-
-            dbg!(&b);
 
             // Ok(b)
 
@@ -637,9 +637,9 @@ where
                 warn!("could not transform built payload into ExecutionPayloadV3");
                 EngineApiError::UnknownPayload
             });
-            res
-        }
-        
+        res
+    }
+
     /// Returns the most recent version of the payload that is available in the corresponding
     /// payload build process at the time of receiving this call.
     ///
@@ -1006,8 +1006,6 @@ where
     //     Ok(res?)
     // }
 
-
-    
     fn ping(&self) -> RpcResult<String> {
         Ok("pong".to_string())
     }
@@ -1023,21 +1021,21 @@ where
         // self.inner.metrics.new_payload_response.update_response_metrics(&res);
         Ok(res?)
     }
-//  /// Handler for `engine_newPayloadV3`
-//     /// See also <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#engine_newpayloadv3>
-//     async fn new_payload_v3(
-//         &self,
-//         payload: ExecutionPayloadV1Irys,
-//     ) -> RpcResult<PayloadStatus> {
+    //  /// Handler for `engine_newPayloadV3`
+    //     /// See also <https://github.com/ethereum/execution-apis/blob/fe8e13c288c592ec154ce25c534e26cb7ce0530d/src/engine/cancun.md#engine_newpayloadv3>
+    //     async fn new_payload_v3(
+    //         &self,
+    //         payload: ExecutionPayloadV1Irys,
+    //     ) -> RpcResult<PayloadStatus> {
 
-//         let gas_used = payload.payload_inner.payload_inner.gas_used;
-//         let res =
-//             Self::new_payload_v3(self, payload, versioned_hashes, parent_beacon_block_root).await;
-//         let elapsed = start.elapsed();
-//         self.inner.metrics.latency.new_payload_v3.record(elapsed);
-//         self.inner.metrics.new_payload_response.update_response_metrics(&res, gas_used, elapsed);
-//         Ok(res?)
-//     }
+    //         let gas_used = payload.payload_inner.payload_inner.gas_used;
+    //         let res =
+    //             Self::new_payload_v3(self, payload, versioned_hashes, parent_beacon_block_root).await;
+    //         let elapsed = start.elapsed();
+    //         self.inner.metrics.latency.new_payload_v3.record(elapsed);
+    //         self.inner.metrics.new_payload_response.update_response_metrics(&res, gas_used, elapsed);
+    //         Ok(res?)
+    //     }
 
     // /// Handler for `engine_newPayloadV4`
     // /// See also <https://github.com/ethereum/execution-apis/blob/03911ffc053b8b806123f1fc237184b0092a485a/src/engine/prague.md#engine_newpayloadv4>
@@ -1065,10 +1063,7 @@ where
         /* RpcResult<EngineT::ExecutionPayloadV1Irys> */
     ) -> RpcResult<EngineT::ExecutionPayloadV1Irys> {
         Ok(EngineApi::build_new_payload_irys(&self, parent, payload_attributes).await?)
-
     }
-
-
 
     async fn fork_choice_updated_v1_irys(
         &self,
@@ -1085,7 +1080,6 @@ where
         Ok(res?)
     }
 
-
     async fn get_payload_v1_irys(
         &self,
         payload_id: PayloadId,
@@ -1096,8 +1090,6 @@ where
         self.inner.metrics.latency.get_payload_v3.record(start.elapsed());
         Ok(res?)
     }
-
-
 
     async fn get_payload_bodies_by_hash_v1_irys(
         &self,
@@ -1233,7 +1225,7 @@ where
     ) -> RpcResult<Vec<Option<BlobAndProofV1>>> {
         trace!(target: "rpc::engine", "Serving engine_getBlobsV1");
         if versioned_hashes.len() > MAX_BLOB_LIMIT {
-            return Err(EngineApiError::BlobRequestTooLarge { len: versioned_hashes.len() }.into())
+            return Err(EngineApiError::BlobRequestTooLarge { len: versioned_hashes.len() }.into());
         }
 
         Ok(self
@@ -1476,8 +1468,8 @@ mod tests {
                     .chain_spec
                     .fork(EthereumHardfork::Paris)
                     .ttd()
-                    .unwrap() +
-                    U256::from(1),
+                    .unwrap()
+                    + U256::from(1),
                 ..Default::default()
             };
 
