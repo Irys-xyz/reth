@@ -92,7 +92,7 @@ where
         args: BuildArguments<Pool, Client, EthPayloadBuilderAttributes, EthBuiltPayload>,
     ) -> Result<BuildOutcome<EthBuiltPayload>, PayloadBuilderError> {
         let (cfg_env, block_env) = self.cfg_and_block_env(&args.config, &args.config.parent_block);
-        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env)
+        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env, false)
     }
 
     fn build_empty_payload(
@@ -110,138 +110,9 @@ where
             best_payload: None,
         };
         let (cfg_env, block_env) = self.cfg_and_block_env(&args.config, &args.config.parent_block);
-        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env)?
+        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env, true)?
             .into_payload()
             .ok_or_else(|| PayloadBuilderError::MissingPayload)
-
-        // let extra_data = config.extra_data();
-        // let PayloadConfig {
-        //     initialized_block_env,
-        //     parent_block,
-        //     attributes,
-        //     chain_spec,
-        //     initialized_cfg,
-        //     ..
-        // } = config;
-
-        // debug!(target: "payload_builder", parent_hash = ?parent_block.hash(), parent_number = parent_block.number, "building empty payload");
-
-        // let state = client.state_by_block_hash(parent_block.hash()).map_err(|err| {
-        //     warn!(target: "payload_builder",
-        //         parent_hash=%parent_block.hash(),
-        //         %err,
-        //         "failed to get state for empty payload"
-        //     );
-        //     err
-        // })?;
-        // let mut db = State::builder()
-        //     .with_database(StateProviderDatabase::new(state))
-        //     .with_bundle_update()
-        //     .build();
-
-        // let base_fee = initialized_block_env.basefee.to::<u64>();
-        // let block_number = initialized_block_env.number.to::<u64>();
-        // let block_gas_limit = initialized_block_env.gas_limit.try_into().unwrap_or(u64::MAX);
-
-        // // // apply eip-4788 pre block contract call
-        // // pre_block_beacon_root_contract_call(
-        // //     &mut db,
-        // //     &chain_spec,
-        // //     block_number,
-        // //     &initialized_cfg,
-        // //     &initialized_block_env,
-        // //     &attributes,
-        // // )
-        // // .map_err(|err| {
-        // //     warn!(target: "payload_builder",
-        // //         parent_hash=%parent_block.hash(),
-        // //         %err,
-        // //         "failed to apply beacon root contract call for empty payload"
-        // //     );
-        // //     err
-        // // })?;
-
-        // let WithdrawalsOutcome { withdrawals_root, withdrawals } = commit_withdrawals(
-        //     &mut db,
-        //     &chain_spec,
-        //     attributes.timestamp,
-        //     attributes.withdrawals.clone(),
-        // )
-        // .map_err(|err| {
-        //     warn!(target: "payload_builder",
-        //         parent_hash=%parent_block.hash(),
-        //         %err,
-        //         "failed to commit withdrawals for empty payload"
-        //     );
-        //     err
-        // })?;
-
-        // // merge all transitions into bundle state, this would apply the withdrawal balance
-        // // changes and 4788 contract call
-        // db.merge_transitions(BundleRetention::PlainState);
-
-        // // calculate the state root
-        // let bundle_state = db.take_bundle();
-        // let state_root = db.database.state_root(&bundle_state).map_err(|err| {
-        //     warn!(target: "payload_builder",
-        //         parent_hash=%parent_block.hash(),
-        //         %err,
-        //         "failed to calculate state root for empty payload"
-        //     );
-        //     err
-        // })?;
-
-        // let mut excess_blob_gas = None;
-        // let mut blob_gas_used = None;
-
-        // if chain_spec.is_cancun_active_at_timestamp(attributes.timestamp) {
-        //     excess_blob_gas = if chain_spec.is_cancun_active_at_timestamp(parent_block.timestamp) {
-        //         let parent_excess_blob_gas = parent_block.excess_blob_gas.unwrap_or_default();
-        //         let parent_blob_gas_used = parent_block.blob_gas_used.unwrap_or_default();
-        //         Some(calculate_excess_blob_gas(parent_excess_blob_gas, parent_blob_gas_used))
-        //     } else {
-        //         // for the first post-fork block, both parent.blob_gas_used and
-        //         // parent.excess_blob_gas are evaluated as 0
-        //         Some(calculate_excess_blob_gas(0, 0))
-        //     };
-
-        //     blob_gas_used = Some(0);
-        // }
-
-        // let header = Header {
-        //     parent_hash: parent_block.hash(),
-        //     ommers_hash: EMPTY_OMMER_ROOT_HASH,
-        //     beneficiary: initialized_block_env.coinbase,
-        //     state_root,
-        //     transactions_root: EMPTY_TRANSACTIONS,
-        //     withdrawals_root,
-        //     receipts_root: EMPTY_RECEIPTS,
-        //     shadows_root: EMPTY_SHADOWS_ROOT,
-        //     logs_bloom: Default::default(),
-        //     timestamp: attributes.timestamp,
-        //     mix_hash: attributes.prev_randao,
-        //     nonce: BEACON_NONCE,
-        //     base_fee_per_gas: Some(base_fee),
-        //     number: parent_block.number + 1,
-        //     gas_limit: block_gas_limit,
-        //     difficulty: U256::ZERO,
-        //     gas_used: 0,
-        //     extra_data,
-        //     blob_gas_used,
-        //     excess_blob_gas,
-        //     parent_beacon_block_root: attributes.parent_beacon_block_root,
-        // };
-
-        // let block = Block {
-        //     header,
-        //     body: vec![],
-        //     ommers: vec![],
-        //     withdrawals,
-        //     shadows: Some(attributes.shadows.clone()),
-        // };
-        // let sealed_block = block.seal_slow();
-
-        // Ok(EthBuiltPayload::new(attributes.payload_id(), sealed_block, U256::ZERO, true))
     }
 }
 
@@ -256,6 +127,7 @@ pub fn default_ethereum_payload<EvmConfig, Pool, Client>(
     args: BuildArguments<Pool, Client, EthPayloadBuilderAttributes, EthBuiltPayload>,
     initialized_cfg: CfgEnvWithHandlerCfg,
     initialized_block_env: BlockEnv,
+    is_empty: bool,
 ) -> Result<BuildOutcome<EthBuiltPayload>, PayloadBuilderError>
 where
     EvmConfig: ConfigureEvm<Header = Header>,
@@ -332,8 +204,12 @@ where
         ))
         .build();
 
-    let shadow_receipts =
-        apply_block_shadows(Some(&attributes.shadows), &mut evm).expect("shadow exec failed :c");
+    let shadow_receipts = match is_empty {
+        false => apply_block_shadows(Some(&attributes.shadows), &mut evm)
+            .expect("shadow execution failed"),
+        true => vec![],
+    };
+
     // commit changes
     info!("shadow exec: {:#?}", &shadow_receipts);
 
@@ -344,6 +220,7 @@ where
     db.commit(ss);
 
     while let Some(pool_tx) = best_txs.next() {
+        debug!("JESSEDEBUG processing tx {:?}", &pool_tx.hash());
         // ensure we still have capacity for this transaction
         if cumulative_gas_used + pool_tx.gas_limit() > block_gas_limit {
             // we can't fit this transaction into the block, so we need to mark it as invalid
@@ -390,6 +267,7 @@ where
             Err(err) => {
                 match err {
                     EVMError::Transaction(err) => {
+                        debug!("JESSEDEBUG evm error: {:?}", &err);
                         if matches!(err, InvalidTransaction::NonceTooLow { .. }) {
                             // if the nonce is too low, we can skip this transaction
                             trace!(target: "payload_builder", %err, ?tx, "skipping nonce too low transaction");
@@ -403,6 +281,8 @@ where
                         continue;
                     }
                     err => {
+                        debug!("JESSEDEBUG evm error2: {:?}", &err);
+
                         // this is an error that we should treat as fatal for this attempt
                         return Err(PayloadBuilderError::EvmExecutionError(err));
                     }
@@ -451,9 +331,12 @@ where
         executed_txs.push(tx.into_signed());
     }
 
+    debug!("JESSEDEBUG executed_txs {:?}", &executed_txs);
+
     // check if we have a better block
     if !is_better_payload(best_payload.as_ref(), total_fees) {
         // can skip building the block
+        debug!("JESSEDEBUG aborting build, not a better payload");
         return Ok(BuildOutcome::Aborted { fees: total_fees, cached_reads });
     }
     let shadows_root = proofs::calculate_shadows_root(&attributes.shadows);
@@ -492,7 +375,7 @@ where
     // merge all transitions into bundle state, this would apply the withdrawal balance changes
     // and 4788 contract call
     db.merge_transitions(BundleRetention::Reverts);
-
+    debug!("JESSEDEBUG receipts {:?}", &receipts);
     let execution_outcome = ExecutionOutcome::new(
         db.take_bundle(),
         vec![receipts.clone()].into(),
@@ -600,7 +483,7 @@ where
         total_fees,
         Some(executed),
         shadow_receipts,
-        false,
+        is_empty,
     );
 
     // extend the payload with the blob sidecars from the executed txs

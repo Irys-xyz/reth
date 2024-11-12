@@ -2,6 +2,7 @@ use crate::{
     capabilities::EngineCapabilities, metrics::EngineApiMetrics, EngineApiError, EngineApiResult,
 };
 use alloy_eips::eip4844::BlobAndProofV1;
+use alloy_primitives::Sealable;
 use alloy_primitives::{BlockHash, BlockNumber, B256, U64};
 use alloy_rpc_types_engine::{
     CancunPayloadFields, ClientVersionV1, ExecutionPayload, ExecutionPayloadBodiesV1,
@@ -373,7 +374,7 @@ where
                 // .new_payload(payload_builder_attributes)
                 .await
                 .expect("unable to build payload");
-
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             // todo: redo this
             let b = loop {
                 match self.inner.payload_store.inner.best_payload(payload_id).await {
@@ -382,10 +383,11 @@ where
                             if v.is_empty() && v.block().is_empty()
                             /* && v.block().shadows.is_none() */
                             {
+                                debug!("JESSEDEBUG skipping payload {:?}", &v.block().hash());
                                 tokio::time::sleep(std::time::Duration::from_millis(20)).await;
                                 continue;
                             } else {
-                                trace!("got payload");
+                                trace!("JESSEDEBUG got payload {:?}", &v.block().hash());
                                 break v.block().clone();
                             }
                         }
@@ -398,65 +400,14 @@ where
                         continue 'outer;
                     }
                 }
-                // if payload.block().body.is_empty() {
-                //     tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-                //     continue;
-                // }
-                // break;
-                // }
             };
-
-            // Ok(b)
 
             let payload = self
                 .get_payload_v1_irys(payload_id)
                 .await
                 .expect("unable to get payload from payload store");
 
-            // let payload = self
-            //     .inner
-            //     .payload_store
-            //     .resolve(payload_id)
-            //     .await
-            //     .ok_or(EngineApiError::UnknownPayload)?
-            //     .map_err(|_| EngineApiError::UnknownPayload)?
-            //     .try_into()
-            //     .map_err(|_| {
-            //         warn!("could not transform built payload into ExecutionPayloadV3");
-            //         EngineApiError::UnknownPayload
-            //     });
-
-            // return payload;
-
-            // Ok((b, payload))
-            match serde_json::to_string(&payload.clone()) {
-                Ok(v) => {
-                    // println!("PAYLOAD {}", v);
-                    warn!(target: "payload_builder", ?v, "payload");
-                    // trace!("{}", &v);
-                    ()
-                }
-                Err(e) => {
-                    // trace!("{}", &e);
-                    // println!("ERROR {}", e);
-                    warn!(target: "payload_builder", ?e, "payload");
-
-                    ()
-                }
-            }
-            // let exec = payload.execution_payload();
-            // let encoded_blobs = BlobsBundleV1Wrapper { inner: payload.blobs_bundle() };
-            // let opaque = OpaquePayload {
-            //     body: exec.payload_inner.payload_inner.payload_inner.transactions,
-            //     blobs_bundle: BlobsBundleV1Wrapper {inner: payload.blobs_bundle()}
-            // }
-            // serialize `transactions` into an opaque bin?
-            // serialize the bits we `don't` need access to.
-            // dbg!(pj);
             return Ok(payload);
-
-            // Ok(ForkchoiceUpdated::new(PayloadStatus::new(PayloadStatusEnum::Valid, None))
-            //     .with_payload_id(payload_id))
         }
     }
 
