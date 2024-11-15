@@ -80,6 +80,12 @@ pub trait DbDupCursorRO<T: DupSort> {
     /// exist.
     fn seek_by_key_subkey(&mut self, key: T::Key, subkey: T::SubKey) -> ValueOnlyResult<T>;
 
+    fn last_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError>;
+
+    fn first_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError>;
+
+    fn dup_cursor_count(&mut self) -> Result<Option<u32>, DatabaseError>;
+
     /// Get an iterator that walks through the dup table.
     ///
     /// The cursor will start at different points in the table depending on the values of `key` and
@@ -154,7 +160,7 @@ impl<T: Table, CURSOR: DbCursorRO<T>> Iterator for Walker<'_, T, CURSOR> {
     fn next(&mut self) -> Option<Self::Item> {
         let start = self.start.take();
         if start.is_some() {
-            return start
+            return start;
         }
 
         self.cursor.next().transpose()
@@ -231,7 +237,7 @@ impl<T: Table, CURSOR: DbCursorRO<T>> Iterator for ReverseWalker<'_, T, CURSOR> 
     fn next(&mut self) -> Option<Self::Item> {
         let start = self.start.take();
         if start.is_some() {
-            return start
+            return start;
         }
 
         self.cursor.prev().transpose()
@@ -271,7 +277,7 @@ impl<T: Table, CURSOR: DbCursorRO<T>> Iterator for RangeWalker<'_, T, CURSOR> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_done {
-            return None
+            return None;
         }
 
         let next_item = self.start.take().or_else(|| self.cursor.next().transpose());
@@ -362,7 +368,7 @@ impl<T: DupSort, CURSOR: DbDupCursorRO<T>> Iterator for DupWalker<'_, T, CURSOR>
     fn next(&mut self) -> Option<Self::Item> {
         let start = self.start.take();
         if start.is_some() {
-            return start
+            return start;
         }
         self.cursor.next_dup().transpose()
     }

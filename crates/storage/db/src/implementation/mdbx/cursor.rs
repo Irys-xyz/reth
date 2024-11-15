@@ -189,6 +189,26 @@ impl<K: TransactionKind, T: DupSort> DbDupCursorRO<T> for Cursor<K, T> {
             .transpose()
     }
 
+    fn last_dup(&mut self) -> ValueOnlyResult<T> {
+        self.inner
+            .last_dup()
+            .map_err(|e| DatabaseError::Read(e.into()))?
+            .map(decode_one::<T>)
+            .transpose()
+    }
+
+    fn first_dup(&mut self) -> ValueOnlyResult<T> {
+        self.inner
+            .first_dup()
+            .map_err(|e| DatabaseError::Read(e.into()))?
+            .map(decode_one::<T>)
+            .transpose()
+    }
+
+    fn dup_cursor_count(&mut self) -> Result<Option<u32>, DatabaseError> {
+        Ok(Some(self.inner.get_dup_count().map_err(|e| DatabaseError::Read(e.into()))?))
+    }
+
     /// Depending on its arguments, returns an iterator starting at:
     /// - Some(key), Some(subkey): a `key` item whose data is >= than `subkey`
     /// - Some(key), None: first item of a specified `key`

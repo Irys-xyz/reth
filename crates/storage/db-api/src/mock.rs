@@ -207,6 +207,18 @@ impl<T: DupSort> DbDupCursorRO<T> for CursorMock {
     ) -> Result<DupWalker<'_, T, Self>, DatabaseError> {
         Ok(DupWalker { cursor: self, start: None })
     }
+
+    fn last_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError> {
+        Ok(None)
+    }
+
+    fn first_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError> {
+        Ok(None)
+    }
+
+    fn dup_cursor_count(&mut self) -> Result<Option<u32>, DatabaseError> {
+        Ok(None)
+    }
 }
 
 impl<T: Table> DbCursorRW<T> for CursorMock {
