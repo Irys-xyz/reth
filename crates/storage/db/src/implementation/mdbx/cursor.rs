@@ -205,8 +205,26 @@ impl<K: TransactionKind, T: DupSort> DbDupCursorRO<T> for Cursor<K, T> {
             .transpose()
     }
 
-    fn dup_cursor_count(&mut self) -> Result<Option<u32>, DatabaseError> {
-        Ok(Some(self.inner.get_dup_count().map_err(|e| DatabaseError::Read(e.into()))?))
+    /// Returns the number of dupsort values associated with the provided key, if the key exists.
+    /// if the key does not exist, it returns Null
+    fn dup_count(&mut self, key: T::Key) -> Result<Option<u32>, DatabaseError> {
+        let key: Vec<u8> = key.encode().into();
+        Ok(
+            // we seek to the key & check the key exists
+            // if we pass a nonexistant key to get_dup_count, it'll panic
+            match self
+                .inner
+                .set(&key)
+                .map_err(|e| DatabaseError::Read(e.into()))?
+                .map(|val| decoder::<T>((Cow::Owned(key), val)))
+            {
+                Some(_v) => {
+                    _v?;
+                    Some(self.inner.get_dup_count().map_err(|e| DatabaseError::Read(e.into()))?)
+                }
+                None => None,
+            },
+        )
     }
 
     /// Depending on its arguments, returns an iterator starting at:

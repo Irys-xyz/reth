@@ -84,7 +84,7 @@ pub trait DbDupCursorRO<T: DupSort> {
 
     fn first_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError>;
 
-    fn dup_cursor_count(&mut self) -> Result<Option<u32>, DatabaseError>;
+    fn dup_count(&mut self, key: T::Key) -> Result<Option<u32>, DatabaseError>;
 
     /// Get an iterator that walks through the dup table.
     ///

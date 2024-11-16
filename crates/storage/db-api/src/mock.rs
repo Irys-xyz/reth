@@ -216,7 +216,7 @@ impl<T: DupSort> DbDupCursorRO<T> for CursorMock {
         Ok(None)
     }
 
-    fn dup_cursor_count(&mut self) -> Result<Option<u32>, DatabaseError> {
+    fn dup_count(&mut self, _key: T::Key) -> Result<Option<u32>, DatabaseError> {
         Ok(None)
     }
 }
