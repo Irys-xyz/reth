@@ -1,5 +1,5 @@
 use clap::Parser;
-use reth_db::{open_db_read_only, tables_to_generic, DatabaseEnv, Tables};
+use reth_db::{open_db_read_only, DatabaseEnv, Tables};
 use reth_db_api::{cursor::DbCursorRO, database::Database, table::Table, transaction::DbTx};
 use reth_db_common::DbTool;
 use reth_node_builder::{NodeTypesWithDBAdapter, NodeTypesWithEngine};
@@ -56,6 +56,7 @@ impl Command {
         self,
         tool: &DbTool<NodeTypesWithDBAdapter<T, Arc<DatabaseEnv>>>,
     ) -> eyre::Result<()> {
+        todo!(); // disabled due to needing the tables_to_generic! macro, which causes issues.
         warn!("Make sure the node is not running when running `reth db diff`!");
         // open second db
         let second_db_path: PathBuf = self.secondary_datadir.join("db").into();
@@ -76,11 +77,11 @@ impl Command {
             secondary_tx.disable_long_read_transaction_safety();
 
             let output_dir = self.output.clone();
-            tables_to_generic!(table, |Table| find_diffs::<Table>(
-                primary_tx,
-                secondary_tx,
-                output_dir
-            ))?;
+            // tables_to_generic!(table, |Table| find_diffs::<Table>(
+            //     primary_tx,
+            //     secondary_tx,
+            //     output_dir
+            // ))?;
         }
 
         Ok(())
