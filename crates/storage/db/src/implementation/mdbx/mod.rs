@@ -23,7 +23,7 @@ use reth_libmdbx::{
 use reth_storage_errors::db::LogLevel;
 use reth_tracing::tracing::error;
 use std::{
-    ops::Deref,
+    ops::{Deref, Range},
     path::Path,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -60,7 +60,7 @@ impl DatabaseEnvKind {
 }
 
 /// Arguments for database initialization.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DatabaseArguments {
     /// Client version that accesses the database.
     client_version: ClientVersion,
@@ -68,6 +68,10 @@ pub struct DatabaseArguments {
     log_level: Option<LogLevel>,
     /// Maximum duration of a read transaction. If [None], the default value is used.
     max_read_transaction_duration: Option<MaxReadTransactionDuration>,
+
+    /// Database geometry
+    geometry: Geometry<Range<usize>>,
+
     /// Open environment in exclusive/monopolistic mode. If [None], the default value is used.
     ///
     /// This can be used as a replacement for `MDB_NOLOCK`, which don't supported by MDBX. In this
@@ -91,15 +95,48 @@ pub struct DatabaseArguments {
     exclusive: Option<bool>,
 }
 
+impl Default for DatabaseArguments {
+    fn default() -> Self {
+        Self {
+            client_version: Default::default(),
+            log_level: Default::default(),
+            max_read_transaction_duration: Default::default(),
+            exclusive: Default::default(),
+            geometry: Geometry {
+                // Maximum database size of 4 terabytes
+                size: Some(0..(4 * TERABYTE)),
+                // We grow the database in increments of 4 gigabytes
+                growth_step: Some(4 * GIGABYTE as isize),
+                // The database never shrinks
+                shrink_threshold: Some(0),
+                page_size: Some(PageSize::Set(default_page_size())),
+            },
+        }
+    }
+}
+
 impl DatabaseArguments {
     /// Create new database arguments with given client version.
-    pub const fn new(client_version: ClientVersion) -> Self {
+    pub fn new(client_version: ClientVersion) -> Self {
         Self {
             client_version,
             log_level: None,
             max_read_transaction_duration: None,
             exclusive: None,
+            geometry: Geometry {
+                // Maximum database size of 4 terabytes
+                size: Some(0..(4 * TERABYTE)),
+                // We grow the database in increments of 4 gigabytes
+                growth_step: Some(4 * GIGABYTE as isize),
+                // The database never shrinks
+                shrink_threshold: Some(0),
+                page_size: Some(PageSize::Set(default_page_size())),
+            },
         }
+    }
+
+    pub fn get_page_size() -> PageSize {
+        PageSize::Set(default_page_size())
     }
 
     /// Set the log level.
@@ -120,6 +157,25 @@ impl DatabaseArguments {
     /// Set the mdbx exclusive flag.
     pub const fn with_exclusive(mut self, exclusive: Option<bool>) -> Self {
         self.exclusive = exclusive;
+        self
+    }
+
+    /// Set the mdbx geometry
+    pub const fn with_geometry(mut self, geometry: Geometry<Range<usize>>) -> Self {
+        self.geometry = geometry;
+        self
+    }
+
+    /// Sets the "growth step" for the database (how much it'll increase in size if it needs more capacity)
+    /// this effectively sets the initial size for the database.
+    pub const fn with_growth_step(mut self, growth_step: isize) -> Self {
+        self.geometry.growth_step = Some(growth_step);
+        self
+    }
+
+    /// Sets the "shrink threshold" for the database (how much free space it'll allow before shrinking it's FS footprint)
+    pub const fn with_shrink_threshold(mut self, shrink_threshold: isize) -> Self {
+        self.geometry.shrink_threshold = Some(shrink_threshold);
         self
     }
 
