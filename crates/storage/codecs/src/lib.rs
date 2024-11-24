@@ -138,7 +138,7 @@ macro_rules! impl_uint_compact {
     };
 }
 
-impl_uint_compact!(u8, u64, u128);
+impl_uint_compact!(u8, u16, u32, u64, u128);
 
 impl<T> Compact for Vec<T>
 where
@@ -324,7 +324,7 @@ impl Compact for U256 {
     #[inline]
     fn from_compact(mut buf: &[u8], len: usize) -> (Self, &[u8]) {
         if len == 0 {
-            return (Self::ZERO, buf)
+            return (Self::ZERO, buf);
         }
 
         let mut arr = [0; 32];
