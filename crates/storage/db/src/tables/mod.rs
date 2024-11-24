@@ -109,7 +109,7 @@ macro_rules! tables {
     (@view $name:ident $v:ident) => { $v.view::<$name>() };
     (@view $name:ident $v:ident $_subkey:ty) => { $v.view_dupsort::<$name>() };
 
-    ($( $(#[$attr:meta])* table $name:ident<Key = $key:ty, Value = $value:ty $(, SubKey = $subkey:ty)? $(,)?>; )*) => {
+    ($enum_name:ident; $( $(#[$attr:meta])* table $name:ident<Key = $key:ty, Value = $value:ty $(, SubKey = $subkey:ty)? $(,)?>; )*) => {
         // Table marker types.
         $(
             $(#[$attr])*
@@ -151,7 +151,7 @@ macro_rules! tables {
 
         /// A table in the database.
         #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-        pub enum Tables {
+        pub enum $enum_name {
             $(
                 #[doc = concat!("The [`", stringify!($name), "`] database table.")]
                 $name,
@@ -159,23 +159,23 @@ macro_rules! tables {
         }
 
         // Implement the HasName trait for the Tables enum
-        impl HasName for Tables {
+        impl HasName for $enum_name {
             fn name(&self) -> &'static str {
                 match self {
                     $(
-                        Tables::$name => table_names::$name,
+                        $enum_name::$name => table_names::$name,
                     )*
                 }
             }
         }
 
          // Implement the HasTableType trait for the Tables enum
-         impl HasTableType for Tables {
+         impl HasTableType for $enum_name {
             fn table_type(&self) -> TableType {
                 match self {
                     $(
-                        Tables::$name => {
-                            if Tables::$name.is_dupsort() {
+                        $enum_name::$name => {
+                            if $enum_name::$name.is_dupsort() {
                                 TableType::DupSort
                             } else {
                                 TableType::Table
@@ -186,7 +186,7 @@ macro_rules! tables {
             }
         }
 
-        impl Tables {
+        impl $enum_name {
             /// All the tables in the database.
             pub const ALL: &'static [Self] = &[$(Self::$name,)*];
 
@@ -233,21 +233,21 @@ macro_rules! tables {
             }
         }
 
-        impl fmt::Debug for Tables {
+        impl fmt::Debug for $enum_name {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.write_str(self.name())
             }
         }
 
-        impl fmt::Display for Tables {
+        impl fmt::Display for $enum_name {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 self.name().fmt(f)
             }
         }
 
-        impl std::str::FromStr for Tables {
+        impl std::str::FromStr for $enum_name {
             type Err = String;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -298,6 +298,7 @@ macro_rules! tables {
 }
 
 tables! {
+    Tables;
     /// Stores the header hashes belonging to the canonical chain.
     table CanonicalHeaders<Key = BlockNumber, Value = HeaderHash>;
 
