@@ -21,7 +21,7 @@ use crate::{
 };
 
 use super::EngineValidatorBuilder;
-use reth_node_core::irys_ext::{IrysExt, IrysExtWrapped};
+use reth_node_core::irys_ext::IrysExt;
 
 /// A generic, general purpose and customizable [`NodeComponentsBuilder`] implementation.
 ///
@@ -50,7 +50,7 @@ pub struct ComponentsBuilder<Node, PoolB, PayloadB, NetworkB, ExecB, ConsB, EVB>
     executor_builder: ExecB,
     consensus_builder: ConsB,
     engine_validator_builder: EVB,
-    irys_ext: IrysExtWrapped,
+    irys_ext: Option<IrysExt>,
     _marker: PhantomData<Node>,
 }
 
@@ -434,7 +434,7 @@ impl Default for ComponentsBuilder<(), (), (), (), (), (), ()> {
             executor_builder: (),
             consensus_builder: (),
             engine_validator_builder: (),
-            irys_ext: IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: None }))),
+            irys_ext: None,
             _marker: Default::default(),
         }
     }

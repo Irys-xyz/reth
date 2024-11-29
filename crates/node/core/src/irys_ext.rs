@@ -1,18 +1,18 @@
 use std::sync::{Arc, RwLock};
 
+pub use irys_types::reth_provider::IrysRethProvider;
+
 use reth_chainspec::ChainSpec;
 use tokio::sync::mpsc::UnboundedSender;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 
-/// Wrapper type for the irys extension
-pub struct IrysExtWrapped(pub Arc<RwLock<IrysExt>>);
-
-#[derive(Debug, Default)]
-/// Custom Irys extension that allows for node-wide access to the reload channel
+/// Container struct for all the objects we want to route through to reth
 pub struct IrysExt {
-    /// reload sender channel - TODO: replace with a oneshot channel
-    pub reload: Option<UnboundedSender<ReloadPayload>>,
+    /// deprecated
+    pub reload: Arc<RwLock<UnboundedSender<ReloadPayload>>>,
+    /// the provider that gives Reth access to Irys node components
+    pub provider: IrysRethProvider,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

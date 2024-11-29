@@ -22,7 +22,6 @@ use reth_node_api::{BuiltPayload, FullNodeTypes, NodeAddOns, NodeTypesWithEngine
 use reth_node_core::{
     dirs::{ChainPath, DataDirPath},
     exit::NodeExitFuture,
-    irys_ext::IrysExt,
     primitives::Head,
     rpc::eth::{helpers::AddDevSigners, FullEthApiServer},
     version::{CARGO_PKG_VERSION, CLIENT_CODE, NAME_CLIENT, VERGEN_GIT_SHA},
@@ -38,8 +37,6 @@ use reth_tracing::tracing::{debug, error, info};
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::{mpsc::unbounded_channel, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
-
-use reth_node_core::irys_ext::IrysExtWrapped;
 
 use crate::{
     common::{Attached, LaunchContextWith, WithConfigs},
@@ -90,9 +87,8 @@ where
         self,
         target: NodeBuilderWithComponents<T, CB, AO>,
     ) -> eyre::Result<Self::Node> {
-        let (reload_tx, reload_rx) = unbounded_channel();
-        // TODO: fix this.
-        let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
+        // TODO: make the reload rx channel optional
+        let (_, reload_rx) = unbounded_channel();
 
         let Self { ctx, engine_tree_config } = self;
         let NodeBuilderWithComponents {
@@ -409,7 +405,7 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
-            irys_ext: irys_ext.clone(),
+            irys_ext: None,
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;

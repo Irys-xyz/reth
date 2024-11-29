@@ -25,7 +25,7 @@ use reth_node_api::{FullNodeTypes, NodeTypes, NodeTypesWithDB};
 use reth_node_core::{
     args::InvalidBlockHookType,
     dirs::{ChainPath, DataDirPath},
-    irys_ext::IrysExtWrapped,
+    irys_ext::IrysExt,
     node_config::NodeConfig,
     version::{
         BUILD_PROFILE_NAME, CARGO_PKG_VERSION, VERGEN_BUILD_TIMESTAMP, VERGEN_CARGO_FEATURES,
@@ -658,10 +658,6 @@ where
         &self.right().tree_config
     }
 
-    // pub const fn irys_ext(&self) -> IrysExtWrapped {
-    //     &self.right().irys_ext
-    // }
-
     /// Returns the `CanonStateNotificationSender`.
     pub fn canon_state_notification_sender(&self) -> CanonStateNotificationSender {
         self.right().canon_state_notification_sender.clone()
@@ -674,7 +670,7 @@ where
         on_component_initialized: Box<
             dyn OnComponentInitializedHook<NodeAdapter<T, CB::Components>>,
         >,
-        irys_ext: Option<IrysExtWrapped>,
+        irys_ext: Option<IrysExt>,
     ) -> eyre::Result<
         LaunchContextWith<
             Attached<WithConfigs<<T::Types as NodeTypes>::ChainSpec>, WithComponents<T, CB>>,
@@ -691,7 +687,7 @@ where
             self.blockchain_db().clone(),
             self.task_executor().clone(),
             self.configs().clone(),
-            irys_ext.clone().unwrap_or_default(),
+            irys_ext,
         );
 
         debug!(target: "reth::cli", "creating components");

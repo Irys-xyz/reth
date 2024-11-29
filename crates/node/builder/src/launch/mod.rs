@@ -51,9 +51,6 @@ use crate::{
     AddOns, NodeBuilderWithComponents, NodeHandle,
 };
 
-use reth_node_core::irys_ext::{IrysExt, IrysExtWrapped};
-use std::sync::RwLock;
-
 /// Alias for [`reth_rpc_eth_types::EthApiBuilderCtx`], adapter for [`FullNodeComponents`].
 pub type EthApiBuilderCtx<N, Eth> = reth_rpc_eth_types::EthApiBuilderCtx<
     <N as FullNodeTypes>::Provider,
@@ -426,10 +423,7 @@ where
             });
         }
 
-        let (reload_tx, reload_rx) = unbounded_channel();
-
-        // TODO: fix this.
-        let irys_ext = IrysExtWrapped(Arc::new(RwLock::new(IrysExt { reload: Some(reload_tx) })));
+        let (_, reload_rx) = unbounded_channel();
 
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
@@ -443,7 +437,7 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
-            irys_ext: irys_ext.clone(),
+            irys_ext: None,
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;

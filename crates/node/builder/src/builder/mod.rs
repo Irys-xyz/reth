@@ -33,7 +33,12 @@ use reth_node_api::{
     NodeTypesWithEngine,
 };
 use reth_node_core::{
-    cli::config::{PayloadBuilderConfig, RethTransactionPoolConfig}, dirs::{ChainPath, DataDirPath}, irys_ext::IrysExtWrapped, node_config::NodeConfig, primitives::Head, rpc::eth::{helpers::AddDevSigners, FullEthApiServer}
+    cli::config::{PayloadBuilderConfig, RethTransactionPoolConfig},
+    dirs::{ChainPath, DataDirPath},
+    irys_ext::IrysExt,
+    node_config::NodeConfig,
+    primitives::Head,
+    rpc::eth::{helpers::AddDevSigners, FullEthApiServer},
 };
 use reth_primitives::revm_primitives::EnvKzgSettings;
 use reth_provider::{providers::BlockchainProvider, ChainSpecProvider, FullProvider};
@@ -528,8 +533,7 @@ pub struct BuilderContext<Node: FullNodeTypes> {
     /// Config container
     pub(crate) config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
 
-    pub(crate) irys_ext: IrysExtWrapped,
-
+    pub irys_ext: Option<IrysExt>,
 }
 
 impl<Node: FullNodeTypes> BuilderContext<Node> {
@@ -539,7 +543,7 @@ impl<Node: FullNodeTypes> BuilderContext<Node> {
         provider: Node::Provider,
         executor: TaskExecutor,
         config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
-        irys_ext: IrysExtWrapped
+        irys_ext: Option<IrysExt>,
     ) -> Self {
         Self { head, provider, executor, config_container, irys_ext }
     }
