@@ -36,6 +36,20 @@ pub trait Database: Send + Sync + Debug {
         Ok(res)
     }
 
+    /// Takes a function and passes a read-only transaction into it, making sure it's closed in the
+    /// end of the execution. This functions allows for `eyre` results.
+    fn view_eyre<T, F>(&self, f: F) -> eyre::Result<T>
+    where
+        F: FnOnce(&Self::TX) -> eyre::Result<T>,
+    {
+        let tx = self.tx()?;
+
+        let res = f(&tx);
+        tx.commit()?;
+
+        res
+    }
+
     /// Takes a function and passes a write-read transaction into it, making sure it's committed in
     /// the end of the execution.
     fn update<T, F>(&self, f: F) -> Result<T, DatabaseError>
@@ -48,6 +62,20 @@ pub trait Database: Send + Sync + Debug {
         tx.commit()?;
 
         Ok(res)
+    }
+
+    /// Takes a function and passes a write-read transaction into it, making sure it's committed in
+    /// the end of the execution. This functions allows for `eyre` results.
+    fn update_eyre<T, F>(&self, f: F) -> eyre::Result<T>
+    where
+        F: FnOnce(&Self::TXMut) -> eyre::Result<T>,
+    {
+        let tx = self.tx_mut()?;
+
+        let res = f(&tx);
+        tx.commit()?;
+
+        res
     }
 }
 
