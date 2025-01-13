@@ -37,6 +37,8 @@ reth-tracing.workspace = true
 reth-transaction-pool.workspace = true
 
 irys-types = { path = "../../../../../crates/types" }
+irys-storage = { path = "../../../../../crates/storage" }
+
 # ethereum
 alloy-primitives.workspace = true
 alloy-rpc-types-engine = { workspace = true, features = ["jwt"] }

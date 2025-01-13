@@ -1,7 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-pub use irys_types::reth_provider::IrysRethProvider;
-
+use irys_storage::reth_provider::IrysRethProvider;
 use reth_chainspec::ChainSpec;
 use tokio::sync::mpsc::UnboundedSender;
 
