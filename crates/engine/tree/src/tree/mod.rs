@@ -1442,15 +1442,18 @@ where
     /// Returns true if the canonical chain length minus the last persisted
     /// block is greater than or equal to the persistence threshold and
     /// backfill is not running.
-    const fn should_persist(&self) -> bool {
+    fn should_persist(&self) -> bool {
         if !self.backfill_sync_state.is_idle() {
             // can't persist if backfill is running
             return false
         }
 
         let min_block = self.persistence_state.last_persisted_block.number;
-        self.state.tree_state.canonical_block_number().saturating_sub(min_block) >
-            self.config.persistence_threshold()
+        let should_persist =
+            self.state.tree_state.canonical_block_number().saturating_sub(min_block)
+                > self.config.persistence_threshold();
+        debug!("JESSEDEBUG should persist {}, min block {}", &should_persist, &min_block);
+        should_persist
     }
 
     /// Returns a batch of consecutive canonical blocks to persist in the range
@@ -1459,6 +1462,7 @@ where
     fn get_canonical_blocks_to_persist(&self) -> Vec<ExecutedBlock> {
         let mut blocks_to_persist = Vec::new();
         let mut current_hash = self.state.tree_state.canonical_block_hash();
+        debug!("JESSEDEBUG current canonical block hash: {}", &current_hash);
         let last_persisted_number = self.persistence_state.last_persisted_block.number;
 
         let canonical_head_number = self.state.tree_state.canonical_block_number();
