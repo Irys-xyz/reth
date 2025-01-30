@@ -143,12 +143,21 @@ where
         &self,
         attributes: <Self::Job as PayloadJob>::PayloadAttributes,
     ) -> Result<Self::Job, PayloadBuilderError> {
+        let latest_blk = self
+            .client
+            .block_by_number_or_tag(BlockNumberOrTag::Latest)?
+            .ok_or_else(|| PayloadBuilderError::MissingParentBlock(attributes.parent()))?
+            .seal_slow();
+        debug!(
+            "JESSEDEBUG latest block: {} ({}), requested parent: {}",
+            &latest_blk.hash(),
+            &latest_blk.number,
+            &attributes.parent()
+        );
         let parent_block = if attributes.parent().is_zero() {
+            debug!("JESSEDEBUG using latest");
             // use latest block if parent is zero: genesis block
-            self.client
-                .block_by_number_or_tag(BlockNumberOrTag::Latest)?
-                .ok_or_else(|| PayloadBuilderError::MissingParentBlock(attributes.parent()))?
-                .seal_slow()
+            latest_blk
         } else {
             let block = self
                 .client
@@ -598,12 +607,12 @@ where
                         Poll::Ready(res)
                     }
                     Err(err) => Poll::Ready(Err(err.into())),
-                }
+                };
             }
         }
 
         if this.is_empty() {
-            return Poll::Ready(Err(PayloadBuilderError::MissingPayload))
+            return Poll::Ready(Err(PayloadBuilderError::MissingPayload));
         }
 
         Poll::Pending

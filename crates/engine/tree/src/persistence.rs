@@ -248,6 +248,10 @@ impl PersistenceHandle {
         blocks: Vec<ExecutedBlock>,
         tx: oneshot::Sender<Option<BlockNumHash>>,
     ) -> Result<(), SendError<PersistenceAction>> {
+        debug!(
+            "JESSEDEBUG persisting blocks: {:?}",
+            &blocks.iter().map(|b| b.block.hash()).collect::<Vec<_>>()
+        );
         self.send_action(PersistenceAction::SaveBlocks(blocks, tx))
     }
 
