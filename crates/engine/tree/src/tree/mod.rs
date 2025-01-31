@@ -1978,6 +1978,8 @@ where
         trace!(target: "engine::tree", new_blocks = %chain_update.new_block_count(), reorged_blocks =  %chain_update.reorged_block_count(), "applying new chain update");
         let start = Instant::now();
 
+        debug!("JESSEDEBUG canonical chain update: {:?}", &chain_update);
+
         // schedule a remove_above call if we have an on-disk reorg
         if let Some(height) = self.find_disk_reorg(&chain_update) {
             // calculate the new tip by subtracting one from the lowest part of the chain
