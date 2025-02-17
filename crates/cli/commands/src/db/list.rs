@@ -10,7 +10,7 @@ use reth_node_builder::{NodeTypesWithDBAdapter, NodeTypesWithEngine};
 use std::{cell::RefCell, sync::Arc};
 use tracing::error;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db list` command
 pub struct Command {
     /// The table name

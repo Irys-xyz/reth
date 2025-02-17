@@ -9,13 +9,14 @@ use reth_db_api::{
     transaction::DbTx,
 };
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_provider::{BlockNumReader, HeaderProvider, ProviderError};
 use reth_trie::StateRoot;
 use reth_trie_db::DatabaseStateRoot;
 use tracing::*;
 
 /// `reth recover storage-tries` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -26,7 +27,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
         _ctx: CliContext,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         let Environment { provider_factory, .. } = self.env.init::<N>(AccessRights::RW)?;
 
         let mut provider = provider_factory.provider_rw()?;
@@ -63,6 +64,6 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
         provider.commit()?;
         info!(target: "reth::cli", deleted = deleted_tries, "Finished recovery");
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

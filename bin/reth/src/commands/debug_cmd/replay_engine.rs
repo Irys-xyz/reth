@@ -36,7 +36,7 @@ use tracing::*;
 /// `reth debug replay-engine` command
 /// This script will read stored engine API messages and replay them by the timestamp.
 /// It does not require
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,

@@ -448,6 +448,7 @@ pub trait LoadPendingBlock: EthApiTypes {
             extra_data: Default::default(),
             parent_beacon_block_root,
             requests_root,
+            shadows_root: EMPTY_ROOT_HASH
         };
 
         // Convert Vec<Option<Receipt>> to Vec<Receipt>
@@ -456,7 +457,7 @@ pub trait LoadPendingBlock: EthApiTypes {
         // seal the block
         let block = Block {
             header,
-            body: BlockBody { transactions: executed_txs, ommers: vec![], withdrawals, requests },
+            body: BlockBody { transactions: executed_txs, ommers: vec![], withdrawals, requests, shadows: None },
         };
         Ok((SealedBlockWithSenders { block: block.seal_slow(), senders }, receipts))
     }

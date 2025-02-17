@@ -13,7 +13,7 @@ use core::{
 use dyn_clone::DynClone;
 
 /// Generic hardfork trait.
-#[auto_impl::auto_impl(&, Box)]
+#[auto_impl::auto_impl(&, Box, Deserialize, Serialize)]
 pub trait Hardfork: Any + DynClone + Send + Sync + 'static {
     /// Fork name.
     fn name(&self) -> &'static str;

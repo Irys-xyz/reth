@@ -13,7 +13,7 @@ use reth_evm::execute::BlockExecutorProvider;
 use reth_node_builder::{NodeTypesWithDB, NodeTypesWithEngine};
 use reth_node_core::{
     args::DatadirArgs,
-    dirs::{DataDirPath, PlatformPath},
+    dirs::{DataDirPath, PlatformPath}, irys_ext::NodeExitReason,
 };
 use std::{path::PathBuf, sync::Arc};
 use tracing::info;
@@ -31,7 +31,7 @@ mod merkle;
 use merkle::dump_merkle_stage;
 
 /// `reth dump-stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -90,7 +90,7 @@ macro_rules! handle_stage {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C> {
     /// Execute `dump-stage` command
-    pub async fn execute<N, E, F>(self, executor: F) -> eyre::Result<()>
+    pub async fn execute<N, E, F>(self, executor: F) -> eyre::Result<NodeExitReason>
     where
         N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>,
         E: BlockExecutorProvider,
@@ -109,7 +109,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
             Stages::Merkle(cmd) => handle_stage!(dump_merkle_stage, &tool, cmd),
         }
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }
 

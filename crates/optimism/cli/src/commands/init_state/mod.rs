@@ -17,7 +17,7 @@ use tracing::info;
 mod bedrock;
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct InitStateCommandOp<C: ChainSpecParser> {
     #[command(flatten)]
     init_state: reth_cli_commands::init_state::InitStateCommand<C>,

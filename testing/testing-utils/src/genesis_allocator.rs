@@ -4,6 +4,8 @@
 use alloy_genesis::GenesisAccount;
 use alloy_primitives::{Address, Bytes, B256, U256};
 use reth_primitives::public_key_to_address;
+// use alloy_genesis::GenesisAccount;
+use reth_primitives::{public_key_to_address, Address, Bytes, GenesisAccount, B256, U256};
 use secp256k1::{
     rand::{thread_rng, RngCore},
     Keypair, Secp256k1,

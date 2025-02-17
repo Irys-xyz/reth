@@ -6,6 +6,7 @@ use reth_cli::chainspec::ChainSpecParser;
 use reth_cli_runner::CliContext;
 use reth_node_api::NodeTypesWithEngine;
 use reth_node_ethereum::EthEngineTypes;
+use reth_node_core::irys_ext::NodeExitReason;
 
 mod build_block;
 mod execution;
@@ -14,14 +15,14 @@ mod merkle;
 mod replay_engine;
 
 /// `reth debug` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(subcommand)]
     command: Subcommands<C>,
 }
 
 /// `reth debug` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands<C: ChainSpecParser> {
     /// Debug the roundtrip execution of blocks as well as the generated data.
     Execution(execution::Command<C>),
@@ -42,13 +43,14 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
     >(
         self,
         ctx: CliContext,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         match self.command {
             Subcommands::Execution(command) => command.execute::<N>(ctx).await,
             Subcommands::Merkle(command) => command.execute::<N>(ctx).await,
             Subcommands::InMemoryMerkle(command) => command.execute::<N>(ctx).await,
             Subcommands::BuildBlock(command) => command.execute::<N>(ctx).await,
             Subcommands::ReplayEngine(command) => command.execute::<N>(ctx).await,
-        }
+        }?;
+        Ok(NodeExitReason::Normal)
     }
 }

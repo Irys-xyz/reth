@@ -1,8 +1,10 @@
+//! Block related models and types.
+
+use reth_primitives::{irys_primitives::shadow::Shadows,  Withdrawals};
 use std::ops::Range;
 
-use alloy_primitives::TxNumber;
+use alloy_primitives::{TxNumber, B256};
 use reth_codecs::{add_arbitrary_tests, Compact};
-use reth_primitives::Withdrawals;
 use serde::{Deserialize, Serialize};
 
 /// Total number of transactions.
@@ -75,6 +77,17 @@ pub struct StoredBlockWithdrawals {
     /// The block withdrawals.
     pub withdrawals: Withdrawals,
 }
+
+#[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize, Compact)]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
+#[add_arbitrary_tests(compact)]
+pub struct StoredBlockShadows {
+    /// The block shadows.
+    pub shadows: Shadows,
+}
+
+/// Hash of the block header. Value for [`CanonicalHeaders`][crate::tables::CanonicalHeaders]
+pub type HeaderHash = B256;
 
 #[cfg(test)]
 mod tests {

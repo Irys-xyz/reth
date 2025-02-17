@@ -12,7 +12,7 @@ use reth_errors::{BlockExecutionError, BlockValidationError, RethError, RethResu
 use reth_ethereum_forks::EthereumHardforks;
 use reth_evm::{system_calls::SystemCaller, ConfigureEvm};
 use reth_payload_validator::ExecutionPayloadValidator;
-use reth_primitives::{proofs, Block, BlockBody, Header, Receipt, Receipts};
+use reth_primitives::{constants::EMPTY_ROOT_HASH, proofs, Block, BlockBody, Header, Receipt, Receipts};
 use reth_provider::{BlockReader, ExecutionOutcome, ProviderError, StateProviderFactory};
 use reth_revm::{
     database::StateProviderDatabase,
@@ -33,6 +33,8 @@ use std::{
 };
 use tokio::sync::oneshot;
 use tracing::*;
+
+use crate::reorg;
 
 #[derive(Debug)]
 enum EngineReorgState<Engine: EngineTypes> {
@@ -379,6 +381,11 @@ where
             (None, None)
         };
 
+    let (shadows, shadows_root) = if let Some(shadows) = &reorg_target.body.shadows {
+        (Some(shadows.clone()), proofs::calculate_shadows_root(shadows))
+    } else {(None, EMPTY_ROOT_HASH)};
+
+
     let reorg_block = Block {
         header: Header {
             // Set same fields as the reorg target
@@ -405,12 +412,14 @@ where
             blob_gas_used: blob_gas_used.map(Into::into),
             excess_blob_gas: excess_blob_gas.map(Into::into),
             state_root: state_provider.state_root(hashed_state)?,
+            shadows_root
         },
         body: BlockBody {
             transactions,
             ommers: reorg_target.body.ommers,
             withdrawals: reorg_target.body.withdrawals,
             requests: None, // TODO(prague)
+            shadows
         },
     }
     .seal_slow();

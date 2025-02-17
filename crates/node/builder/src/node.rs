@@ -6,6 +6,7 @@ use std::{marker::PhantomData, sync::Arc};
 use reth_node_api::{EngineTypes, FullNodeComponents};
 use reth_node_core::{
     dirs::{ChainPath, DataDirPath},
+    irys_ext::IrysExt,
     node_config::NodeConfig,
     rpc::api::EngineApiClient,
 };
@@ -125,6 +126,8 @@ pub struct FullNode<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> {
     pub config: NodeConfig<<Node::Types as NodeTypes>::ChainSpec>,
     /// The data dir of the node.
     pub data_dir: ChainPath<DataDirPath>,
+    /// custom extension (mainly for debug reloading)
+    pub irys_ext: Option<IrysExt>,
 }
 
 impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Clone for FullNode<Node, AddOns> {
@@ -141,6 +144,7 @@ impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Clone for FullNode<Node
             rpc_registry: self.rpc_registry.clone(),
             config: self.config.clone(),
             data_dir: self.data_dir.clone(),
+            irys_ext: self.irys_ext.clone(),
         }
     }
 }

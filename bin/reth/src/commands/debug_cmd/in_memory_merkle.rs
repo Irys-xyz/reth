@@ -37,7 +37,7 @@ use tracing::*;
 /// This debug routine requires that the node is positioned at the block before the target.
 /// The script will then download the block from p2p network and attempt to calculate and verify
 /// merkle root for it.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,

@@ -4,11 +4,13 @@ use crate::{
     table::{Compress, Decode, Decompress, Encode},
     DatabaseError,
 };
-use alloy_genesis::GenesisAccount;
+// use alloy_genesis::GenesisAccount;
+
 use alloy_primitives::{Address, Bytes, Log, B256, U256};
 use reth_codecs::{add_arbitrary_tests, Compact};
 use reth_primitives::{
-    Account, Bytecode, Header, Receipt, Requests, StorageEntry, TransactionSignedNoHash, TxType,
+    Account, Bytecode, GenesisAccount, Header, Receipt, Requests, StorageEntry,
+    TransactionSignedNoHash, TxType,
 };
 use reth_prune_types::{PruneCheckpoint, PruneSegment};
 use reth_stages_types::StageCheckpoint;
@@ -24,7 +26,8 @@ pub mod storage_sharded_key;
 pub use accounts::*;
 pub use blocks::*;
 pub use reth_db_models::{
-    AccountBeforeTx, ClientVersion, StoredBlockBodyIndices, StoredBlockWithdrawals,
+    AccountBeforeTx, ClientVersion, StoredBlockBodyIndices, StoredBlockShadows,
+    StoredBlockWithdrawals,
 };
 pub use sharded_key::ShardedKey;
 
@@ -53,7 +56,7 @@ macro_rules! impl_uints {
     };
 }
 
-impl_uints!(u64, u32, u16, u8);
+impl_uints!(u128, u64, u32, u16, u8);
 
 impl Encode for Vec<u8> {
     type Encoded = Self;
@@ -223,6 +226,7 @@ impl_compression_for_compact!(
     StoredBlockBodyIndices,
     StoredBlockOmmers,
     StoredBlockWithdrawals,
+    StoredBlockShadows,
     Bytecode,
     AccountBeforeTx,
     TransactionSignedNoHash,

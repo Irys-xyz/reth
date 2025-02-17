@@ -7,6 +7,8 @@
 //!
 //! Components depend on a fully type configured node: [FullNodeTypes](crate::node::FullNodeTypes).
 
+use reth_node_core::irys_ext::IrysExt;
+
 mod builder;
 mod consensus;
 mod engine;
@@ -78,6 +80,8 @@ pub trait NodeComponents<T: FullNodeTypes>: Clone + Unpin + Send + Sync + 'stati
 
     /// Returns the engine validator.
     fn engine_validator(&self) -> &Self::EngineValidator;
+
+    fn irys_ext(&self) -> Option<IrysExt>;
 }
 
 /// All the components of the node.
@@ -99,6 +103,8 @@ pub struct Components<Node: FullNodeTypes, Pool, EVM, Executor, Consensus, Valid
     pub payload_builder: PayloadBuilderHandle<<Node::Types as NodeTypesWithEngine>::Engine>,
     /// The validator for the engine API.
     pub engine_validator: Validator,
+    /// Custom Irys extension
+    pub irys_ext: Option<IrysExt>,
 }
 
 impl<Node, Pool, EVM, Executor, Cons, Val> NodeComponents<Node>
@@ -147,6 +153,10 @@ where
     fn engine_validator(&self) -> &Self::EngineValidator {
         &self.engine_validator
     }
+
+    fn irys_ext(&self) -> Option<IrysExt> {
+        self.irys_ext.clone()
+    }
 }
 
 impl<Node, Pool, EVM, Executor, Cons, Val> Clone
@@ -168,6 +178,7 @@ where
             network: self.network.clone(),
             payload_builder: self.payload_builder.clone(),
             engine_validator: self.engine_validator.clone(),
+            irys_ext: self.irys_ext.clone(),
         }
     }
 }

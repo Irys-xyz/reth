@@ -143,10 +143,11 @@ fn load_field_from_segments(
         if is_enum {
             fields.push(FieldTypes::EnumUnnamedField((ftype, use_alt_impl)));
         } else {
-            let should_compact = is_flag_type(&ftype) ||
-                field.attrs.iter().any(|attr| {
-                    attr.path().segments.iter().any(|path| path.ident == "maybe_zero")
-                });
+            let should_compact = is_flag_type(&ftype)
+                || field
+                    .attrs
+                    .iter()
+                    .any(|attr| attr.path().segments.iter().any(|path| path.ident == "maybe_zero"));
 
             fields.push(FieldTypes::StructField((
                 field.ident.as_ref().map(|i| i.to_string()).unwrap_or_default(),
@@ -180,7 +181,7 @@ fn should_use_alt_impl(ftype: &str, segment: &syn::PathSegment) -> bool {
                     ]
                     .contains(&path.ident.to_string().as_str())
                     {
-                        return true
+                        return true;
                     }
                 }
             }
@@ -193,8 +194,9 @@ fn should_use_alt_impl(ftype: &str, segment: &syn::PathSegment) -> bool {
 /// length.
 pub fn get_bit_size(ftype: &str) -> u8 {
     match ftype {
-        "TransactionKind" | "TxKind" | "bool" | "Option" | "Signature" => 1,
+        "TransactionKind" | "TxKind" | "bool" | "Option" | "Signature" | "u8" => 1,
         "TxType" => 2,
+        "u32" => 3,
         "u64" | "BlockNumber" | "TxNumber" | "ChainId" | "NumTransactions" => 4,
         "u128" => 5,
         "U256" => 6,

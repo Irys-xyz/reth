@@ -39,6 +39,16 @@ pub use mdbx::{create_db, init_db, open_db, open_db_read_only, DatabaseEnv, Data
 pub use models::ClientVersion;
 pub use reth_db_api::*;
 
+/// Used to get custom tables registered with metrics
+pub trait HasName {
+    /// Allows a type to expose its name as a static string
+    fn name(&self) -> &'static str;
+}
+
+pub trait HasTableType {
+    fn table_type(&self) -> TableType;
+}
+
 /// Collection of database test utilities
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils {
@@ -187,6 +197,21 @@ pub mod test_utils {
         .expect(&emsg);
 
         Arc::new(TempDatabase::new(db, path))
+    }
+
+    /// Create read/write database for testing
+    pub fn create_test_rw_db_2() -> (Arc<DatabaseEnv>, PathBuf) {
+        let path = tempdir_path();
+        let emsg = format!("{ERROR_DB_CREATION}: {path:?}");
+
+        let db = init_db(
+            &path,
+            DatabaseArguments::new(ClientVersion::default())
+                .with_max_read_transaction_duration(Some(MaxReadTransactionDuration::Unbounded)),
+        )
+        .expect(&emsg);
+
+        (Arc::new(db), path)
     }
 
     /// Create read/write database for testing

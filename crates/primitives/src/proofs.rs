@@ -8,6 +8,7 @@ use alloc::vec::Vec;
 use alloy_eips::{eip2718::Encodable2718, eip7685::Encodable7685};
 use alloy_primitives::{keccak256, B256};
 use reth_trie_common::root::{ordered_trie_root, ordered_trie_root_with_encoder};
+use irys_primitives::Shadows;
 
 /// Calculate a transaction root.
 ///
@@ -22,6 +23,11 @@ where
 /// Calculates the root hash of the withdrawals.
 pub fn calculate_withdrawals_root(withdrawals: &[Withdrawal]) -> B256 {
     ordered_trie_root(withdrawals)
+}
+
+/// Calculates the root hash of the shadows
+pub fn calculate_shadows_root(shadows: &Shadows) -> B256 {
+    ordered_trie_root(shadows)
 }
 
 /// Calculates the receipt root for a header.
@@ -54,7 +60,7 @@ pub fn calculate_receipt_root_no_memo(receipts: &[&Receipt]) -> B256 {
 pub fn calculate_ommers_root(ommers: &[Header]) -> B256 {
     // Check if `ommers` list is empty
     if ommers.is_empty() {
-        return EMPTY_OMMER_ROOT_HASH
+        return EMPTY_OMMER_ROOT_HASH;
     }
     // RLP Encode
     let mut ommers_rlp = Vec::new();

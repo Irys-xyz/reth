@@ -89,6 +89,8 @@ impl PayloadJob for TestPayloadJob {
             Block::default().seal_slow(),
             U256::ZERO,
             Some(ExecutedBlock::default()),
+            Vec::new(),
+            false,
         ))
     }
 

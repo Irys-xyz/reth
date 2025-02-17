@@ -15,7 +15,7 @@ use reth_provider::providers::{ProviderNodeTypes, StaticFileProvider};
 use reth_static_file_types::SegmentRangeInclusive;
 use std::{sync::Arc, time::Duration};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db stats` command
 pub struct Command {
     /// Show only the total size for static files.
@@ -290,10 +290,10 @@ impl Command {
                         .add_cell(Cell::new(human_bytes(segment_config_size as f64)));
                 }
                 row.add_cell(Cell::new(human_bytes(
-                    (segment_data_size +
-                        segment_index_size +
-                        segment_offsets_size +
-                        segment_config_size) as f64,
+                    (segment_data_size
+                        + segment_index_size
+                        + segment_offsets_size
+                        + segment_config_size) as f64,
                 )));
                 table.add_row(row);
             }

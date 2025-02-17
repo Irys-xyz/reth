@@ -29,7 +29,7 @@ use tracing::{debug, info, trace, warn};
 use crate::receipt_file_codec::HackReceiptFileCodec;
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct ImportReceiptsOpCommand<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,

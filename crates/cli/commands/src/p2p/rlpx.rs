@@ -9,7 +9,7 @@ use secp256k1::SECP256K1;
 use tokio::net::TcpStream;
 
 /// RLPx commands
-#[derive(Parser, Debug)]
+#[derive(Parser, Clone, Debug)]
 pub struct Command {
     #[clap(subcommand)]
     subcommand: Subcommands,
@@ -41,7 +41,7 @@ impl Command {
     }
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 enum Subcommands {
     /// ping node
     Ping {

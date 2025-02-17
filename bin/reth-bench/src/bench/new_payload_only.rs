@@ -22,7 +22,7 @@ use std::time::Instant;
 use tracing::{debug, info};
 
 /// `reth benchmark new-payload-only` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command {
     /// The RPC url to use for getting data.
     #[arg(long, value_name = "RPC_URL", verbatim_doc_comment)]

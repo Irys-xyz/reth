@@ -145,7 +145,7 @@ impl HashedPostState {
     }
 
     fn extend_inner(&mut self, other: Cow<'_, Self>) {
-        self.accounts.extend(other.accounts.iter().map(|(&k, &v)| (k, v)));
+        self.accounts.extend(other.accounts.iter().map(|(&k, &ref v)| (k, v.clone())));
 
         self.storages.reserve(other.storages.len());
         match other {
@@ -312,7 +312,7 @@ impl HashedAccountsSorted {
     pub fn accounts_sorted(&self) -> impl Iterator<Item = (B256, Option<Account>)> {
         self.accounts
             .iter()
-            .map(|(address, account)| (*address, Some(*account)))
+            .map(|(address, account)| (*address, Some(account.clone())))
             .chain(self.destroyed_accounts.iter().map(|address| (*address, None)))
             .sorted_by_key(|entry| *entry.0)
     }

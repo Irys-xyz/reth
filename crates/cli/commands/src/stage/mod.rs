@@ -8,6 +8,7 @@ use reth_cli::chainspec::ChainSpecParser;
 use reth_cli_runner::CliContext;
 use reth_evm::execute::BlockExecutorProvider;
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 
 pub mod drop;
 pub mod dump;
@@ -15,14 +16,14 @@ pub mod run;
 pub mod unwind;
 
 /// `reth stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(subcommand)]
     command: Subcommands<C>,
 }
 
 /// `reth stage` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands<C: ChainSpecParser> {
     /// Run a single stage.
     ///
@@ -41,7 +42,7 @@ pub enum Subcommands<C: ChainSpecParser> {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C> {
     /// Execute `stage` command
-    pub async fn execute<N, E, F>(self, ctx: CliContext, executor: F) -> eyre::Result<()>
+    pub async fn execute<N, E, F>(self, ctx: CliContext, executor: F) -> eyre::Result<NodeExitReason>
     where
         N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>,
         E: BlockExecutorProvider,

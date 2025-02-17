@@ -174,7 +174,7 @@ where
             .with_blockchain_db::<T, _>(move |provider_factory| {
                 Ok(BlockchainProvider::new(provider_factory, tree)?)
             }, tree_config, canon_state_notification_sender)?
-            .with_components(components_builder, on_component_initialized).await?;
+            .with_components(components_builder, on_component_initialized, None).await?;
 
         // spawn exexs
         let exex_manager_handle = ExExLauncher::new(
@@ -423,6 +423,8 @@ where
             });
         }
 
+        let (_, reload_rx) = unbounded_channel();
+
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
             block_executor: ctx.components().block_executor().clone(),
@@ -435,13 +437,15 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
+            irys_ext: None,
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
 
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
-                async { Ok(rx.await??) },
+                // async { Ok(rx.await??) },
+                reload_rx,
                 full_node.config.debug.terminate,
             ),
             node: full_node,

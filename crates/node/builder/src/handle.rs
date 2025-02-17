@@ -7,6 +7,7 @@ use crate::node::FullNode;
 
 /// A Handle to the launched node.
 #[must_use = "Needs to await the node exit future"]
+
 pub struct NodeHandle<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> {
     /// All node components.
     pub node: FullNode<Node, AddOns>,
@@ -21,7 +22,8 @@ where
 {
     /// Waits for the node to exit, if it was configured to exit.
     pub async fn wait_for_node_exit(self) -> eyre::Result<()> {
-        self.node_exit_future.await
+        self.node_exit_future.await?;
+        Ok(())
     }
 }
 

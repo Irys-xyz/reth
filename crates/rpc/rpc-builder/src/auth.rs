@@ -52,13 +52,13 @@ impl AuthServerConfig {
     pub async fn start(self, module: AuthRpcModule) -> Result<AuthServerHandle, RpcError> {
         let Self { socket_addr, secret, server_config, ipc_server_config, ipc_endpoint } = self;
 
-        // Create auth middleware.
-        let middleware =
-            tower::ServiceBuilder::new().layer(AuthLayer::new(JwtAuthValidator::new(secret)));
+        // // Create auth middleware.
+        // let middleware =
+        //     tower::ServiceBuilder::new().layer(AuthLayer::new(JwtAuthValidator::new(secret)));
 
         // By default, both http and ws are enabled.
         let server = server_config
-            .set_http_middleware(middleware)
+            // .set_http_middleware(middleware)
             .build(socket_addr)
             .await
             .map_err(|err| RpcError::server_error(err, ServerKind::Auth(socket_addr)))?;
@@ -304,7 +304,7 @@ impl AuthServerHandle {
                     .build(ipc_endpoint)
                     .await
                     .expect("Failed to create ipc client"),
-            )
+            );
         }
         None
     }

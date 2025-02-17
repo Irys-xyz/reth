@@ -37,6 +37,7 @@ metrics.workspace = true
 # misc
 derive_more.workspace = true
 bytes.workspace = true
+eyre.workspace = true
 
 # arbitrary utils
 arbitrary = { workspace = true, features = ["derive"], optional = true }

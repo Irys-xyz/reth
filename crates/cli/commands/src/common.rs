@@ -23,8 +23,8 @@ use tokio::sync::watch;
 use tracing::{debug, info, warn};
 
 /// Struct to hold config and datadir paths
-#[derive(Debug, Parser)]
-pub struct EnvironmentArgs<C: ChainSpecParser> {
+#[derive(Debug, Clone, Parser)]
+pub struct EnvironmentArgs<C: ChainSpecParser + Clone> {
     /// Parameters for datadir configuration
     #[command(flatten)]
     pub datadir: DatadirArgs,

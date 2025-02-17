@@ -1,11 +1,11 @@
 [package]
-name = "reth-cli"
-version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
 homepage.workspace = true
+license.workspace = true
+name = "reth-cli"
 repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
@@ -16,12 +16,10 @@ workspace = true
 reth-cli-runner.workspace = true
 
 alloy-genesis.workspace = true
+irys-primitives.workspace = true
 
 # misc
 clap.workspace = true
-shellexpand.workspace = true
 eyre.workspace = true
 serde_json.workspace = true
-
-
-
+shellexpand.workspace = true

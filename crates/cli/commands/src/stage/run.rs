@@ -21,11 +21,10 @@ use reth_network::BlockDownloaderProvider;
 use reth_network_p2p::HeadersClient;
 use reth_node_builder::NodeTypesWithEngine;
 use reth_node_core::{
-    args::{NetworkArgs, StageEnum},
-    version::{
+    args::{NetworkArgs, StageEnum}, irys_ext::NodeExitReason, version::{
         BUILD_PROFILE_NAME, CARGO_PKG_VERSION, VERGEN_BUILD_TIMESTAMP, VERGEN_CARGO_FEATURES,
         VERGEN_CARGO_TARGET_TRIPLE, VERGEN_GIT_SHA,
-    },
+    }
 };
 use reth_node_metrics::{
     chain::ChainSpecInfo,
@@ -51,7 +50,7 @@ use tokio::sync::watch;
 use tracing::*;
 
 /// `reth stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -104,7 +103,7 @@ pub struct Command<C: ChainSpecParser> {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C> {
     /// Execute `stage` command
-    pub async fn execute<N, E, F>(self, ctx: CliContext, executor: F) -> eyre::Result<()>
+    pub async fn execute<N, E, F>(self, ctx: CliContext, executor: F) -> eyre::Result<NodeExitReason>
     where
         N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>,
         E: BlockExecutorProvider,
@@ -303,7 +302,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
                     )),
                     None,
                 ),
-                _ => return Ok(()),
+                _ => return Ok(NodeExitReason::Normal),
             };
         if let Some(unwind_stage) = &unwind_stage {
             assert_eq!((*exec_stage).type_id(), (**unwind_stage).type_id());
@@ -365,6 +364,6 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
         }
         info!(target: "reth::cli", stage = %self.stage, time = ?start.elapsed(), "Finished stage");
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

@@ -64,7 +64,7 @@ pub struct BlockchainTree<N: NodeTypesWithDB, E> {
     /// The state of the tree
     ///
     /// Tracks all the chains, the block indices, and the block buffer.
-    state: TreeState,
+    pub state: TreeState,
     /// External components (the database, consensus engine etc.)
     externals: TreeExternals<N, E>,
     /// Tree configuration
@@ -198,7 +198,7 @@ where
             return Err(BlockchainTreeError::PendingBlockIsFinalized {
                 last_finalized: last_finalized_block,
             }
-            .into())
+            .into());
         }
 
         // is block inside chain
@@ -211,7 +211,7 @@ where
             return Ok(Some(BlockStatus::Disconnected {
                 head: self.state.block_indices.canonical_tip(),
                 missing_ancestor: block.parent_num_hash(),
-            }))
+            }));
         }
 
         Ok(None)
@@ -349,7 +349,7 @@ where
                     parent_block_number: canonical_parent_number,
                     block_number: block.number,
                 }
-                .into())
+                .into());
             }
         }
 
@@ -410,7 +410,7 @@ where
             return Err(BlockExecutionError::Validation(BlockValidationError::BlockPreMerge {
                 hash: block.hash(),
             })
-            .into())
+            .into());
         }
 
         let parent_header = provider
@@ -549,7 +549,7 @@ where
             } else {
                 // if there is no fork block that point to other chains, break the loop.
                 // it means that this fork joins to canonical block.
-                break
+                break;
             }
         }
         hashes
@@ -570,9 +570,9 @@ where
             // get fork block chain
             if let Some(fork_chain_id) = self.block_indices().get_side_chain_id(&fork.hash) {
                 chain_id = fork_chain_id;
-                continue
+                continue;
             }
-            break
+            break;
         }
         (self.block_indices().canonical_hash(&fork.number) == Some(fork.hash)).then_some(fork)
     }
@@ -1051,7 +1051,7 @@ where
             {
                 return Err(CanonicalError::from(BlockValidationError::BlockPreMerge {
                     hash: block_hash,
-                }))
+                }));
             }
 
             let head = self.state.block_indices.canonical_tip();
@@ -1062,7 +1062,7 @@ where
             debug!(target: "blockchain_tree", ?block_hash, "Block hash not found in block indices");
             return Err(CanonicalError::from(BlockchainTreeError::BlockHashNotFoundInChain {
                 block_hash,
-            }))
+            }));
         };
 
         // we are splitting chain at the block hash that we want to make canonical
@@ -1253,7 +1253,7 @@ where
                         block_number: tip.number,
                         block_hash: tip.hash(),
                     }))
-                    .into())
+                    .into());
                 }
                 self.metrics.trie_updates_insert_recomputed.increment(1);
                 trie_updates
@@ -1315,8 +1315,8 @@ where
             .provider_factory
             .static_file_provider()
             .get_highest_static_file_block(StaticFileSegment::Headers)
-            .unwrap_or_default() >
-            revert_until
+            .unwrap_or_default()
+            > revert_until
         {
             trace!(
                 target: "blockchain_tree",

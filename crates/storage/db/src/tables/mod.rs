@@ -19,6 +19,7 @@ pub use raw::{RawDupSort, RawKey, RawTable, RawValue, TableRawRow};
 #[cfg(feature = "mdbx")]
 pub(crate) mod utils;
 
+use crate::{HasName, HasTableType};
 use alloy_primitives::{Address, BlockHash, BlockNumber, TxHash, TxNumber, B256};
 use reth_db_api::{
     models::{
@@ -26,7 +27,7 @@ use reth_db_api::{
         blocks::{HeaderHash, StoredBlockOmmers},
         storage_sharded_key::StorageShardedKey,
         AccountBeforeTx, ClientVersion, CompactU256, ShardedKey, StoredBlockBodyIndices,
-        StoredBlockWithdrawals,
+        StoredBlockShadows, StoredBlockWithdrawals,
     },
     table::{Decode, DupSort, Encode, Table},
 };
@@ -108,7 +109,7 @@ macro_rules! tables {
     (@view $name:ident $v:ident) => { $v.view::<$name>() };
     (@view $name:ident $v:ident $_subkey:ty) => { $v.view_dupsort::<$name>() };
 
-    ($( $(#[$attr:meta])* table $name:ident<Key = $key:ty, Value = $value:ty $(, SubKey = $subkey:ty)? $(,)?>; )*) => {
+    ($enum_name:ident; $( $(#[$attr:meta])* table $name:ident<Key = $key:ty, Value = $value:ty $(, SubKey = $subkey:ty)? $(,)?>; )*) => {
         // Table marker types.
         $(
             $(#[$attr])*
@@ -150,14 +151,42 @@ macro_rules! tables {
 
         /// A table in the database.
         #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-        pub enum Tables {
+        pub enum $enum_name {
             $(
                 #[doc = concat!("The [`", stringify!($name), "`] database table.")]
                 $name,
             )*
         }
 
-        impl Tables {
+        // Implement the HasName trait for the Tables enum
+        impl HasName for $enum_name {
+            fn name(&self) -> &'static str {
+                match self {
+                    $(
+                        $enum_name::$name => table_names::$name,
+                    )*
+                }
+            }
+        }
+
+         // Implement the HasTableType trait for the Tables enum
+         impl HasTableType for $enum_name {
+            fn table_type(&self) -> TableType {
+                match self {
+                    $(
+                        $enum_name::$name => {
+                            if $enum_name::$name.is_dupsort() {
+                                TableType::DupSort
+                            } else {
+                                TableType::Table
+                            }
+                        }
+                    )*
+                }
+            }
+        }
+
+        impl $enum_name {
             /// All the tables in the database.
             pub const ALL: &'static [Self] = &[$(Self::$name,)*];
 
@@ -204,21 +233,21 @@ macro_rules! tables {
             }
         }
 
-        impl fmt::Debug for Tables {
+        impl fmt::Debug for $enum_name {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.write_str(self.name())
             }
         }
 
-        impl fmt::Display for Tables {
+        impl fmt::Display for $enum_name {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 self.name().fmt(f)
             }
         }
 
-        impl std::str::FromStr for Tables {
+        impl std::str::FromStr for $enum_name {
             type Err = String;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -253,7 +282,6 @@ macro_rules! tables {
         /// let result = tables_to_generic!(table, |GenericTable| GenericTable::NAME);
         /// assert_eq!(result, table.name());
         /// ```
-        #[macro_export]
         macro_rules! tables_to_generic {
             ($table:expr, |$generic_name:ident| $e:expr) => {
                 match $table {
@@ -270,6 +298,7 @@ macro_rules! tables {
 }
 
 tables! {
+    Tables;
     /// Stores the header hashes belonging to the canonical chain.
     table CanonicalHeaders<Key = BlockNumber, Value = HeaderHash>;
 
@@ -292,6 +321,11 @@ tables! {
 
     /// Stores the block withdrawals.
     table BlockWithdrawals<Key = BlockNumber, Value = StoredBlockWithdrawals>;
+
+    table BlockShadows<Key = BlockNumber, Value = StoredBlockShadows>;
+
+    /// Stores block shadows for blocks pending execution
+    // table PendingBlockShadows<Key = BlockHash, Value = StoredBlockShadows>;
 
     /// Canonical only Stores the transaction body for canonical transactions.
     table Transactions<Key = TxNumber, Value = TransactionSignedNoHash>;

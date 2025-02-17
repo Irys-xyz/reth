@@ -17,9 +17,9 @@ use reth_errors::{RethError, RethResult};
 use reth_evm::ConfigureEvmEnv;
 use reth_node_types::NodeTypesWithDB;
 use reth_primitives::{
-    Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader,
-    StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal,
-    Withdrawals,
+    irys_primitives::Shadows, Block, BlockWithSenders, Header, Receipt, SealedBlock,
+    SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta, TransactionSigned,
+    TransactionSignedNoHash, Withdrawal, Withdrawals,
 };
 use reth_prune_types::{PruneCheckpoint, PruneModes, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
@@ -46,7 +46,7 @@ mod metrics;
 /// This provider implements most provider or provider factory traits.
 pub struct ProviderFactory<N: NodeTypesWithDB> {
     /// Database
-    db: N::DB,
+    pub db: N::DB,
     /// Chain spec
     chain_spec: Arc<N::ChainSpec>,
     /// Static File Provider
@@ -192,10 +192,12 @@ impl<N: ProviderNodeTypes> DatabaseProviderFactory for ProviderFactory<N> {
     fn database_provider_ro(&self) -> ProviderResult<Self::Provider> {
         self.provider()
     }
-
     fn database_provider_rw(&self) -> ProviderResult<Self::ProviderRW> {
         self.provider_rw().map(|provider| provider.0)
     }
+    // fn database_ref(&self) -> &DB {
+    //     &self.db
+    // }
 }
 
 impl<N: NodeTypesWithDB> StaticFileProviderFactory for ProviderFactory<N> {
@@ -237,7 +239,7 @@ impl<N: ProviderNodeTypes> HeaderProvider for ProviderFactory<N> {
         if let Some(td) = self.chain_spec.final_paris_total_difficulty(number) {
             // if this block is higher than the final paris(merge) block, return the final paris
             // difficulty
-            return Ok(Some(td))
+            return Ok(Some(td));
         }
 
         self.static_file_provider.get_with_static_file_or_database(
@@ -397,6 +399,13 @@ impl<N: ProviderNodeTypes> BlockReader for ProviderFactory<N> {
     ) -> ProviderResult<Vec<SealedBlockWithSenders>> {
         self.provider()?.sealed_block_with_senders_range(range)
     }
+    fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+        self.provider()?.shadows(id)
+    }
+
+    // fn pending_shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
+    //     self.provider()?.pending_shadows(id)
+    // }
 }
 
 impl<N: ProviderNodeTypes> TransactionsProvider for ProviderFactory<N> {

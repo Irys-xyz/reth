@@ -5,18 +5,19 @@ use reth_chainspec::{EthChainSpec, EthereumHardforks};
 use reth_cli::chainspec::ChainSpecParser;
 use reth_cli_runner::CliContext;
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 
 mod storage_tries;
 
 /// `reth recover` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(subcommand)]
     command: Subcommands<C>,
 }
 
 /// `reth recover` subcommands
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug)]
 pub enum Subcommands<C: ChainSpecParser> {
     /// Recover the node by deleting dangling storage tries.
     StorageTries(storage_tries::Command<C>),
@@ -27,7 +28,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
         ctx: CliContext,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         match self.command {
             Subcommands::StorageTries(command) => command.execute::<N>(ctx).await,
         }

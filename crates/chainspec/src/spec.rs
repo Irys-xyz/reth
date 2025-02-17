@@ -1,12 +1,17 @@
+use once_cell::sync::Lazy;
+use reth_primitives::Genesis;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::sync::Arc;
+
 pub use alloy_eips::eip1559::BaseFeeParams;
 
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use alloc::{boxed::Box, vec::Vec};
 use alloy_chains::{Chain, NamedChain};
-use alloy_genesis::Genesis;
+
 use alloy_primitives::{address, b256, Address, BlockNumber, B256, U256};
 use alloy_trie::EMPTY_ROOT_HASH;
 use derive_more::From;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::OnceCell;
 use reth_ethereum_forks::{
     ChainHardforks, DisplayHardforks, EthereumHardfork, EthereumHardforks, ForkCondition,
     ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork, Hardforks, Head, DEV_HARDFORKS,
@@ -17,11 +22,13 @@ use reth_network_peers::{
 };
 use reth_primitives_traits::{
     constants::{
-        DEV_GENESIS_HASH, EIP1559_INITIAL_BASE_FEE, EMPTY_WITHDRAWALS, ETHEREUM_BLOCK_GAS_LIMIT,
-        HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
+        DEV_GENESIS_HASH, EIP1559_INITIAL_BASE_FEE, EMPTY_SHADOWS_ROOT, EMPTY_WITHDRAWALS,
+        ETHEREUM_BLOCK_GAS_LIMIT, HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
     },
     Header, SealedHeader,
 };
+
+use reth_primitives::proofs::calculate_shadows_root;
 use reth_trie_common::root::state_root_ref_unhashed;
 
 use crate::{constants::MAINNET_DEPOSIT_CONTRACT, once_cell_set, EthChainSpec};
@@ -163,6 +170,57 @@ impl core::ops::Deref for ChainSpec {
     }
 }
 
+// impl<'de, T: Deserialize<'de>> Deserialize<'de> for core::lazy::OnceCell<T> {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         Ok(match Option::<T>::deserialize(deserializer)? {
+//             Some(value) => core::lazy::OnceCell::from(value),
+//             None => core::lazy::OnceCell::new(),
+//         })
+//     }
+// }
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for WrappedOnceCell<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(match Option::<T>::deserialize(deserializer)? {
+            Some(value) => WrappedOnceCell(OnceCell::from(value)),
+            None => WrappedOnceCell(OnceCell::new()),
+        })
+    }
+}
+
+// impl<T: Serialize> Serialize for core::lazy::OnceCell<T> {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         match self.get() {
+//             Some(value) => serializer.serialize_some(value),
+//             None => serializer.serialize_none(),
+//         }
+//     }
+// }
+
+impl<T: Serialize> Serialize for WrappedOnceCell<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self.0.get() {
+            Some(value) => serializer.serialize_some(value),
+            None => serializer.serialize_none(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct WrappedOnceCell<T>(pub OnceCell<T>);
+
 /// An Ethereum chain specification.
 ///
 /// A chain specification describes:
@@ -170,7 +228,7 @@ impl core::ops::Deref for ChainSpec {
 /// - Meta-information about the chain (the chain ID)
 /// - The genesis block of the chain ([`Genesis`])
 /// - What hardforks are activated, and under which conditions
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChainSpec {
     /// The chain ID
     pub chain: Chain,
@@ -182,12 +240,14 @@ pub struct ChainSpec {
     ///
     /// This is either stored at construction time if it is known using [`once_cell_set`], or
     /// computed once on the first access.
+    #[serde(skip_deserializing, skip_serializing)]
     pub genesis_hash: OnceCell<B256>,
 
     /// The header corresponding to the genesis block.
     ///
     /// This is either stored at construction time if it is known using [`once_cell_set`], or
     /// computed once on the first access.
+    #[serde(skip_deserializing, skip_serializing)]
     pub genesis_header: OnceCell<Header>,
 
     /// The block at which [`EthereumHardfork::Paris`] was activated and the final difficulty at
@@ -195,12 +255,14 @@ pub struct ChainSpec {
     pub paris_block_and_final_difficulty: Option<(u64, U256)>,
 
     /// The active hard forks and their activation conditions
+    #[serde(skip_deserializing, skip_serializing)]
     pub hardforks: ChainHardforks,
 
     /// The deposit contract deployed for `PoS`
     pub deposit_contract: Option<DepositContract>,
 
     /// The parameters that configure how a block's base fee is computed
+    #[serde(skip_deserializing, skip_serializing)]
     pub base_fee_params: BaseFeeParamsKind,
 
     /// The maximum gas limit
@@ -243,8 +305,8 @@ impl ChainSpec {
     #[inline]
     #[cfg(feature = "optimism")]
     pub fn is_optimism(&self) -> bool {
-        self.chain.is_optimism() ||
-            self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
+        self.chain.is_optimism()
+            || self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
     }
 
     /// Returns `true` if this chain contains Optimism configuration.
@@ -303,6 +365,10 @@ impl ChainSpec {
             None
         };
 
+        let shadows_root = match &self.genesis.shadows {
+            Some(shadows) => calculate_shadows_root(&shadows),
+            None => EMPTY_SHADOWS_ROOT,
+        };
         Header {
             gas_limit: self.genesis.gas_limit,
             difficulty: self.genesis.difficulty,
@@ -318,6 +384,7 @@ impl ChainSpec {
             blob_gas_used: blob_gas_used.map(Into::into),
             excess_blob_gas: excess_blob_gas.map(Into::into),
             requests_root,
+            shadows_root,
             ..Default::default()
         }
     }
@@ -347,7 +414,7 @@ impl ChainSpec {
                 // given timestamp.
                 for (fork, params) in bf_params.iter().rev() {
                     if self.hardforks.is_fork_active_at_timestamp(fork.clone(), timestamp) {
-                        return *params
+                        return *params;
                     }
                 }
 
@@ -366,7 +433,7 @@ impl ChainSpec {
                 // given timestamp.
                 for (fork, params) in bf_params.iter().rev() {
                     if self.hardforks.is_fork_active_at_block(fork.clone(), block_number) {
-                        return *params
+                        return *params;
                     }
                 }
 
@@ -451,8 +518,8 @@ impl ChainSpec {
             // We filter out TTD-based forks w/o a pre-known block since those do not show up in the
             // fork filter.
             Some(match condition {
-                ForkCondition::Block(block) |
-                ForkCondition::TTD { fork_block: Some(block), .. } => ForkFilterKey::Block(block),
+                ForkCondition::Block(block)
+                | ForkCondition::TTD { fork_block: Some(block), .. } => ForkFilterKey::Block(block),
                 ForkCondition::Timestamp(time) => ForkFilterKey::Time(time),
                 _ => return None,
             })
@@ -470,8 +537,8 @@ impl ChainSpec {
         for (_, cond) in self.hardforks.forks_iter() {
             // handle block based forks and the sepolia merge netsplit block edge case (TTD
             // ForkCondition with Some(block))
-            if let ForkCondition::Block(block) |
-            ForkCondition::TTD { fork_block: Some(block), .. } = cond
+            if let ForkCondition::Block(block)
+            | ForkCondition::TTD { fork_block: Some(block), .. } = cond
             {
                 if cond.active_at_head(head) {
                     if block != current_applied {
@@ -481,7 +548,7 @@ impl ChainSpec {
                 } else {
                     // we can return here because this block fork is not active, so we set the
                     // `next` value
-                    return ForkId { hash: forkhash, next: block }
+                    return ForkId { hash: forkhash, next: block };
                 }
             }
         }
@@ -502,7 +569,7 @@ impl ChainSpec {
                 // can safely return here because we have already handled all block forks and
                 // have handled all active timestamp forks, and set the next value to the
                 // timestamp that is known but not active yet
-                return ForkId { hash: forkhash, next: timestamp }
+                return ForkId { hash: forkhash, next: timestamp };
             }
         }
 
@@ -546,17 +613,17 @@ impl ChainSpec {
                     ForkCondition::TTD { fork_block, .. } => {
                         // handle Sepolia merge netsplit case
                         if fork_block.is_some() {
-                            return *fork_block
+                            return *fork_block;
                         }
                         // ensure curr_cond is indeed ForkCondition::Block and return block_num
                         if let ForkCondition::Block(block_num) = curr_cond {
-                            return Some(block_num)
+                            return Some(block_num);
                         }
                     }
                     ForkCondition::Timestamp(_) => {
                         // ensure curr_cond is indeed ForkCondition::Block and return block_num
                         if let ForkCondition::Block(block_num) = curr_cond {
-                            return Some(block_num)
+                            return Some(block_num);
                         }
                     }
                     ForkCondition::Block(_) | ForkCondition::Never => continue,
@@ -725,9 +792,9 @@ pub trait ChainSpecProvider: Send + Sync {
 /// A helper to build custom chain specs
 #[derive(Debug, Default, Clone)]
 pub struct ChainSpecBuilder {
-    chain: Option<Chain>,
-    genesis: Option<Genesis>,
-    hardforks: ChainHardforks,
+    pub chain: Option<Chain>,
+    pub genesis: Option<Genesis>,
+    pub hardforks: ChainHardforks,
 }
 
 impl ChainSpecBuilder {
@@ -972,7 +1039,8 @@ impl From<&Arc<ChainSpec>> for ChainSpecBuilder {
 }
 
 /// `PoS` deposit contract details.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+
 pub struct DepositContract {
     /// Deposit Contract Address
     pub address: Address,

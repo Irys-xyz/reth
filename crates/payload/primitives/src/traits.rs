@@ -6,7 +6,7 @@ use alloy_rpc_types::{
 };
 use op_alloy_rpc_types_engine::OpPayloadAttributes;
 use reth_chain_state::ExecutedBlock;
-use reth_primitives::{SealedBlock, Withdrawals};
+use reth_primitives::{irys_primitives::ShadowReceipt, SealedBlock, Withdrawals};
 use std::{future::Future, pin::Pin};
 use tokio::sync::oneshot;
 
@@ -69,6 +69,11 @@ pub trait BuiltPayload: Send + Sync + std::fmt::Debug {
     fn executed_block(&self) -> Option<ExecutedBlock> {
         None
     }
+    /// Returns if the payload is empty or not
+    fn is_empty(&self) -> bool;
+
+    /// returns the shadow receipts
+    fn shadow_receipts(&self) -> Vec<ShadowReceipt>;
 }
 
 /// This can be implemented by types that describe a currently running payload job.

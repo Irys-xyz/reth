@@ -1,6 +1,7 @@
 use std::{fs, path::PathBuf, sync::Arc};
 
 use clap::builder::TypedValueParser;
+use irys_primitives::Genesis;
 
 #[derive(Debug, Clone)]
 struct Parser<C>(std::marker::PhantomData<C>);
@@ -34,7 +35,7 @@ impl<C: ChainSpecParser> TypedValueParser for Parser<C> {
 /// function to parse a given string into a chain spec.
 pub trait ChainSpecParser: Clone + Send + Sync + 'static {
     /// The chain specification type.
-    type ChainSpec: std::fmt::Debug + Send + Sync;
+    type ChainSpec: std::fmt::Debug + Send + Sync + Clone;
 
     /// List of supported chains.
     const SUPPORTED_CHAINS: &'static [&'static str];
@@ -62,8 +63,8 @@ pub trait ChainSpecParser: Clone + Send + Sync + 'static {
     }
 }
 
-/// A helper to parse a [`Genesis`](alloy_genesis::Genesis) as argument or from disk.
-pub fn parse_genesis(s: &str) -> eyre::Result<alloy_genesis::Genesis> {
+/// A helper to parse a [`Genesis`]` as argument or from disk.
+pub fn parse_genesis(s: &str) -> eyre::Result<Genesis> {
     // try to read json from path first
     let raw = match fs::read_to_string(PathBuf::from(shellexpand::full(s)?.into_owned())) {
         Ok(raw) => raw,

@@ -39,7 +39,7 @@ use tokio::sync::watch;
 use tracing::*;
 
 /// `reth debug execution` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,

@@ -5,7 +5,7 @@ use crate::{
     metrics::DatabaseEnvMetrics,
     tables::{self, TableType, Tables},
     utils::default_page_size,
-    DatabaseError,
+    DatabaseError, HasName, HasTableType,
 };
 use eyre::Context;
 use metrics::{gauge, Label};
@@ -23,7 +23,7 @@ use reth_libmdbx::{
 use reth_storage_errors::db::LogLevel;
 use reth_tracing::tracing::error;
 use std::{
-    ops::Deref,
+    ops::{Deref, Range},
     path::Path,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -60,7 +60,7 @@ impl DatabaseEnvKind {
 }
 
 /// Arguments for database initialization.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DatabaseArguments {
     /// Client version that accesses the database.
     client_version: ClientVersion,
@@ -68,6 +68,10 @@ pub struct DatabaseArguments {
     log_level: Option<LogLevel>,
     /// Maximum duration of a read transaction. If [None], the default value is used.
     max_read_transaction_duration: Option<MaxReadTransactionDuration>,
+
+    /// Database geometry
+    geometry: Geometry<Range<usize>>,
+
     /// Open environment in exclusive/monopolistic mode. If [None], the default value is used.
     ///
     /// This can be used as a replacement for `MDB_NOLOCK`, which don't supported by MDBX. In this
@@ -91,15 +95,48 @@ pub struct DatabaseArguments {
     exclusive: Option<bool>,
 }
 
+impl Default for DatabaseArguments {
+    fn default() -> Self {
+        Self {
+            client_version: Default::default(),
+            log_level: Default::default(),
+            max_read_transaction_duration: Default::default(),
+            exclusive: Default::default(),
+            geometry: Geometry {
+                // Maximum database size of 4 terabytes
+                size: Some(0..(4 * TERABYTE)),
+                // We grow the database in increments of 4 gigabytes
+                growth_step: Some(4 * GIGABYTE as isize),
+                // The database never shrinks
+                shrink_threshold: Some(0),
+                page_size: Some(PageSize::Set(default_page_size())),
+            },
+        }
+    }
+}
+
 impl DatabaseArguments {
     /// Create new database arguments with given client version.
-    pub const fn new(client_version: ClientVersion) -> Self {
+    pub fn new(client_version: ClientVersion) -> Self {
         Self {
             client_version,
             log_level: None,
             max_read_transaction_duration: None,
             exclusive: None,
+            geometry: Geometry {
+                // Maximum database size of 4 terabytes
+                size: Some(0..(4 * TERABYTE)),
+                // We grow the database in increments of 4 gigabytes
+                growth_step: Some(4 * GIGABYTE as isize),
+                // The database never shrinks
+                shrink_threshold: Some(0),
+                page_size: Some(PageSize::Set(default_page_size())),
+            },
         }
+    }
+
+    pub fn get_page_size() -> PageSize {
+        PageSize::Set(default_page_size())
     }
 
     /// Set the log level.
@@ -123,6 +160,25 @@ impl DatabaseArguments {
         self
     }
 
+    /// Set the mdbx geometry
+    pub const fn with_geometry(mut self, geometry: Geometry<Range<usize>>) -> Self {
+        self.geometry = geometry;
+        self
+    }
+
+    /// Sets the "growth step" for the database (how much it'll increase in size if it needs more capacity)
+    /// this effectively sets the initial size for the database.
+    pub const fn with_growth_step(mut self, growth_step: isize) -> Self {
+        self.geometry.growth_step = Some(growth_step);
+        self
+    }
+
+    /// Sets the "shrink threshold" for the database (how much free space it'll allow before shrinking it's FS footprint)
+    pub const fn with_shrink_threshold(mut self, shrink_threshold: isize) -> Self {
+        self.geometry.shrink_threshold = Some(shrink_threshold);
+        self
+    }
+
     /// Returns the client version if any.
     pub const fn client_version(&self) -> &ClientVersion {
         &self.client_version
@@ -133,7 +189,7 @@ impl DatabaseArguments {
 #[derive(Debug)]
 pub struct DatabaseEnv {
     /// Libmdbx-sys environment.
-    inner: Environment,
+    pub inner: Environment,
     /// Cache for metric handles. If `None`, metrics are not recorded.
     metrics: Option<Arc<DatabaseEnvMetrics>>,
     /// Write lock for when dealing with a read-write environment.
@@ -394,7 +450,7 @@ impl DatabaseEnv {
                     LogLevel::Extra => 7,
                 });
             } else {
-                return Err(DatabaseError::LogLevelUnavailable(log_level))
+                return Err(DatabaseError::LogLevelUnavailable(log_level));
             }
         }
 
@@ -417,6 +473,13 @@ impl DatabaseEnv {
         self
     }
 
+    /// Enables metrics on the database including additional table definitions
+    pub fn with_metrics_and_tables<T: HasName + HasTableType>(mut self, tables: &[T]) -> Self {
+        self.metrics = Some(DatabaseEnvMetrics::new_with_tables(tables).into());
+        let _ = self.add_tables(&tables);
+        self
+    }
+
     /// Creates all the defined tables, if necessary.
     pub fn create_tables(&self) -> Result<(), DatabaseError> {
         let tx = self.inner.begin_rw_txn().map_err(|e| DatabaseError::InitTx(e.into()))?;
@@ -436,10 +499,29 @@ impl DatabaseEnv {
         Ok(())
     }
 
+    /// Allows additional (create external) tables to be added to the database schema
+    pub fn add_tables<T: HasName + HasTableType>(&self, tables: &[T]) -> Result<(), DatabaseError> {
+        let tx = self.inner.begin_rw_txn().map_err(|e| DatabaseError::InitTx(e.into()))?;
+
+        for table in tables {
+            let flags = match table.table_type() {
+                TableType::Table => DatabaseFlags::default(),
+                TableType::DupSort => DatabaseFlags::DUP_SORT,
+            };
+
+            tx.create_db(Some(table.name()), flags)
+                .map_err(|e| DatabaseError::CreateTable(e.into()))?;
+        }
+
+        tx.commit().map_err(|e| DatabaseError::Commit(e.into()))?;
+
+        Ok(())
+    }
+
     /// Records version that accesses the database with write privileges.
     pub fn record_client_version(&self, version: ClientVersion) -> Result<(), DatabaseError> {
         if version.is_empty() {
-            return Ok(())
+            return Ok(());
         }
 
         let tx = self.tx_mut()?;

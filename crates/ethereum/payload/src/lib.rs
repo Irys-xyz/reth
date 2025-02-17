@@ -29,7 +29,7 @@ use reth_primitives::{
     Block, BlockBody, EthereumHardforks, Header, Receipt, EMPTY_OMMER_ROOT_HASH,
 };
 use reth_provider::{ChainSpecProvider, StateProviderFactory};
-use reth_revm::database::StateProviderDatabase;
+use reth_revm::{database::StateProviderDatabase, state_change::apply_block_shadows};
 use reth_transaction_pool::{
     noop::NoopTransactionPool, BestTransactionsAttributes, TransactionPool,
 };
@@ -41,7 +41,7 @@ use revm::{
 };
 use revm_primitives::calc_excess_blob_gas;
 use std::sync::Arc;
-use tracing::{debug, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 /// Ethereum payload builder
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,7 +92,7 @@ where
         args: BuildArguments<Pool, Client, EthPayloadBuilderAttributes, EthBuiltPayload>,
     ) -> Result<BuildOutcome<EthBuiltPayload>, PayloadBuilderError> {
         let (cfg_env, block_env) = self.cfg_and_block_env(&args.config, &args.config.parent_block);
-        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env)
+        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env, false)
     }
 
     fn build_empty_payload(
@@ -110,7 +110,7 @@ where
             best_payload: None,
         };
         let (cfg_env, block_env) = self.cfg_and_block_env(&args.config, &args.config.parent_block);
-        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env)?
+        default_ethereum_payload(self.evm_config.clone(), args, cfg_env, block_env, true)?
             .into_payload()
             .ok_or_else(|| PayloadBuilderError::MissingPayload)
     }
@@ -127,6 +127,7 @@ pub fn default_ethereum_payload<EvmConfig, Pool, Client>(
     args: BuildArguments<Pool, Client, EthPayloadBuilderAttributes, EthBuiltPayload>,
     initialized_cfg: CfgEnvWithHandlerCfg,
     initialized_block_env: BlockEnv,
+    is_empty: bool,
 ) -> Result<BuildOutcome<EthBuiltPayload>, PayloadBuilderError>
 where
     EvmConfig: ConfigureEvm<Header = Header>,
@@ -192,19 +193,46 @@ where
     })?;
 
     let mut receipts = Vec::new();
+
+    let mut evm = revm::Evm::builder()
+        .with_db(&mut db)
+        .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
+            initialized_cfg.clone(),
+            initialized_block_env.clone(),
+            // tx_env_with_recovered(&tx),
+            Default::default(),
+        ))
+        .build();
+
+    let shadow_receipts = match is_empty {
+        false => apply_block_shadows(Some(&attributes.shadows), &mut evm)
+            .expect("shadow execution failed"),
+        true => vec![],
+    };
+
+    // commit changes
+    info!("shadow exec: {:#?}", &shadow_receipts);
+
+    let ss = evm.context.evm.inner.journaled_state.state.clone();
+    // evm.db_mut().commit(ss);
+    // drop handle on db
+    drop(evm);
+    db.commit(ss);
+
     while let Some(pool_tx) = best_txs.next() {
+        debug!("JESSEDEBUG processing tx {:?}", &pool_tx.hash());
         // ensure we still have capacity for this transaction
         if cumulative_gas_used + pool_tx.gas_limit() > block_gas_limit {
             // we can't fit this transaction into the block, so we need to mark it as invalid
             // which also removes all dependent transaction from the iterator before we can
             // continue
             best_txs.mark_invalid(&pool_tx);
-            continue
+            continue;
         }
 
         // check if the job was cancelled, if so we can exit early
         if cancel.is_cancelled() {
-            return Ok(BuildOutcome::Cancelled)
+            return Ok(BuildOutcome::Cancelled);
         }
 
         // convert tx to a signed transaction
@@ -221,7 +249,7 @@ where
                 // for regular transactions above.
                 trace!(target: "payload_builder", tx=?tx.hash, ?sum_blob_gas_used, ?tx_blob_gas, "skipping blob transaction because it would exceed the max data gas per block");
                 best_txs.mark_invalid(&pool_tx);
-                continue
+                continue;
             }
         }
 
@@ -239,6 +267,7 @@ where
             Err(err) => {
                 match err {
                     EVMError::Transaction(err) => {
+                        debug!("JESSEDEBUG evm error: {:?}", &err);
                         if matches!(err, InvalidTransaction::NonceTooLow { .. }) {
                             // if the nonce is too low, we can skip this transaction
                             trace!(target: "payload_builder", %err, ?tx, "skipping nonce too low transaction");
@@ -249,11 +278,13 @@ where
                             best_txs.mark_invalid(&pool_tx);
                         }
 
-                        continue
+                        continue;
                     }
                     err => {
+                        debug!("JESSEDEBUG evm error2: {:?}", &err);
+
                         // this is an error that we should treat as fatal for this attempt
-                        return Err(PayloadBuilderError::EvmExecutionError(err))
+                        return Err(PayloadBuilderError::EvmExecutionError(err));
                     }
                 }
             }
@@ -300,11 +331,15 @@ where
         executed_txs.push(tx.into_signed());
     }
 
+    debug!("JESSEDEBUG executed_txs {:?}", &executed_txs);
+
     // check if we have a better block
     if !is_better_payload(best_payload.as_ref(), total_fees) {
         // can skip building the block
-        return Ok(BuildOutcome::Aborted { fees: total_fees, cached_reads })
+        debug!("JESSEDEBUG aborting build, not a better payload");
+        return Ok(BuildOutcome::Aborted { fees: total_fees, cached_reads });
     }
+    let shadows_root = proofs::calculate_shadows_root(&attributes.shadows);
 
     // calculate the requests and the requests root
     let (requests, requests_root) = if chain_spec
@@ -340,7 +375,7 @@ where
     // merge all transitions into bundle state, this would apply the withdrawal balance changes
     // and 4788 contract call
     db.merge_transitions(BundleRetention::Reverts);
-
+    debug!("JESSEDEBUG receipts {:?}", &receipts);
     let execution_outcome = ExecutionOutcome::new(
         db.take_bundle(),
         vec![receipts.clone()].into(),
@@ -395,6 +430,7 @@ where
     let header = Header {
         parent_hash: parent_block.hash(),
         ommers_hash: EMPTY_OMMER_ROOT_HASH,
+        shadows_root,
         beneficiary: initialized_block_env.coinbase,
         state_root,
         transactions_root,
@@ -419,10 +455,17 @@ where
     // seal the block
     let block = Block {
         header,
-        body: BlockBody { transactions: executed_txs, ommers: vec![], withdrawals, requests },
+        body: BlockBody {
+            transactions: executed_txs,
+            ommers: vec![],
+            withdrawals,
+            requests,
+            shadows: Some(attributes.shadows),
+        },
     };
 
     let sealed_block = block.seal_slow();
+    debug!(target: "payload_builder", ?state_root, "sealed build block - state root");
     debug!(target: "payload_builder", ?sealed_block, "sealed built block");
 
     // create the executed block data
@@ -434,7 +477,14 @@ where
         trie: Arc::new(trie_output),
     };
 
-    let mut payload = EthBuiltPayload::new(attributes.id, sealed_block, total_fees, Some(executed));
+    let mut payload = EthBuiltPayload::new(
+        attributes.id,
+        sealed_block,
+        total_fees,
+        Some(executed),
+        shadow_receipts,
+        is_empty,
+    );
 
     // extend the payload with the blob sidecars from the executed txs
     payload.extend_sidecars(blob_sidecars);

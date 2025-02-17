@@ -1,14 +1,15 @@
 use crate::root::storage_root_unhashed;
 use alloy_consensus::constants::KECCAK_EMPTY;
-use alloy_genesis::GenesisAccount;
 use alloy_primitives::{keccak256, B256, U256};
 use alloy_rlp::{RlpDecodable, RlpEncodable};
 use alloy_trie::EMPTY_ROOT_HASH;
+use irys_primitives::{Commitments, GenesisAccount, LastTx, Stake};
 use reth_primitives_traits::Account;
 use revm_primitives::AccountInfo;
 
 /// An Ethereum account as represented in the trie.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, RlpEncodable, RlpDecodable)]
+#[rlp(trailing)]
 pub struct TrieAccount {
     /// Account nonce.
     pub nonce: u64,
@@ -18,6 +19,11 @@ pub struct TrieAccount {
     pub storage_root: B256,
     /// Hash of the account's bytecode.
     pub code_hash: B256,
+
+    pub stake: Option<Stake>,
+    pub commitments: Option<Commitments>,
+    pub last_tx: Option<LastTx>,
+    pub mining_permission: Option<bool>,
 }
 
 impl TrieAccount {
@@ -46,6 +52,10 @@ impl From<GenesisAccount> for TrieAccount {
             balance: account.balance,
             storage_root,
             code_hash: account.code.map_or(KECCAK_EMPTY, keccak256),
+            stake: account.stake,
+            commitments: account.commitments,
+            last_tx: account.last_tx,
+            mining_permission: account.mining_permission
         }
     }
 }
@@ -57,6 +67,10 @@ impl From<(Account, B256)> for TrieAccount {
             balance: account.balance,
             storage_root,
             code_hash: account.bytecode_hash.unwrap_or(KECCAK_EMPTY),
+            stake: account.stake,
+            commitments: account.commitments,
+            last_tx: account.last_tx,
+            mining_permission: account.mining_permission
         }
     }
 }
@@ -68,6 +82,10 @@ impl From<(AccountInfo, B256)> for TrieAccount {
             balance: account.balance,
             storage_root,
             code_hash: account.code_hash,
+            stake: account.stake,
+            commitments: account.commitments,
+            last_tx: account.last_tx,
+            mining_permission: account.mining_permission
         }
     }
 }
@@ -113,6 +131,7 @@ mod tests {
             code: Some(Bytes::from(vec![0x60, 0x61])),
             storage: Some(storage),
             private_key: None,
+            ..Default::default()
         };
 
         // Convert the GenesisAccount to a TrieAccount
@@ -135,7 +154,8 @@ mod tests {
                 Account {
                     nonce: 10,
                     balance: U256::from(1000),
-                    bytecode_hash: Some(keccak256([0x60, 0x61]))
+                    bytecode_hash: Some(keccak256([0x60, 0x61])),
+                    ..Default::default()
                 },
                 expected_storage_root
             )),
@@ -168,6 +188,7 @@ mod tests {
             code: None,
             storage: Some(storage),
             private_key: None,
+            ..Default::default()
         };
 
         // Convert the GenesisAccount to a TrieAccount

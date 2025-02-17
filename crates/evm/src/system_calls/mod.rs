@@ -224,6 +224,9 @@ where
         DB: Database + DatabaseCommit,
         DB::Error: Display,
     {
+        // DISABLED @JesseTheRobot
+        return Ok(());
+
         let result_and_state = eip4788::transact_beacon_root_contract_call(
             &self.evm_config.clone(),
             &self.chain_spec,

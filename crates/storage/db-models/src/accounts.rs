@@ -29,7 +29,7 @@ impl Compact for AccountBeforeTx {
         buf.put_slice(self.address.as_slice());
 
         let mut acc_len = 0;
-        if let Some(account) = self.info {
+        if let Some(account) = &self.info {
             acc_len = account.to_compact(buf);
         }
         acc_len + 20

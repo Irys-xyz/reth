@@ -143,7 +143,7 @@ impl TransactionTestContext {
 }
 
 /// Creates a type 2 transaction
-fn tx(
+pub fn tx(
     chain_id: u64,
     gas: u64,
     data: Option<Bytes>,

@@ -1,12 +1,12 @@
 [package]
-name = "reth-primitives-traits"
-version.workspace = true
+description = "Common types in reth."
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
+name = "reth-primitives-traits"
 repository.workspace = true
 rust-version.workspace = true
-description = "Common types in reth."
+version.workspace = true
 
 [lints]
 workspace = true
@@ -28,6 +28,8 @@ derive_more.workspace = true
 roaring = "0.10.2"
 serde_with = { workspace = true, optional = true }
 
+irys-primitives.workspace = true
+
 # required by reth-codecs
 bytes.workspace = true
 modular-bitfield.workspace = true
@@ -41,8 +43,8 @@ proptest-arbitrary-interop = { workspace = true, optional = true }
 [dev-dependencies]
 reth-testing-utils.workspace = true
 
-alloy-primitives = { workspace = true, features = ["arbitrary"] }
 alloy-consensus = { workspace = true, features = ["arbitrary"] }
+alloy-primitives = { workspace = true, features = ["arbitrary"] }
 
 arbitrary = { workspace = true, features = ["derive"] }
 bincode.workspace = true
@@ -53,15 +55,15 @@ serde_json.workspace = true
 test-fuzz.workspace = true
 
 [features]
-default = ["std"]
-std = []
-test-utils = ["arbitrary"]
 arbitrary = [
-    "std",
     "alloy-consensus/arbitrary",
     "alloy-primitives/arbitrary",
     "dep:arbitrary",
     "dep:proptest",
     "dep:proptest-arbitrary-interop",
+    "std",
 ]
-serde-bincode-compat = ["serde_with", "alloy-consensus/serde-bincode-compat"]
+default = ["std"]
+serde-bincode-compat = ["alloy-consensus/serde-bincode-compat", "serde_with"]
+std = []
+test-utils = ["arbitrary"]

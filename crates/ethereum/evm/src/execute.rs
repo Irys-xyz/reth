@@ -23,14 +23,15 @@ use reth_prune_types::PruneModes;
 use reth_revm::{
     batch::BlockBatchRecord,
     db::{states::bundle_state::BundleRetention, State},
-    state_change::post_block_balance_increments,
-    Evm,
-};
-use revm_primitives::{
-    db::{Database, DatabaseCommit},
-    BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState,
+    state_change::{apply_block_shadows, post_block_balance_increments},
+    Evm
 };
 
+use revm_primitives::{
+    db::{Database, DatabaseCommit},
+    BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState, B256,
+};
+use tracing::{info};
 /// Provides executors to execute regular ethereum blocks
 #[derive(Debug, Clone)]
 pub struct EthExecutorProvider<EvmConfig = EthEvmConfig> {
@@ -147,6 +148,40 @@ where
             SystemCaller::new(&self.evm_config, &self.chain_spec).with_state_hook(state_hook);
 
         system_caller.apply_pre_execution_changes(block, &mut evm)?;
+        // // // apply pre execution changes
+        // apply_beacon_root_contract_call(
+        //     &self.chain_spec,
+        //     block.timestamp,
+        //     block.number,
+        //     block.parent_beacon_block_root,
+        //     &mut evm,
+        // )?;
+
+        // let mut evm = revm::Evm::builder()
+        // .with_db(&mut db)
+        // .with_env_with_handler_cfg(EnvWithHandlerCfg::new_with_cfg_env(
+        //     initialized_cfg.clone(),
+        //     initialized_block_env.clone(),
+        //     // tx_env_with_recovered(&tx),
+        //     Default::default(),
+        // ))
+        // .build();
+        let prev = evm.context.evm.inner.journaled_state.checkpoint();
+        // TODO: fix this
+        let shadow_exec =
+            apply_block_shadows(block.body.shadows.as_ref(), &mut evm).map_err(move |err| {
+                let new_err = err.map_db_err(|e| e.into());
+                BlockValidationError::EVM {
+                    hash: B256::ZERO,
+                    error: Box::new(new_err),
+                }
+            })?;
+        info!("shadow exec: {:#?}", &shadow_exec);
+        let ss = evm.context.evm.inner.journaled_state.state.clone();
+
+        evm.db_mut().commit(ss);
+
+        evm.context.evm.inner.journaled_state.checkpoint_revert(prev);
 
         // execute transactions
         let mut cumulative_gas_used = 0;
@@ -160,7 +195,7 @@ where
                     transaction_gas_limit: transaction.gas_limit(),
                     block_available_gas,
                 }
-                .into())
+                .into());
             }
 
             self.evm_config.fill_tx_env(evm.tx_mut(), transaction, *sender);
@@ -518,6 +553,10 @@ mod tests {
             balance: U256::ZERO,
             bytecode_hash: Some(keccak256(BEACON_ROOTS_CODE.clone())),
             nonce: 1,
+            commitments: None,
+            stake: None,
+            last_tx: None,
+            mining_permission: Some(true),
         };
 
         db.insert_account(
@@ -537,6 +576,7 @@ mod tests {
             nonce: 1,
             balance: U256::ZERO,
             bytecode_hash: Some(keccak256(WITHDRAWAL_REQUEST_PREDEPLOY_CODE.clone())),
+            ..Default::default()
         };
 
         db.insert_account(
@@ -582,6 +622,7 @@ mod tests {
                                 ommers: vec![],
                                 withdrawals: None,
                                 requests: None,
+                                shadows: None,
                             },
                         },
                         senders: vec![],
@@ -615,6 +656,7 @@ mod tests {
                             ommers: vec![],
                             withdrawals: None,
                             requests: None,
+                            shadows: None,
                         },
                     },
                     senders: vec![],
@@ -683,6 +725,7 @@ mod tests {
                                 ommers: vec![],
                                 withdrawals: None,
                                 requests: None,
+                                shadows: None,
                             },
                         },
                         senders: vec![],
@@ -738,6 +781,7 @@ mod tests {
                                 ommers: vec![],
                                 withdrawals: None,
                                 requests: None,
+                                shadows: None,
                             },
                         },
                         senders: vec![],
@@ -896,6 +940,7 @@ mod tests {
             balance: U256::ZERO,
             bytecode_hash: Some(keccak256(HISTORY_STORAGE_CODE.clone())),
             nonce: 1,
+            ..Default::default()
         };
 
         db.insert_account(
@@ -1247,7 +1292,7 @@ mod tests {
 
         db.insert_account(
             sender_address,
-            Account { nonce: 1, balance: U256::from(ETH_TO_WEI), bytecode_hash: None },
+            Account { nonce: 1, balance: U256::from(ETH_TO_WEI), bytecode_hash: None, ..Default::default() },
             None,
             HashMap::default(),
         );
@@ -1330,7 +1375,7 @@ mod tests {
         // Insert the sender account into the state with a nonce of 1 and a balance of 1 ETH in Wei
         db.insert_account(
             sender_address,
-            Account { nonce: 1, balance: U256::from(ETH_TO_WEI), bytecode_hash: None },
+            Account { nonce: 1, balance: U256::from(ETH_TO_WEI), bytecode_hash: None, ..Default::default() },
             None,
             HashMap::default(),
         );

@@ -11,14 +11,14 @@ use reth_db_common::{
     DbTool,
 };
 use reth_node_builder::NodeTypesWithEngine;
-use reth_node_core::args::StageEnum;
+use reth_node_core::{args::StageEnum, irys_ext::NodeExitReason};
 use reth_provider::{writer::UnifiedStorageWriter, StaticFileProviderFactory};
 use reth_prune::PruneSegment;
 use reth_stages::StageId;
 use reth_static_file_types::StaticFileSegment;
 
 /// `reth drop-stage` command
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -30,7 +30,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
     /// Execute `db` command
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         let Environment { provider_factory, .. } = self.env.init::<N>(AccessRights::RW)?;
 
         let static_file_provider = provider_factory.static_file_provider();
@@ -192,6 +192,6 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C>
 
         UnifiedStorageWriter::commit_unwind(provider_rw, static_file_provider)?;
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

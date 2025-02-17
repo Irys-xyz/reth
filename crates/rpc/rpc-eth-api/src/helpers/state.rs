@@ -12,7 +12,7 @@ use reth_provider::{
     BlockIdReader, BlockNumReader, ChainSpecProvider, StateProvider, StateProviderBox,
     StateProviderFactory,
 };
-use reth_rpc_eth_types::{EthApiError, EthStateCache, PendingBlockEnv, RpcInvalidTransactionError};
+use reth_rpc_eth_types::{EthApiError, EthResult, EthStateCache, PendingBlockEnv, RpcInvalidTransactionError};
 use reth_rpc_types_compat::proof::from_primitive_account_proof;
 use reth_transaction_pool::TransactionPool;
 use revm_primitives::{BlockEnv, CfgEnvWithHandlerCfg, SpecId};
@@ -331,5 +331,13 @@ pub trait LoadState: EthApiTypes {
                 .unwrap_or_default()
                 .original_bytes())
         })
+    }
+
+    fn balance(&self, address: Address, block_id: Option<BlockId>) ->Result<U256, Self::Error> {
+        Ok(
+            self
+        .state_at_block_id_or_latest(block_id)?
+        .account_balance(address)
+        .unwrap_or_default().unwrap_or(U256::ZERO))
     }
 }

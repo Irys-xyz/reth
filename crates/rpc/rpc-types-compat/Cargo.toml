@@ -1,12 +1,12 @@
 [package]
-name = "reth-rpc-types-compat"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-homepage.workspace = true
-repository.workspace = true
 description = "Compatibility layer for reth-primitives and ethereum RPC types"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+name = "reth-rpc-types-compat"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
@@ -20,10 +20,14 @@ reth-trie-common.workspace = true
 alloy-eips.workspace = true
 alloy-primitives.workspace = true
 alloy-rlp.workspace = true
-alloy-rpc-types.workspace = true
-alloy-rpc-types-eth = { workspace = true, default-features = false, features = ["serde"] }
-alloy-serde.workspace = true
 alloy-rpc-types-engine.workspace = true
+alloy-rpc-types-eth = { workspace = true, default-features = false, features = [
+    "serde",
+] }
+alloy-rpc-types.workspace = true
+alloy-serde.workspace = true
+
+irys-primitives.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

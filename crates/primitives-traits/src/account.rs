@@ -1,11 +1,12 @@
 use alloy_consensus::constants::KECCAK_EMPTY;
-use alloy_genesis::GenesisAccount;
+// use alloy_genesis::GenesisAccount;
 use alloy_primitives::{keccak256, Bytes, B256, U256};
 use byteorder::{BigEndian, ReadBytesExt};
 use bytes::Buf;
 use derive_more::Deref;
+use irys_primitives::{Commitments, GenesisAccount, LastTx, Stake};
 use reth_codecs::{add_arbitrary_tests, Compact};
-use revm_primitives::{AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError, JumpTable};
+use revm_primitives::{ AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError,  JumpTable, };
 use serde::{Deserialize, Serialize};
 
 /// Identifier for [`LegacyRaw`](RevmBytecode::LegacyRaw).
@@ -24,7 +25,7 @@ const EOF_BYTECODE_ID: u8 = 3;
 const EIP7702_BYTECODE_ID: u8 = 4;
 
 /// An Ethereum account.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize, Deserialize, Compact)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize, Compact)]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
 #[add_arbitrary_tests(compact)]
 pub struct Account {
@@ -34,6 +35,10 @@ pub struct Account {
     pub balance: U256,
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
+    pub stake: Option<Stake>,
+    pub commitments: Option<Commitments>,
+    pub last_tx: Option<LastTx>,
+    pub mining_permission: Option<bool>,
 }
 
 impl Account {
@@ -45,9 +50,11 @@ impl Account {
     /// After `SpuriousDragon` empty account is defined as account with nonce == 0 && balance == 0
     /// && bytecode = None (or hash is [`KECCAK_EMPTY`]).
     pub fn is_empty(&self) -> bool {
-        self.nonce == 0 &&
-            self.balance.is_zero() &&
-            self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
+        self.nonce == 0
+            && self.balance.is_zero()
+            && self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
+            && self.stake.is_none()
+            && self.commitments.is_none()
     }
 
     /// Returns an account bytecode's hash.
@@ -158,6 +165,10 @@ impl From<&GenesisAccount> for Account {
             nonce: value.nonce.unwrap_or_default(),
             balance: value.balance,
             bytecode_hash: value.code.as_ref().map(keccak256),
+            stake: value.stake,
+            commitments: value.commitments.clone(),
+            last_tx: value.last_tx,
+            mining_permission: value.mining_permission
         }
     }
 }
@@ -169,6 +180,10 @@ impl From<AccountInfo> for Account {
             balance: revm_acc.balance,
             nonce: revm_acc.nonce,
             bytecode_hash: (code_hash != KECCAK_EMPTY).then_some(code_hash),
+            stake: revm_acc.stake,
+            commitments: revm_acc.commitments,
+            last_tx: revm_acc.last_tx,
+            mining_permission: revm_acc.mining_permission
         }
     }
 }
@@ -180,6 +195,10 @@ impl From<Account> for AccountInfo {
             nonce: reth_acc.nonce,
             code_hash: reth_acc.bytecode_hash.unwrap_or(KECCAK_EMPTY),
             code: None,
+            stake: reth_acc.stake,
+            commitments: reth_acc.commitments,
+            last_tx: reth_acc.last_tx,
+            mining_permission: reth_acc.mining_permission
         }
     }
 }
@@ -208,7 +227,15 @@ mod tests {
 
     #[test]
     fn test_empty_account() {
-        let mut acc = Account { nonce: 0, balance: U256::ZERO, bytecode_hash: None };
+        let mut acc = Account {
+            nonce: 0,
+            balance: U256::ZERO,
+            bytecode_hash: None,
+            commitments: None,
+            stake: None,
+            mining_permission: Some(true),
+            last_tx: None,
+        };
         // Nonce 0, balance 0, and bytecode hash set to None is considered empty.
         assert!(acc.is_empty());
 

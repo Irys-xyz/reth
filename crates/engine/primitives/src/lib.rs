@@ -26,7 +26,9 @@ pub trait EngineTypes:
         BuiltPayload: TryInto<Self::ExecutionPayloadV1>
                           + TryInto<Self::ExecutionPayloadV2>
                           + TryInto<Self::ExecutionPayloadV3>
-                          + TryInto<Self::ExecutionPayloadV4>,
+                          + TryInto<Self::ExecutionPayloadV4>
+                          + TryInto<Self::ExecutionPayloadV1Irys>,
+
     > + DeserializeOwned
     + Serialize
     + 'static
@@ -39,6 +41,8 @@ pub trait EngineTypes:
     type ExecutionPayloadV3: DeserializeOwned + Serialize + Clone + Unpin + Send + Sync + 'static;
     /// Execution Payload V4 type.
     type ExecutionPayloadV4: DeserializeOwned + Serialize + Clone + Unpin + Send + Sync + 'static;
+    /// Execution payload V1 Irys type
+    type ExecutionPayloadV1Irys: DeserializeOwned + Serialize + Clone + Unpin + Send + Sync + 'static;
 }
 
 /// Type that validates the payloads sent to the engine.

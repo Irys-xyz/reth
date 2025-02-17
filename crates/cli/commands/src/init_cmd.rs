@@ -5,11 +5,12 @@ use clap::Parser;
 use reth_chainspec::{EthChainSpec, EthereumHardforks};
 use reth_cli::chainspec::ChainSpecParser;
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_provider::BlockHashReader;
 use tracing::info;
 
 /// Initializes the database with the genesis block.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct InitCommand<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -19,7 +20,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> InitComman
     /// Execute the `init` command
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         info!(target: "reth::cli", "reth init starting");
 
         let Environment { provider_factory, .. } = self.env.init::<N>(AccessRights::RW)?;
@@ -29,6 +30,6 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> InitComman
             .ok_or_else(|| eyre::eyre!("Genesis hash not found."))?;
 
         info!(target: "reth::cli", hash = ?hash, "Genesis block written");
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

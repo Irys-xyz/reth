@@ -11,6 +11,7 @@
 mod payload;
 use std::sync::Arc;
 
+use alloy_rpc_types_engine::ExecutionPayloadEnvelopeV1Irys;
 pub use alloy_rpc_types_engine::{
     ExecutionPayloadEnvelopeV2, ExecutionPayloadEnvelopeV3, ExecutionPayloadEnvelopeV4,
     ExecutionPayloadV1, PayloadAttributes as EthPayloadAttributes,
@@ -22,6 +23,8 @@ use reth_payload_primitives::{
     validate_version_specific_fields, EngineApiMessageVersion, EngineObjectValidationError,
     PayloadOrAttributes, PayloadTypes,
 };
+
+
 
 /// The types used in the default mainnet ethereum beacon consensus engine.
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
@@ -41,12 +44,15 @@ where
     T::BuiltPayload: TryInto<ExecutionPayloadV1>
         + TryInto<ExecutionPayloadEnvelopeV2>
         + TryInto<ExecutionPayloadEnvelopeV3>
-        + TryInto<ExecutionPayloadEnvelopeV4>,
+        + TryInto<ExecutionPayloadEnvelopeV4>
+        +TryInto<ExecutionPayloadEnvelopeV1Irys>,
 {
     type ExecutionPayloadV1 = ExecutionPayloadV1;
     type ExecutionPayloadV2 = ExecutionPayloadEnvelopeV2;
     type ExecutionPayloadV3 = ExecutionPayloadEnvelopeV3;
     type ExecutionPayloadV4 = ExecutionPayloadEnvelopeV4;
+    type ExecutionPayloadV1Irys = ExecutionPayloadEnvelopeV1Irys;
+
 }
 
 /// A default payload type for [`EthEngineTypes`]

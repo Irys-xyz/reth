@@ -34,7 +34,7 @@ use reth_rpc_engine_api::{capabilities::EngineCapabilities, EngineApi};
 use reth_tasks::TaskExecutor;
 use reth_tokio_util::EventSender;
 use reth_tracing::tracing::{debug, error, info};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::{mpsc::unbounded_channel, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -87,6 +87,9 @@ where
         self,
         target: NodeBuilderWithComponents<T, CB, AO>,
     ) -> eyre::Result<Self::Node> {
+        // TODO: make the reload rx channel optional
+        let (_, reload_rx) = unbounded_channel();
+
         let Self { ctx, engine_tree_config } = self;
         let NodeBuilderWithComponents {
             adapter: NodeTypesAdapter { database },
@@ -135,7 +138,7 @@ where
             .with_blockchain_db::<T, _>(move |provider_factory| {
                 Ok(BlockchainProvider2::new(provider_factory)?)
             }, tree_config, canon_state_notification_sender)?
-            .with_components(components_builder, on_component_initialized).await?;
+            .with_components(components_builder, on_component_initialized, None).await?;
 
         // spawn exexs
         let exex_manager_handle = ExExLauncher::new(
@@ -402,13 +405,15 @@ where
             rpc_registry,
             config: ctx.node_config().clone(),
             data_dir: ctx.data_dir().clone(),
+            irys_ext: None,
         };
         // Notify on node started
         on_node_started.on_event(full_node.clone())?;
 
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
-                async { rx.await? },
+                // async { rx.await? },
+                reload_rx,
                 full_node.config.debug.terminate,
             ),
             node: full_node,

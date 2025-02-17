@@ -10,6 +10,7 @@ use alloy_rlp::{length_of_length, Decodable, Encodable, RlpDecodable, RlpEncodab
 use bytes::{Buf, BufMut};
 use core::{cmp::Ordering, ops::Deref};
 use derive_more::{DerefMut, From, IntoIterator};
+use irys_primitives::{IrysTxId, ShadowTxType};
 #[cfg(feature = "reth-codec")]
 use reth_codecs::{Compact, CompactZstd};
 use serde::{Deserialize, Serialize};
@@ -237,7 +238,7 @@ impl ReceiptWithBloom {
         let b = &mut &**buf;
         let rlp_head = alloy_rlp::Header::decode(b)?;
         if !rlp_head.list {
-            return Err(alloy_rlp::Error::UnexpectedString)
+            return Err(alloy_rlp::Error::UnexpectedString);
         }
         let started_len = b.len();
 
@@ -282,7 +283,7 @@ impl ReceiptWithBloom {
             return Err(alloy_rlp::Error::ListLengthMismatch {
                 expected: rlp_head.payload_length,
                 got: consumed,
-            })
+            });
         }
         *buf = *b;
         Ok(this)
@@ -439,7 +440,7 @@ impl ReceiptWithBloomEncoder<'_> {
     fn encode_inner(&self, out: &mut dyn BufMut, with_header: bool) {
         if matches!(self.receipt.tx_type, TxType::Legacy) {
             self.encode_fields(out);
-            return
+            return;
         }
 
         let mut payload = Vec::new();

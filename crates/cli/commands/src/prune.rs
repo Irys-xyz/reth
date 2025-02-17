@@ -4,12 +4,13 @@ use clap::Parser;
 use reth_chainspec::{EthChainSpec, EthereumHardforks};
 use reth_cli::chainspec::ChainSpecParser;
 use reth_node_builder::NodeTypesWithEngine;
+use reth_node_core::irys_ext::NodeExitReason;
 use reth_prune::PrunerBuilder;
 use reth_static_file::StaticFileProducer;
 use tracing::info;
 
 /// Prunes according to the configuration without any limits
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct PruneCommand<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -19,7 +20,7 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> PruneComma
     /// Execute the `prune` command
     pub async fn execute<N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>>(
         self,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<NodeExitReason> {
         let Environment { config, provider_factory, .. } = self.env.init::<N>(AccessRights::RW)?;
         let prune_config = config.prune.unwrap_or_default();
 
@@ -42,6 +43,6 @@ impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> PruneComma
             info!(target: "reth::cli", "Pruned data from database");
         }
 
-        Ok(())
+        Ok(NodeExitReason::Normal)
     }
 }

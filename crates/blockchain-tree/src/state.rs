@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 
 /// Container to hold the state of the blockchain tree.
 #[derive(Debug)]
-pub(crate) struct TreeState {
+pub struct TreeState {
     /// Keeps track of new unique identifiers for chains
     block_chain_id_generator: u64,
     /// The tracked chains and their current data.
@@ -16,9 +16,9 @@ pub(crate) struct TreeState {
     ///
     /// This gets modified by the tree itself and is read from engine API/RPC to access the pending
     /// block for example.
-    pub(crate) block_indices: BlockIndices,
+    pub block_indices: BlockIndices,
     /// Unconnected block buffer.
-    pub(crate) buffered_blocks: BlockBuffer,
+    pub buffered_blocks: BlockBuffer,
 }
 
 impl TreeState {
@@ -88,7 +88,7 @@ impl TreeState {
     /// Inserts a chain into the tree and builds the block indices.
     pub(crate) fn insert_chain(&mut self, chain: AppendableChain) -> Option<SidechainId> {
         if chain.is_empty() {
-            return None
+            return None;
         }
         let chain_id = self.next_id();
 

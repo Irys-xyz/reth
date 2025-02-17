@@ -12,18 +12,16 @@ use reth_node_core::{
     args::{
         DatabaseArgs, DatadirArgs, DebugArgs, DevArgs, NetworkArgs, PayloadBuilderArgs,
         PruningArgs, RpcServerArgs, TxPoolArgs,
-    },
-    node_config::NodeConfig,
-    version,
+    }, irys_ext::NodeExitReason, node_config::NodeConfig, version
 };
 use reth_node_metrics::recorder::install_prometheus_recorder;
 use std::{ffi::OsString, fmt, future::Future, net::SocketAddr, path::PathBuf, sync::Arc};
 
 /// Start the node
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct NodeCommand<
     C: ChainSpecParser = EthereumChainSpecParser,
-    Ext: clap::Args + fmt::Debug = NoArgs,
+    Ext: clap::Args + Clone + fmt::Debug = NoArgs,
 > {
     /// The path to the configuration file to use.
     #[arg(long, value_name = "FILE", verbatim_doc_comment)]
@@ -131,17 +129,17 @@ impl<C: ChainSpecParser> NodeCommand<C> {
 
 impl<
         C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>,
-        Ext: clap::Args + fmt::Debug,
+        Ext: clap::Args + Clone + fmt::Debug,
     > NodeCommand<C, Ext>
 {
     /// Launches the node
     ///
     /// This transforms the node command into a node config and launches the node using the given
     /// closure.
-    pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<()>
+    pub async fn execute<L, Fut>(self, ctx: CliContext, launcher: L) -> eyre::Result<NodeExitReason>
     where
         L: FnOnce(WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>, C::ChainSpec>>, Ext) -> Fut,
-        Fut: Future<Output = eyre::Result<()>>,
+        Fut: Future<Output = eyre::Result<NodeExitReason>>,
     {
         tracing::info!(target: "reth::cli", version = ?version::SHORT_VERSION, "Starting reth");
 
@@ -198,7 +196,8 @@ impl<
             .with_database(database)
             .with_launch_context(ctx.task_executor);
 
-        launcher(builder, ext).await
+        launcher(builder, ext).await?;
+        Ok(NodeExitReason::Normal)
     }
 }
 

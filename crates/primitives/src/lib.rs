@@ -43,6 +43,8 @@ pub use constants::{
     DEV_GENESIS_HASH, EMPTY_OMMER_ROOT_HASH, HOLESKY_GENESIS_HASH, KECCAK_EMPTY,
     MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
 };
+pub mod irys;
+pub use irys::*;
 pub use receipt::{
     gas_spent_by_transactions, Receipt, ReceiptWithBloom, ReceiptWithBloomRef, Receipts,
 };
@@ -71,6 +73,8 @@ pub use transaction::{
 // Re-exports
 pub use reth_ethereum_forks::*;
 pub use revm_primitives::{self, JumpTable};
+// payload::PayloadAttributes, Genesis, GenesisAccount,
+pub use irys_primitives::{self, Genesis, GenesisAccount};
 
 #[cfg(any(test, feature = "arbitrary"))]
 pub use arbitrary;

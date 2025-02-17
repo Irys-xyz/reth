@@ -1,6 +1,7 @@
 /// Ethereum helper methods
 mod ethereum;
 pub use ethereum::EthereumHardforks;
+use serde::{Deserialize, Serialize};
 
 use crate::{ForkCondition, ForkFilter, ForkId, Hardfork, Head};
 #[cfg(feature = "std")]
@@ -44,6 +45,7 @@ pub trait Hardforks: Clone {
 
 /// Ordered list of a chain hardforks that implement [`Hardfork`].
 #[derive(Default, Clone, PartialEq, Eq)]
+// #[derive(Serialize, Deserialize)]
 pub struct ChainHardforks {
     forks: Vec<(Box<dyn Hardfork>, ForkCondition)>,
     #[cfg(feature = "std")]

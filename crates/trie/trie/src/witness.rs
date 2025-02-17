@@ -113,7 +113,7 @@ where
                 .ok_or(TrieWitnessError::MissingAccount(hashed_address))?;
             let value = if account.is_some() || storage_multiproof.root != EMPTY_ROOT_HASH {
                 account_rlp.clear();
-                TrieAccount::from((account.unwrap_or_default(), storage_multiproof.root))
+                TrieAccount::from((account.clone().unwrap_or_default(), storage_multiproof.root))
                     .encode(&mut account_rlp as &mut dyn BufMut);
                 Some(account_rlp.clone())
             } else {

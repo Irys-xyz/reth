@@ -47,7 +47,7 @@ use tracing::*;
 /// `reth debug build-block` command
 /// This debug routine requires that the node is positioned at the block before the target.
 /// The script will then parse the block and attempt to build a similar one.
-#[derive(Debug, Parser)]
+#[derive(Debug, Clone, Parser)]
 pub struct Command<C: ChainSpecParser> {
     #[command(flatten)]
     env: EnvironmentArgs<C>,
@@ -220,6 +220,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
             suggested_fee_recipient: self.suggested_fee_recipient,
             // TODO: add support for withdrawals
             withdrawals: None,
+            shadows: None,
         };
         let payload_config = PayloadConfig::new(
             Arc::clone(&best_block),

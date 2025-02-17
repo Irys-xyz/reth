@@ -12,7 +12,7 @@ use tracing::{level_filters::LevelFilter, Level};
 const MB_TO_BYTES: u64 = 1024 * 1024;
 
 /// The log configuration.
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 #[command(next_help_heading = "Logging")]
 pub struct LogArgs {
     /// The format to use for logs written to stdout.

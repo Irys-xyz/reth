@@ -14,7 +14,7 @@ use std::{
 };
 use tracing::{info, warn};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db checksum` command
 pub struct Command {
     /// The table name
@@ -119,7 +119,7 @@ impl<N: ProviderNodeTypes> TableViewer<(u64, Duration)> for ChecksumViewer<'_, N
 
             total = index + 1;
             if total >= limit {
-                break
+                break;
             }
         }
 

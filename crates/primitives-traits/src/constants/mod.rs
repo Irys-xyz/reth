@@ -141,6 +141,9 @@ pub const EMPTY_TRANSACTIONS: B256 = EMPTY_ROOT_HASH;
 /// Withdrawals root of empty withdrawals set.
 pub const EMPTY_WITHDRAWALS: B256 = EMPTY_ROOT_HASH;
 
+/// Shadows root of an empty shadows list
+pub const EMPTY_SHADOWS_ROOT: B256 = EMPTY_ROOT_HASH;
+
 /// The number of blocks to unwind during a reorg that already became a part of canonical chain.
 ///
 /// In reality, the node can end up in this particular situation very rarely. It would happen only
