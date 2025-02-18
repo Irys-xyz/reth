@@ -1,5 +1,13 @@
 //! Engine node related functionality.
 
+use crate::{
+    common::{Attached, LaunchContextWith, WithConfigs},
+    hooks::NodeHooks,
+    rpc::{launch_rpc_servers, EthApiBuilderProvider},
+    setup::build_networked_pipeline,
+    AddOns, ExExLauncher, FullNode, LaunchContext, LaunchNode, NodeAdapter,
+    NodeBuilderWithComponents, NodeComponents, NodeComponentsBuilder, NodeHandle, NodeTypesAdapter,
+};
 use alloy_rpc_types::engine::ClientVersionV1;
 use futures::{future::Either, stream, stream_select, StreamExt};
 use reth_beacon_consensus::{
@@ -34,18 +42,9 @@ use reth_rpc_engine_api::{capabilities::EngineCapabilities, EngineApi};
 use reth_tasks::TaskExecutor;
 use reth_tokio_util::EventSender;
 use reth_tracing::tracing::{debug, error, info};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::Arc;
 use tokio::sync::{mpsc::unbounded_channel, oneshot};
 use tokio_stream::wrappers::UnboundedReceiverStream;
-
-use crate::{
-    common::{Attached, LaunchContextWith, WithConfigs},
-    hooks::NodeHooks,
-    rpc::{launch_rpc_servers, EthApiBuilderProvider},
-    setup::build_networked_pipeline,
-    AddOns, ExExLauncher, FullNode, LaunchContext, LaunchNode, NodeAdapter,
-    NodeBuilderWithComponents, NodeComponents, NodeComponentsBuilder, NodeHandle, NodeTypesAdapter,
-};
 
 /// The engine node launcher.
 #[derive(Debug)]
@@ -336,7 +335,7 @@ where
             .into_built_payload_stream()
             .fuse();
         let chainspec = ctx.chain_spec();
-        let (exit, rx) = oneshot::channel();
+        let (exit, _rx) = oneshot::channel();
         info!(target: "reth::cli", "Starting consensus engine");
         ctx.task_executor().spawn_critical("consensus engine", async move {
             if let Some(initial_target) = initial_target {

@@ -3,7 +3,6 @@ use core::fmt::Display;
 use alloy_primitives::{map::HashMap, Address, U256};
 use reth_chainspec::EthereumHardforks;
 use reth_consensus_common::calc;
-use reth_execution_errors::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
     irys_primitives::{
         LastTx, ShadowReceipt, ShadowResult, ShadowTx, ShadowTxType, ShadowTxTypeId, Shadows,
@@ -19,7 +18,7 @@ use revm::{
     primitives::{AccountInfo, EVMError},
     Database, DatabaseCommit, Evm, JournalEntry, JournaledState,
 };
-use tracing::{info, trace};
+use tracing::trace;
 
 /// Collect all balance changes at the end of the block.
 ///
@@ -61,7 +60,6 @@ pub fn post_block_balance_increments<ChainSpec: EthereumHardforks>(
 
 // Applies the pre-block Irys transaction shadows, using the given block,
 /// [ChainSpec], EVM.
-///
 
 #[inline]
 pub fn apply_block_shadows<EXT, DB: Database + DatabaseCommit>(
@@ -113,6 +111,7 @@ where
     Ok(receipts)
 }
 
+/// Simulate applying the shadow. Return a receipt of success.
 pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
     shadow: ShadowTx,
     evm: &mut Evm<'_, EXT, DB>,
@@ -129,6 +128,7 @@ pub fn simulate_apply_shadow<EXT, DB: Database + DatabaseCommit>(
     return result;
 }
 
+/// Simulate applying the shadow. Return a receipt of success.
 pub fn simulate_apply_shadow_thin<DB: Database + DatabaseCommit>(
     shadow: ShadowTx,
     journaled_state: &mut JournaledState,
@@ -141,6 +141,7 @@ pub fn simulate_apply_shadow_thin<DB: Database + DatabaseCommit>(
     return result;
 }
 
+/// Apply a given shadow.
 pub fn apply_shadow<DB: Database + DatabaseCommit>(
     shadow: ShadowTx,
     journaled_state: &mut JournaledState,
@@ -148,7 +149,8 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
 ) -> Result<ShadowReceipt, EVMError<DB::Error>> {
     let address = shadow.address.clone();
     // account load procedure: load, then touch/get
-    journaled_state.load_account(address, db)?; //.map_err(|e| BlockExecutionError::Validation(BlockValidationError::EVM{hash: Default::default(), error: Box::new(e)}))?;
+    journaled_state.load_account(address, db)?; //.map_err(|e| BlockExecutionError::Validation(BlockValidationError::EVM{hash:
+                                                //.map_err(|e| Default::default(), error: Box::new(e)}))?;
                                                 // load primary account
                                                 // accounts need to be marked as `touched` if any state change happens to/from them
                                                 // if they're purely read-only, they can be left untouched.
@@ -166,7 +168,8 @@ pub fn apply_shadow<DB: Database + DatabaseCommit>(
     // };
     // primary_account.info.balance = new_balance;
 
-    // we use case breaks so we can return early from a case block without returning the entire function
+    // we use case breaks so we can return early from a case block without returning the entire
+    // function
     let res = match shadow.tx {
         ShadowTxType::Null => ShadowResult::Success,
         ShadowTxType::Data(data_shadow) => 'data_shadow: {

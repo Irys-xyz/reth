@@ -1,12 +1,11 @@
-use std::sync::{Arc, RwLock};
-
 use irys_storage::reth_provider::IrysRethProvider;
 use reth_chainspec::ChainSpec;
+use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Debug, Clone)]
 
-/// Container struct for all the objects we want to route through to reth
+/// Container struct for all the objects we want to route through to reth.
 pub struct IrysExt {
     /// deprecated
     pub reload: Arc<RwLock<UnboundedSender<ReloadPayload>>>,

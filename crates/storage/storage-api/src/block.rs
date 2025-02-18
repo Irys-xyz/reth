@@ -6,7 +6,8 @@ use alloy_eips::{BlockHashOrNumber, BlockId, BlockNumberOrTag};
 use alloy_primitives::{BlockNumber, Sealable, B256};
 use reth_db_models::StoredBlockBodyIndices;
 use reth_primitives::{
-    irys_primitives::Shadows, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader
+    irys_primitives::Shadows, Block, BlockWithSenders, Header, Receipt, SealedBlock,
+    SealedBlockWithSenders, SealedHeader,
 };
 use reth_storage_errors::provider::ProviderResult;
 use std::ops::RangeInclusive;
@@ -94,7 +95,6 @@ pub trait BlockReader:
     /// Returns `None` if block is not found.
     fn shadows(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>>;
 
-
     /// Returns the block with matching hash from the database.
     ///
     /// Returns `None` if block is not found.
@@ -154,8 +154,6 @@ pub trait BlockReader:
         &self,
         range: RangeInclusive<BlockNumber>,
     ) -> ProviderResult<Vec<SealedBlockWithSenders>>;
-
-
 }
 
 /// Trait extension for `BlockReader`, for types that implement `BlockId` conversion.
@@ -286,12 +284,9 @@ pub trait BlockReaderIdExt: BlockReader + ReceiptProviderIdExt {
     ///
     /// Returns `None` if block is not found.
     fn ommers_by_id(&self, id: BlockId) -> ProviderResult<Option<Vec<Header>>>;
-    
+
     /// Returns the shadows with a matching `BlockId` from the database.
-    /// 
+    ///
     /// Returns `None` is the block isn't found
     fn shadows_by_id(&self, id: BlockId) -> ProviderResult<Option<Shadows>>;
-
-
-
 }

@@ -1315,8 +1315,8 @@ where
             .provider_factory
             .static_file_provider()
             .get_highest_static_file_block(StaticFileSegment::Headers)
-            .unwrap_or_default()
-            > revert_until
+            .unwrap_or_default() >
+            revert_until
         {
             trace!(
                 target: "blockchain_tree",

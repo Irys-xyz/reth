@@ -24,14 +24,14 @@ use reth_revm::{
     batch::BlockBatchRecord,
     db::{states::bundle_state::BundleRetention, State},
     state_change::{apply_block_shadows, post_block_balance_increments},
-    Evm
+    Evm,
 };
 
 use revm_primitives::{
     db::{Database, DatabaseCommit},
     BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState, B256,
 };
-use tracing::{info};
+use tracing::info;
 /// Provides executors to execute regular ethereum blocks
 #[derive(Debug, Clone)]
 pub struct EthExecutorProvider<EvmConfig = EthEvmConfig> {
@@ -171,10 +171,7 @@ where
         let shadow_exec =
             apply_block_shadows(block.body.shadows.as_ref(), &mut evm).map_err(move |err| {
                 let new_err = err.map_db_err(|e| e.into());
-                BlockValidationError::EVM {
-                    hash: B256::ZERO,
-                    error: Box::new(new_err),
-                }
+                BlockValidationError::EVM { hash: B256::ZERO, error: Box::new(new_err) }
             })?;
         info!("shadow exec: {:#?}", &shadow_exec);
         let ss = evm.context.evm.inner.journaled_state.state.clone();
@@ -1292,7 +1289,12 @@ mod tests {
 
         db.insert_account(
             sender_address,
-            Account { nonce: 1, balance: U256::from(ETH_TO_WEI), bytecode_hash: None, ..Default::default() },
+            Account {
+                nonce: 1,
+                balance: U256::from(ETH_TO_WEI),
+                bytecode_hash: None,
+                ..Default::default()
+            },
             None,
             HashMap::default(),
         );
@@ -1375,7 +1377,12 @@ mod tests {
         // Insert the sender account into the state with a nonce of 1 and a balance of 1 ETH in Wei
         db.insert_account(
             sender_address,
-            Account { nonce: 1, balance: U256::from(ETH_TO_WEI), bytecode_hash: None, ..Default::default() },
+            Account {
+                nonce: 1,
+                balance: U256::from(ETH_TO_WEI),
+                bytecode_hash: None,
+                ..Default::default()
+            },
             None,
             HashMap::default(),
         );

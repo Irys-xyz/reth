@@ -16,7 +16,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use tracing::{info, warn};
+use tracing::info;
 
 #[derive(Parser, Debug, Clone)]
 /// The arguments for the `reth db diff` command
@@ -52,12 +52,14 @@ impl Command {
     ///
     /// The discrepancies and extra elements, along with a brief summary of the diff results are
     /// then written to a file in the output directory.
+    #[allow(unused_variables)]
     pub fn execute<T: NodeTypesWithEngine>(
         self,
         tool: &DbTool<NodeTypesWithDBAdapter<T, Arc<DatabaseEnv>>>,
     ) -> eyre::Result<()> {
         todo!(); // disabled due to needing the tables_to_generic! macro, which causes issues.
-        warn!("Make sure the node is not running when running `reth db diff`!");
+        #[allow(unreachable_code)]
+        // warn!("Make sure the node is not running when running `reth db diff`!");
         // open second db
         let second_db_path: PathBuf = self.secondary_datadir.join("db").into();
         let second_db = open_db_read_only(&second_db_path, self.second_db.database_args())?;
@@ -67,7 +69,7 @@ impl Command {
             None => Tables::ALL,
         };
 
-        for table in tables {
+        for _table in tables {
             let mut primary_tx = tool.provider_factory.db_ref().tx()?;
             let mut secondary_tx = second_db.tx()?;
 
@@ -76,7 +78,7 @@ impl Command {
             primary_tx.disable_long_read_transaction_safety();
             secondary_tx.disable_long_read_transaction_safety();
 
-            let output_dir = self.output.clone();
+            let _output_dir = self.output.clone();
             // tables_to_generic!(table, |Table| find_diffs::<Table>(
             //     primary_tx,
             //     secondary_tx,
@@ -89,7 +91,7 @@ impl Command {
 }
 
 /// Find diffs for a table, then analyzing the result
-fn find_diffs<T: Table>(
+fn _find_diffs<T: Table>(
     primary_tx: impl DbTx,
     secondary_tx: impl DbTx,
     output_dir: impl AsRef<Path>,
@@ -170,6 +172,7 @@ where
     Ok(())
 }
 
+#[allow(dead_code)]
 /// This diff algorithm is slightly different, it will walk _each_ table, cross-checking for the
 /// element in the other table.
 fn find_diffs_advanced<T: Table>(
@@ -272,6 +275,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 impl<T: Table> TableDiffResult<T>
 where
     T::Key: Hash,

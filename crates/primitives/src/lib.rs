@@ -43,6 +43,7 @@ pub use constants::{
     DEV_GENESIS_HASH, EMPTY_OMMER_ROOT_HASH, HOLESKY_GENESIS_HASH, KECCAK_EMPTY,
     MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
 };
+/// Irys module.
 pub mod irys;
 pub use irys::*;
 pub use receipt::{

@@ -9,12 +9,12 @@ use alloy_eips::eip2718::Encodable2718;
 use alloy_primitives::{Address, Bytes, Sealable, B256};
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use derive_more::{Deref, DerefMut};
+use irys_primitives::Shadows;
 #[cfg(any(test, feature = "arbitrary"))]
 use proptest::prelude::prop_compose;
 #[cfg(any(test, feature = "arbitrary"))]
 pub use reth_primitives_traits::test_utils::{generate_valid_header, valid_header_strategy};
 use reth_primitives_traits::Requests;
-use irys_primitives::Shadows;
 use serde::{Deserialize, Serialize};
 
 // HACK(onbjerg): we need this to always set `requests` to `None` since we might otherwise generate
@@ -124,7 +124,7 @@ mod block_rlp {
         ommers: Vec<Header>,
         withdrawals: Option<Withdrawals>,
         requests: Option<Requests>,
-        shadows: Option<Shadows>
+        shadows: Option<Shadows>,
     }
 
     #[derive(RlpEncodable)]
@@ -135,21 +135,22 @@ mod block_rlp {
         ommers: &'a Vec<Header>,
         withdrawals: Option<&'a Withdrawals>,
         requests: Option<&'a Requests>,
-        shadows: Option<&'a Shadows>
-
+        shadows: Option<&'a Shadows>,
     }
 
     impl<'a> From<&'a Block> for HelperRef<'a, Header> {
         fn from(block: &'a Block) -> Self {
-            let Block { header, body: BlockBody { transactions, ommers, withdrawals, requests, shadows } } =
-                block;
+            let Block {
+                header,
+                body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
+            } = block;
             Self {
                 header,
                 transactions,
                 ommers,
                 withdrawals: withdrawals.as_ref(),
                 requests: requests.as_ref(),
-                shadows: shadows.as_ref()
+                shadows: shadows.as_ref(),
             }
         }
     }
@@ -166,22 +167,30 @@ mod block_rlp {
                 ommers,
                 withdrawals: withdrawals.as_ref(),
                 requests: requests.as_ref(),
-                shadows: shadows.as_ref()
+                shadows: shadows.as_ref(),
             }
         }
     }
 
     impl Decodable for Block {
         fn decode(b: &mut &[u8]) -> alloy_rlp::Result<Self> {
-            let Helper { header, transactions, ommers, withdrawals, requests, shadows } = Helper::decode(b)?;
-            Ok(Self { header, body: BlockBody { transactions, ommers, withdrawals, requests, shadows } })
+            let Helper { header, transactions, ommers, withdrawals, requests, shadows } =
+                Helper::decode(b)?;
+            Ok(Self {
+                header,
+                body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
+            })
         }
     }
 
     impl Decodable for SealedBlock {
         fn decode(b: &mut &[u8]) -> alloy_rlp::Result<Self> {
-            let Helper { header, transactions, ommers, withdrawals, requests, shadows } = Helper::decode(b)?;
-            Ok(Self { header, body: BlockBody { transactions, ommers, withdrawals, requests, shadows } })
+            let Helper { header, transactions, ommers, withdrawals, requests, shadows } =
+                Helper::decode(b)?;
+            Ok(Self {
+                header,
+                body: BlockBody { transactions, ommers, withdrawals, requests, shadows },
+            })
         }
     }
 
@@ -229,7 +238,7 @@ impl<'a> arbitrary::Arbitrary<'a> for Block {
                 // for now just generate empty requests, see HACK above
                 requests: u.arbitrary()?,
                 withdrawals: u.arbitrary()?,
-                shadows: None
+                shadows: None,
             },
         })
     }
@@ -596,6 +605,7 @@ impl BlockBody {
         crate::proofs::calculate_transaction_root(&self.transactions)
     }
 
+    /// Determine and return (if the field exists) the Shadow's root hash.
     pub fn calculate_shadows_root(&self) -> Option<B256> {
         match &self.shadows {
             Some(shadows) => Some(crate::proofs::calculate_shadows_root(shadows)),
@@ -688,7 +698,7 @@ impl From<Block> for BlockBody {
             ommers: block.body.ommers,
             withdrawals: block.body.withdrawals,
             requests: block.body.requests,
-            shadows: block.body.shadows
+            shadows: block.body.shadows,
         }
     }
 }
@@ -711,7 +721,13 @@ impl<'a> arbitrary::Arbitrary<'a> for BlockBody {
             .collect::<arbitrary::Result<Vec<_>>>()?;
 
         // for now just generate empty requests, see HACK above
-        Ok(Self { transactions, ommers, requests: None, withdrawals: u.arbitrary()?, shadows: None })
+        Ok(Self {
+            transactions,
+            ommers,
+            requests: None,
+            withdrawals: u.arbitrary()?,
+            shadows: None,
+        })
     }
 }
 
@@ -721,8 +737,8 @@ pub(super) mod serde_bincode_compat {
     use alloc::{borrow::Cow, vec::Vec};
     use alloy_consensus::serde_bincode_compat::Header;
     use alloy_primitives::Address;
-    use reth_primitives_traits::{serde_bincode_compat::SealedHeader, Requests, Withdrawals};
     use irys_primitives::Shadows;
+    use reth_primitives_traits::{serde_bincode_compat::SealedHeader, Requests, Withdrawals};
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use serde_with::{DeserializeAs, SerializeAs};
 
@@ -749,7 +765,7 @@ pub(super) mod serde_bincode_compat {
         ommers: Vec<Header<'a>>,
         withdrawals: Cow<'a, Option<Withdrawals>>,
         requests: Cow<'a, Option<Requests>>,
-        shadows: Cow<'a, Option<Shadows>>
+        shadows: Cow<'a, Option<Shadows>>,
     }
 
     impl<'a> From<&'a super::BlockBody> for BlockBody<'a> {
@@ -759,7 +775,7 @@ pub(super) mod serde_bincode_compat {
                 ommers: value.ommers.iter().map(Into::into).collect(),
                 withdrawals: Cow::Borrowed(&value.withdrawals),
                 requests: Cow::Borrowed(&value.requests),
-                shadows: Cow::Borrowed(&value.shadows)
+                shadows: Cow::Borrowed(&value.shadows),
             }
         }
     }
@@ -771,7 +787,7 @@ pub(super) mod serde_bincode_compat {
                 ommers: value.ommers.into_iter().map(Into::into).collect(),
                 withdrawals: value.withdrawals.into_owned(),
                 requests: value.requests.into_owned(),
-                shadows: value.shadows.into_owned()
+                shadows: value.shadows.into_owned(),
             }
         }
     }

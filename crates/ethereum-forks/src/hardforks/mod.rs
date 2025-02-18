@@ -1,7 +1,6 @@
 /// Ethereum helper methods
 mod ethereum;
 pub use ethereum::EthereumHardforks;
-use serde::{Deserialize, Serialize};
 
 use crate::{ForkCondition, ForkFilter, ForkId, Hardfork, Head};
 #[cfg(feature = "std")]

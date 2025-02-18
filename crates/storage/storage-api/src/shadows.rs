@@ -6,8 +6,5 @@ use reth_storage_errors::provider::ProviderResult;
 #[auto_impl::auto_impl(&, Arc)]
 pub trait ShadowsProvider: Send + Sync {
     /// Get withdrawals by block id.
-    fn shadows_by_block(
-        &self,
-        id: BlockHashOrNumber
-    ) -> ProviderResult<Option<Shadows>>;
+    fn shadows_by_block(&self, id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>>;
 }

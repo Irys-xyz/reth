@@ -49,9 +49,9 @@ pub trait PayloadTypes: Send + Sync + Unpin + core::fmt::Debug + Clone + 'static
 ///
 /// Otherwise, this will return [`EngineObjectValidationError::UnsupportedFork`].
 pub fn validate_payload_timestamp(
-    chain_spec: impl EthereumHardforks,
-    version: EngineApiMessageVersion,
-    timestamp: u64,
+    _chain_spec: impl EthereumHardforks,
+    _version: EngineApiMessageVersion,
+    _timestamp: u64,
 ) -> Result<(), EngineObjectValidationError> {
     // let is_cancun = chain_spec.is_cancun_active_at_timestamp(timestamp);
     // if version == EngineApiMessageVersion::V1Irys && is_cancun {
@@ -70,9 +70,9 @@ pub fn validate_payload_timestamp(
     //     //
     //     // a validation **MUST** be added:
     //     //
-    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-    //     //    payload or payloadAttributes is greater or equal to the Cancun activation timestamp.
-    //     return Err(EngineObjectValidationError::UnsupportedFork);
+    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp`
+    // of     //    payload or payloadAttributes is greater or equal to the Cancun activation
+    // timestamp.     return Err(EngineObjectValidationError::UnsupportedFork);
     // }
 
     // if version == EngineApiMessageVersion::V3 && !is_cancun {
@@ -81,19 +81,19 @@ pub fn validate_payload_timestamp(
     //     //
     //     // For `engine_getPayloadV3`:
     //     //
-    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-    //     //    the built payload does not fall within the time frame of the Cancun fork.
+    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp`
+    // of     //    the built payload does not fall within the time frame of the Cancun fork.
     //     //
     //     // For `engine_forkchoiceUpdatedV3`:
     //     //
     //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the
-    //     //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall within
-    //     //    the time frame of the Cancun fork.
+    //     //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall
+    // within     //    the time frame of the Cancun fork.
     //     //
     //     // For `engine_newPayloadV3`:
     //     //
-    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-    //     //    the payload does not fall within the time frame of the Cancun fork.
+    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp`
+    // of     //    the payload does not fall within the time frame of the Cancun fork.
     //     return Err(EngineObjectValidationError::UnsupportedFork);
     // }
 
@@ -104,19 +104,19 @@ pub fn validate_payload_timestamp(
     //     //
     //     // For `engine_getPayloadV4`:
     //     //
-    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-    //     //    the built payload does not fall within the time frame of the Prague fork.
+    //     // 1. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp`
+    // of     //    the built payload does not fall within the time frame of the Prague fork.
     //     //
     //     // For `engine_forkchoiceUpdatedV4`:
     //     //
     //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the
-    //     //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall within
-    //     //    the time frame of the Prague fork.
+    //     //    `payloadAttributes` is set and the `payloadAttributes.timestamp` does not fall
+    // within     //    the time frame of the Prague fork.
     //     //
     //     // For `engine_newPayloadV4`:
     //     //
-    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp` of
-    //     //    the payload does not fall within the time frame of the Prague fork.
+    //     // 2. Client software **MUST** return `-38005: Unsupported fork` error if the `timestamp`
+    // of     //    the payload does not fall within the time frame of the Prague fork.
     //     return Err(EngineObjectValidationError::UnsupportedFork);
     // }
     Ok(())
@@ -126,11 +126,11 @@ pub fn validate_payload_timestamp(
 /// After Shanghai, withdrawals field must be [Some].
 /// Before Shanghai, withdrawals field must be [None];
 pub fn validate_withdrawals_presence(
-    chain_spec: &ChainSpec,
-    version: EngineApiMessageVersion,
-    message_validation_kind: MessageValidationKind,
-    timestamp: u64,
-    has_withdrawals: bool,
+    _chain_spec: &ChainSpec,
+    _version: EngineApiMessageVersion,
+    _message_validation_kind: MessageValidationKind,
+    _timestamp: u64,
+    _has_withdrawals: bool,
 ) -> Result<(), EngineObjectValidationError> {
     // let is_shanghai_active = chain_spec.is_shanghai_active_at_timestamp(timestamp);
 
@@ -141,8 +141,8 @@ pub fn validate_withdrawals_presence(
     //                 .to_error(VersionSpecificValidationError::WithdrawalsNotSupportedInV1));
     //         }
     //     }
-    //     EngineApiMessageVersion::V2 | EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4 => {
-    //         if is_shanghai_active && !has_withdrawals {
+    //     EngineApiMessageVersion::V2 | EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4
+    // => {         if is_shanghai_active && !has_withdrawals {
     //             return Err(message_validation_kind
     //                 .to_error(VersionSpecificValidationError::NoWithdrawalsPostShanghai));
     //         }
@@ -215,11 +215,11 @@ pub fn validate_withdrawals_presence(
 /// parameter is `MessageValidationKind::PayloadAttributes`, then the error code will be `-38003:
 /// Invalid payload attributes`.
 pub fn validate_parent_beacon_block_root_presence(
-    chain_spec: &ChainSpec,
-    version: EngineApiMessageVersion,
-    validation_kind: MessageValidationKind,
-    timestamp: u64,
-    has_parent_beacon_block_root: bool,
+    _chain_spec: &ChainSpec,
+    _version: EngineApiMessageVersion,
+    _validation_kind: MessageValidationKind,
+    _timestamp: u64,
+    _has_parent_beacon_block_root: bool,
 ) -> Result<(), EngineObjectValidationError> {
     // 1. Client software **MUST** check that provided set of parameters and their fields strictly
     //    matches the expected one and return `-32602: Invalid params` error if this check fails.
@@ -249,8 +249,8 @@ pub fn validate_parent_beacon_block_root_presence(
     //     EngineApiMessageVersion::V3 | EngineApiMessageVersion::V4 => {
     //         if !has_parent_beacon_block_root {
     //             return Err(validation_kind
-    //                 .to_error(VersionSpecificValidationError::NoParentBeaconBlockRootPostCancun));
-    //         }
+    //
+    // .to_error(VersionSpecificValidationError::NoParentBeaconBlockRootPostCancun));         }
     //     }
     // };
 
@@ -344,6 +344,7 @@ pub enum EngineApiMessageVersion {
     // ///
     // /// Added in the Prague hardfork.
     // V4,
+    /// Irys V1.
     V1Irys,
 }
 

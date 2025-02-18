@@ -55,7 +55,7 @@ impl<ChainSpec: EthereumHardforks> ExecutionPayloadValidator<ChainSpec> {
     ///
     /// Ensures that the number of blob versioned hashes matches the number hashes included in the
     /// _separate_ `block_versioned_hashes` of the cancun payload fields.
-    fn ensure_matching_blob_versioned_hashes(
+    fn _ensure_matching_blob_versioned_hashes(
         &self,
         sealed_block: &SealedBlock,
         cancun_fields: &MaybeCancunPayloadFields,

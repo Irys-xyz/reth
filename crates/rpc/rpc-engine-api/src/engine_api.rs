@@ -2,13 +2,11 @@ use crate::{
     capabilities::EngineCapabilities, metrics::EngineApiMetrics, EngineApiError, EngineApiResult,
 };
 use alloy_eips::eip4844::BlobAndProofV1;
-use alloy_primitives::Sealable;
 use alloy_primitives::{BlockHash, BlockNumber, B256, U64};
 use alloy_rpc_types_engine::{
-    CancunPayloadFields, ClientVersionV1, ExecutionPayload, ExecutionPayloadBodiesV1,
-    ExecutionPayloadBodiesV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV1Irys,
-    ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId,
-    PayloadStatus, TransitionConfiguration,
+    ClientVersionV1, ExecutionPayload, ExecutionPayloadBodiesV1, ExecutionPayloadBodiesV2,
+    ExecutionPayloadV1Irys, ForkchoiceState, ForkchoiceUpdated, PayloadId, PayloadStatus,
+    TransitionConfiguration,
 };
 use async_trait::async_trait;
 use jsonrpsee_core::RpcResult;
@@ -17,16 +15,14 @@ use reth_chainspec::{EthereumHardforks, Hardforks};
 use reth_engine_primitives::{BuiltPayload, EngineTypes, EngineValidator, PayloadTypes};
 use reth_evm::provider::EvmEnvProvider;
 use reth_payload_builder::PayloadStore;
-use reth_payload_primitives::PayloadBuilder;
 use reth_payload_primitives::{
-    validate_payload_timestamp, EngineApiMessageVersion, PayloadBuilderAttributes,
+    validate_payload_timestamp, EngineApiMessageVersion, PayloadBuilder, PayloadBuilderAttributes,
     PayloadOrAttributes,
 };
 use reth_primitives::{Block, BlockHashOrNumber, EthereumHardfork};
 use reth_rpc_api::EngineApiServer;
 use reth_rpc_types_compat::engine::payload::{
-    block_to_payload_v1_irys, convert_payload_input_v2_to_payload, convert_to_payload_body_v1,
-    convert_to_payload_body_v2,
+    block_to_payload_v1_irys, convert_to_payload_body_v1, convert_to_payload_body_v2,
 };
 use reth_storage_api::{BlockReader, HeaderProvider, StateProviderFactory};
 use reth_tasks::TaskSpawner;
@@ -47,7 +43,7 @@ const MAX_BLOB_LIMIT: usize = 128;
 /// The Engine API implementation that grants the Consensus layer access to data and
 /// functions in the Execution layer that are crucial for the consensus process.
 pub struct EngineApi<Provider, EngineT: EngineTypes, Pool, Validator, ChainSpec> {
-    pub inner: Arc<EngineApiInner<Provider, EngineT, Pool, Validator, ChainSpec>>,
+    inner: Arc<EngineApiInner<Provider, EngineT, Pool, Validator, ChainSpec>>,
 }
 
 struct EngineApiInner<Provider, EngineT: EngineTypes, Pool, Validator, ChainSpec> {
@@ -308,8 +304,8 @@ where
     //         .await
     // }
 
-    // /// Sends a message to the beacon consensus engine to update the fork choice _with_ withdrawals,
-    // /// but only _after_ shanghai.
+    // /// Sends a message to the beacon consensus engine to update the fork choice _with_
+    // withdrawals, /// but only _after_ shanghai.
     // ///
     // /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/shanghai.md#engine_forkchoiceupdatedv2>
     // pub async fn fork_choice_updated_v2(
@@ -321,8 +317,8 @@ where
     //         .await
     // }
 
-    // /// Sends a message to the beacon consensus engine to update the fork choice _with_ withdrawals,
-    // /// but only _after_ cancun.
+    // /// Sends a message to the beacon consensus engine to update the fork choice _with_
+    // withdrawals, /// but only _after_ cancun.
     // ///
     // /// See also  <https://github.com/ethereum/execution-apis/blob/main/src/engine/cancun.md#engine_forkchoiceupdatedv3>
     // pub async fn fork_choice_updated_v3(
@@ -376,7 +372,7 @@ where
                 .expect("unable to build payload");
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             // todo: redo this
-            let b = loop {
+            let _b = loop {
                 match self.inner.payload_store.inner.best_payload(payload_id).await {
                     Some(v) => match v {
                         Ok(v) => {
@@ -416,8 +412,8 @@ where
     //     block_id: B256,
     //     shadows: Shadows,
     // ) -> EngineApiResult<ShadowSubmission> {
-    //     // self.validate_and_execute_forkchoice(EngineApiMessageVersion::V1Irys, state, payload_attrs)
-    //     //     .await
+    //     // self.validate_and_execute_forkchoice(EngineApiMessageVersion::V1Irys, state,
+    // payload_attrs)     //     .await
     //     // self.inner.provider.insert_block(block, prune_modes)
     //     // todo!();
     //     // Ok(?)
@@ -769,6 +765,7 @@ where
         self.get_payload_bodies_by_hash_with(hashes, convert_to_payload_body_v2).await
     }
 
+    /// Get some payload from a BlockHash.
     pub fn get_full_payload_by_hash(
         &self,
         hash: BlockHash,
@@ -798,6 +795,8 @@ where
 
         // Ok(result)
     }
+
+    /// Get a full payload at a specific height.
     pub fn get_full_payload_by_height(
         &self,
         height: u64,
@@ -946,8 +945,8 @@ where
 
     // /// Handler for `engine_newPayloadV2`
     // /// See also <https://github.com/ethereum/execution-apis/blob/584905270d8ad665718058060267061ecfd79ca5/src/engine/shanghai.md#engine_newpayloadv2>
-    // async fn new_payload_v2(&self, payload: ExecutionPayloadInputV2) -> RpcResult<PayloadStatus> {
-    //     trace!(target: "rpc::engine", "Serving engine_newPayloadV2");
+    // async fn new_payload_v2(&self, payload: ExecutionPayloadInputV2) -> RpcResult<PayloadStatus>
+    // {     trace!(target: "rpc::engine", "Serving engine_newPayloadV2");
     //     let start = Instant::now();
     //     let gas_used = payload.execution_payload.gas_used;
     //     let res = Self::new_payload_v2(self, payload).await;
@@ -981,11 +980,11 @@ where
 
     //         let gas_used = payload.payload_inner.payload_inner.gas_used;
     //         let res =
-    //             Self::new_payload_v3(self, payload, versioned_hashes, parent_beacon_block_root).await;
-    //         let elapsed = start.elapsed();
+    //             Self::new_payload_v3(self, payload, versioned_hashes,
+    // parent_beacon_block_root).await;         let elapsed = start.elapsed();
     //         self.inner.metrics.latency.new_payload_v3.record(elapsed);
-    //         self.inner.metrics.new_payload_response.update_response_metrics(&res, gas_used, elapsed);
-    //         Ok(res?)
+    //         self.inner.metrics.new_payload_response.update_response_metrics(&res, gas_used,
+    // elapsed);         Ok(res?)
     //     }
 
     // /// Handler for `engine_newPayloadV4`
@@ -1000,8 +999,8 @@ where
     //     let start = Instant::now();
     //     let gas_used = payload.payload_inner.payload_inner.payload_inner.gas_used;
     //     let res =
-    //         Self::new_payload_v4(self, payload, versioned_hashes, parent_beacon_block_root).await;
-    //     let elapsed = start.elapsed();
+    //         Self::new_payload_v4(self, payload, versioned_hashes,
+    // parent_beacon_block_root).await;     let elapsed = start.elapsed();
     //     self.inner.metrics.latency.new_payload_v4.record(elapsed);
     //     self.inner.metrics.new_payload_response.update_response_metrics(&res, gas_used, elapsed);
     //     Ok(res?)
@@ -1358,8 +1357,8 @@ mod tests {
                 blocks
                     .iter()
                     .filter(|b| {
-                        !first_missing_range.contains(&b.number)
-                            && !second_missing_range.contains(&b.number)
+                        !first_missing_range.contains(&b.number) &&
+                            !second_missing_range.contains(&b.number)
                     })
                     .map(|b| (b.hash(), b.clone().unseal())),
             );
@@ -1388,8 +1387,8 @@ mod tests {
                 // ensure we still return trailing `None`s here because by-hash will not be aware
                 // of the missing block's number, and cannot compare it to the current best block
                 .map(|b| {
-                    if first_missing_range.contains(&b.number)
-                        || second_missing_range.contains(&b.number)
+                    if first_missing_range.contains(&b.number) ||
+                        second_missing_range.contains(&b.number)
                     {
                         None
                     } else {
@@ -1419,8 +1418,8 @@ mod tests {
                     .chain_spec
                     .fork(EthereumHardfork::Paris)
                     .ttd()
-                    .unwrap()
-                    + U256::from(1),
+                    .unwrap() +
+                    U256::from(1),
                 ..Default::default()
             };
 

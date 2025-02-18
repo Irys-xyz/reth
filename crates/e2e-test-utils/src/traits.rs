@@ -1,6 +1,4 @@
 use alloy_rpc_types::engine::{ExecutionPayloadEnvelopeV1Irys, ExecutionPayloadV1Irys};
-use op_alloy_rpc_types_engine::OpExecutionPayloadEnvelopeV3;
-use reth::rpc::types::engine::{ExecutionPayloadEnvelopeV3, ExecutionPayloadV3};
 
 /// The execution payload envelope type.
 pub trait PayloadEnvelopeExt: Send + Sync + std::fmt::Debug {
@@ -19,7 +17,6 @@ pub trait PayloadEnvelopeExt: Send + Sync + std::fmt::Debug {
 //         self.execution_payload.clone()
 //     }
 // }
-
 
 impl PayloadEnvelopeExt for ExecutionPayloadEnvelopeV1Irys {
     fn execution_payload(&self) -> ExecutionPayloadV1Irys {

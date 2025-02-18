@@ -20,14 +20,19 @@ use reth_db_api::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;
 use reth_node_types::NodeTypesWithDB;
 use reth_primitives::{
-    irys_primitives::Shadows, Account, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
+    irys_primitives::Shadows, Account, Block, BlockWithSenders, Header, Receipt, SealedBlock,
+    SealedBlockWithSenders, SealedHeader, TransactionMeta, TransactionSigned,
+    TransactionSignedNoHash, Withdrawal, Withdrawals,
 };
 use reth_prune_types::{PruneCheckpoint, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
 use reth_storage_errors::provider::ProviderResult;
-use revm::primitives::{ BlockEnv, CfgEnvWithHandlerCfg};
+use revm::primitives::{BlockEnv, CfgEnvWithHandlerCfg};
 use std::{
-    collections::BTreeMap, fmt, ops::{RangeBounds, RangeInclusive}, sync::Arc, time::Instant
+    collections::BTreeMap,
+    ops::{RangeBounds, RangeInclusive},
+    sync::Arc,
+    time::Instant,
 };
 use tracing::trace;
 
@@ -975,14 +980,14 @@ impl<N: ProviderNodeTypes> AccountReader for BlockchainProvider<N> {
 // where
 //     DB: Database,
 // {
-//     fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> ProviderResult<ShadowSubmission> {
-//         self.tx.put::<tables::BlockShadows>(
+//     fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> ProviderResult<ShadowSubmission>
+// {         self.tx.put::<tables::BlockShadows>(
 //             self.block_number(block_hash)?.unwrap(),
 //             StoredBlockShadows { shadows },
 //         )?;
 
-//         // match self.tx.put::<tables::BlockShadows>(block_hash, StoredBlockShadows { shadows }) {
-//         //     Ok(_) => {
+//         // match self.tx.put::<tables::BlockShadows>(block_hash, StoredBlockShadows { shadows })
+// {         //     Ok(_) => {
 //         //         Ok(ShadowSubmission::new())
 //         //     },
 //         //     Err(e) => {

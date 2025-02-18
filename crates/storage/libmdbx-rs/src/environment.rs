@@ -231,6 +231,7 @@ impl Environment {
 ///
 /// This holds the raw pointer to the MDBX environment and the transaction manager.
 /// The env is opened via [`mdbx_env_create`](ffi::mdbx_env_create) and closed when this type drops.
+#[derive(Debug)]
 pub struct EnvironmentInner {
     /// The raw pointer to the MDBX environment.
     ///

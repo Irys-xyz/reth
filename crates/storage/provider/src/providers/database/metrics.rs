@@ -118,7 +118,7 @@ struct DatabaseProviderMetrics {
     /// Duration of get parent TD
     get_parent_td: Histogram,
     /// Duration of insert block shadows
-    insert_block_shadows: Histogram
+    insert_block_shadows: Histogram,
 }
 
 impl DatabaseProviderMetrics {

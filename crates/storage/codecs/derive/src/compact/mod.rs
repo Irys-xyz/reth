@@ -143,11 +143,10 @@ fn load_field_from_segments(
         if is_enum {
             fields.push(FieldTypes::EnumUnnamedField((ftype, use_alt_impl)));
         } else {
-            let should_compact = is_flag_type(&ftype)
-                || field
-                    .attrs
-                    .iter()
-                    .any(|attr| attr.path().segments.iter().any(|path| path.ident == "maybe_zero"));
+            let should_compact = is_flag_type(&ftype) ||
+                field.attrs.iter().any(|attr| {
+                    attr.path().segments.iter().any(|path| path.ident == "maybe_zero")
+                });
 
             fields.push(FieldTypes::StructField((
                 field.ident.as_ref().map(|i| i.to_string()).unwrap_or_default(),

@@ -35,8 +35,10 @@ pub use crate::core::cli::*;
 /// This is the entrypoint to the executable.
 #[derive(Debug, Parser, Clone)]
 #[command(author, version = SHORT_VERSION, long_version = LONG_VERSION, about = "Reth", long_about = None)]
-pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + Clone + fmt::Debug = NoArgs>
-{
+pub struct Cli<
+    C: ChainSpecParser = EthereumChainSpecParser,
+    Ext: clap::Args + Clone + fmt::Debug = NoArgs,
+> {
     /// The command to run
     #[command(subcommand)]
     pub command: Commands<C, Ext>,
@@ -71,6 +73,7 @@ pub struct Cli<C: ChainSpecParser = EthereumChainSpecParser, Ext: clap::Args + C
     pub instance: u16,
 
     #[command(flatten)]
+    /// Type of Log Configuration.
     pub logs: LogArgs,
 }
 

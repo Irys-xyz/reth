@@ -42,7 +42,11 @@ pub enum Subcommands<C: ChainSpecParser> {
 
 impl<C: ChainSpecParser<ChainSpec: EthChainSpec + EthereumHardforks>> Command<C> {
     /// Execute `stage` command
-    pub async fn execute<N, E, F>(self, ctx: CliContext, executor: F) -> eyre::Result<NodeExitReason>
+    pub async fn execute<N, E, F>(
+        self,
+        ctx: CliContext,
+        executor: F,
+    ) -> eyre::Result<NodeExitReason>
     where
         N: NodeTypesWithEngine<ChainSpec = C::ChainSpec>,
         E: BlockExecutorProvider,

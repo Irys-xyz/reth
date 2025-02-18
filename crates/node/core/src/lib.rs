@@ -12,6 +12,7 @@ pub mod args;
 pub mod cli;
 pub mod dirs;
 pub mod exit;
+/// The external Irys module.
 pub mod irys_ext;
 pub mod node_config;
 pub mod utils;

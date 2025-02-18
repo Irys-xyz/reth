@@ -1,6 +1,6 @@
 //! Block related models and types.
 
-use reth_primitives::{irys_primitives::shadow::Shadows,  Withdrawals};
+use reth_primitives::{irys_primitives::shadow::Shadows, Withdrawals};
 use std::ops::Range;
 
 use alloy_primitives::{TxNumber, B256};
@@ -78,6 +78,7 @@ pub struct StoredBlockWithdrawals {
     pub withdrawals: Withdrawals,
 }
 
+/// Struct containing a vector of ShadowTx type.
 #[derive(Debug, Default, Eq, PartialEq, Clone, Serialize, Deserialize, Compact)]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
 #[add_arbitrary_tests(compact)]

@@ -24,8 +24,6 @@ use reth_payload_primitives::{
     PayloadOrAttributes, PayloadTypes,
 };
 
-
-
 /// The types used in the default mainnet ethereum beacon consensus engine.
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
@@ -45,14 +43,13 @@ where
         + TryInto<ExecutionPayloadEnvelopeV2>
         + TryInto<ExecutionPayloadEnvelopeV3>
         + TryInto<ExecutionPayloadEnvelopeV4>
-        +TryInto<ExecutionPayloadEnvelopeV1Irys>,
+        + TryInto<ExecutionPayloadEnvelopeV1Irys>,
 {
     type ExecutionPayloadV1 = ExecutionPayloadV1;
     type ExecutionPayloadV2 = ExecutionPayloadEnvelopeV2;
     type ExecutionPayloadV3 = ExecutionPayloadEnvelopeV3;
     type ExecutionPayloadV4 = ExecutionPayloadEnvelopeV4;
     type ExecutionPayloadV1Irys = ExecutionPayloadEnvelopeV1Irys;
-
 }
 
 /// A default payload type for [`EthEngineTypes`]

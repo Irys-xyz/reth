@@ -13,7 +13,6 @@
 use reth_node_core::irys_ext::NodeExitReason;
 use reth_tasks::{TaskExecutor, TaskManager};
 use std::{future::Future, pin::pin, sync::mpsc, time::Duration};
-use tokio::runtime::Runtime;
 use tracing::{debug, error, trace};
 
 /// Executes CLI commands.
@@ -115,9 +114,13 @@ impl CliRunner {
 }
 
 /// [CliRunner] configuration when executing commands asynchronously
+#[derive(Debug)]
 pub struct AsyncCliRunner {
+    /// Context for the runner.
     pub context: CliContext,
+    /// A task manager for the runner.
     pub task_manager: TaskManager,
+    /// A runtime for the runner.
     pub tokio_runtime: tokio::runtime::Runtime,
 }
 

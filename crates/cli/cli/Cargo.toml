@@ -15,7 +15,6 @@ workspace = true
 # reth
 reth-cli-runner.workspace = true
 
-alloy-genesis.workspace = true
 irys-primitives.workspace = true
 
 # misc

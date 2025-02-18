@@ -213,6 +213,7 @@ where
     }
 
     /// Applies the pre-block call to the EIP-4788 beacon root contract.
+    #[allow(unused_variables)]
     pub fn apply_beacon_root_contract_call<DB, Ext>(
         &mut self,
         timestamp: u64,
@@ -226,7 +227,7 @@ where
     {
         // DISABLED @JesseTheRobot
         return Ok(());
-
+        #[allow(unreachable_code)]
         let result_and_state = eip4788::transact_beacon_root_contract_call(
             &self.evm_config.clone(),
             &self.chain_spec,

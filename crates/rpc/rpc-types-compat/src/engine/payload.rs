@@ -4,16 +4,16 @@
 use alloy_eips::eip2718::{Decodable2718, Encodable2718};
 use alloy_primitives::{B256, U256};
 use alloy_rpc_types_engine::{
-    payload::{ExecutionPayloadBodyV1, ExecutionPayloadFieldV2, ExecutionPayloadInputV2}, ExecutionPayload, ExecutionPayloadBodyV2, ExecutionPayloadV1, ExecutionPayloadV1Irys, ExecutionPayloadV2, ExecutionPayloadV3, ExecutionPayloadV4, PayloadError
+    payload::{ExecutionPayloadBodyV1, ExecutionPayloadFieldV2, ExecutionPayloadInputV2},
+    ExecutionPayload, ExecutionPayloadBodyV2, ExecutionPayloadV1, ExecutionPayloadV1Irys,
+    ExecutionPayloadV2, ExecutionPayloadV3, ExecutionPayloadV4, PayloadError,
 };
 
-
 use reth_primitives::{
-    constants::{EMPTY_OMMER_ROOT_HASH, MAXIMUM_EXTRA_DATA_SIZE, EMPTY_SHADOWS_ROOT},
+    constants::{EMPTY_OMMER_ROOT_HASH, EMPTY_SHADOWS_ROOT, MAXIMUM_EXTRA_DATA_SIZE},
     proofs::{self},
     Block, BlockBody, Header, Request, SealedBlock, TransactionSigned, Withdrawals,
 };
-
 
 /// Converts [`ExecutionPayloadV1`] to [`Block`]
 pub fn try_payload_v1_to_block(payload: ExecutionPayloadV1) -> Result<Block, PayloadError> {
@@ -103,6 +103,7 @@ pub fn try_payload_v3_to_block(payload: ExecutionPayloadV3) -> Result<Block, Pay
     Ok(base_block)
 }
 
+/// Converts Payload to Block.
 pub fn try_payload_v1_irys_to_block(
     payload: ExecutionPayloadV1Irys,
 ) -> Result<Block, PayloadError> {
@@ -284,8 +285,7 @@ pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
     let transactions = value.raw_transactions();
 
     // let parent_beacon_block_root = value.header.parent_beacon_block_root;
-        let payload = ExecutionPayloadV1Irys {
-
+    let payload = ExecutionPayloadV1Irys {
         payload_inner: ExecutionPayloadV3 {
             blob_gas_used: value.blob_gas_used.unwrap_or_default(),
             excess_blob_gas: value.excess_blob_gas.unwrap_or_default(),
@@ -305,14 +305,14 @@ pub fn block_to_payload_v1_irys(value: SealedBlock) -> ExecutionPayloadV1Irys {
                     base_fee_per_gas: U256::from(value.base_fee_per_gas.unwrap_or_default()),
                     block_hash: value.hash(),
                     transactions,
-                    },  
-                    withdrawals: value.body.withdrawals.clone().unwrap_or_default().into_inner(),
                 },
+                withdrawals: value.body.withdrawals.clone().unwrap_or_default().into_inner(),
             },
-            shadows: value.body.shadows.clone(),
-            shadows_root: value.shadows_root.clone()
-        };
-       
+        },
+        shadows: value.body.shadows.clone(),
+        shadows_root: value.shadows_root.clone(),
+    };
+
     // let (payload, parent_beacon_block_root) =
     // (payload, parent_beacon_block_root)
     payload

@@ -271,7 +271,7 @@ pub enum ConsensusError {
     /// Error when requests are missing.
     #[display("missing requests")]
     BodyRequestsMissing,
-    
+
     /// Error when shadows are missing.
     #[display("missing shadows")]
     BodyShadowsMissing,

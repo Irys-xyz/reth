@@ -1,16 +1,13 @@
 //! Helper types for waiting for the node to exit.
 
-use futures::{future::BoxFuture, FutureExt};
+use crate::irys_ext::{NodeExitReason, ReloadPayload};
 use std::{
     fmt,
     future::Future,
     pin::Pin,
-    task::{ready, Context, Poll},
+    task::{Context, Poll},
 };
 use tokio::sync::mpsc::UnboundedReceiver;
-use tracing::error;
-
-use crate::irys_ext::{NodeExitReason, ReloadPayload};
 
 /// A Future which resolves when the node exits
 pub struct NodeExitFuture {
