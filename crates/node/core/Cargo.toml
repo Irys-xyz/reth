@@ -36,7 +36,6 @@ reth-storage-errors.workspace = true
 reth-tracing.workspace = true
 reth-transaction-pool.workspace = true
 
-irys-types = { path = "../../../../../crates/types" }
 irys-storage = { path = "../../../../../crates/storage" }
 
 # ethereum

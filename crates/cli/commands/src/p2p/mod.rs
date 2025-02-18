@@ -12,7 +12,9 @@ use reth_config::Config;
 use reth_network::{BlockDownloaderProvider, NetworkConfigBuilder};
 use reth_network_p2p::bodies::client::BodiesClient;
 use reth_node_core::{
-    args::{DatabaseArgs, DatadirArgs, NetworkArgs}, irys_ext::NodeExitReason, utils::get_single_header
+    args::{DatabaseArgs, DatadirArgs, NetworkArgs},
+    irys_ext::NodeExitReason,
+    utils::get_single_header,
 };
 
 mod rlpx;

@@ -80,10 +80,13 @@ pub trait DbDupCursorRO<T: DupSort> {
     /// exist.
     fn seek_by_key_subkey(&mut self, key: T::Key, subkey: T::SubKey) -> ValueOnlyResult<T>;
 
+    /// Position the cursor at the last duplicate.
     fn last_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError>;
 
+    /// Position the cursor at the first duplicate.
     fn first_dup(&mut self) -> Result<Option<<T as Table>::Value>, DatabaseError>;
 
+    /// Count the number of dupilicates.
     fn dup_count(&mut self, key: T::Key) -> Result<Option<u32>, DatabaseError>;
 
     /// Get an iterator that walks through the dup table.

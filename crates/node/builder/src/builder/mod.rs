@@ -267,6 +267,7 @@ where
 /// See [`WithLaunchContext::launch`]
 pub struct WithLaunchContext<Builder> {
     builder: Builder,
+    /// An executor for spawning new tasks.
     pub task_executor: TaskExecutor,
 }
 
@@ -532,7 +533,7 @@ pub struct BuilderContext<Node: FullNodeTypes> {
     pub(crate) executor: TaskExecutor,
     /// Config container
     pub(crate) config_container: WithConfigs<<Node::Types as NodeTypes>::ChainSpec>,
-
+    /// Optional container struct.
     pub irys_ext: Option<IrysExt>,
 }
 

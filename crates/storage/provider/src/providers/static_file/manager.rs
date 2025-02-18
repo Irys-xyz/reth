@@ -26,10 +26,14 @@ use reth_db_api::{
 };
 use reth_nippy_jar::{NippyJar, NippyJarChecker, CONFIG_FILE_EXTENSION};
 use reth_primitives::{
-    irys_primitives::Shadows, static_file::{
+    irys_primitives::Shadows,
+    static_file::{
         find_fixed_range, HighestStaticFiles, SegmentHeader, SegmentRangeInclusive,
         DEFAULT_BLOCKS_PER_STATIC_FILE,
-    }, Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader, StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal, Withdrawals
+    },
+    Block, BlockWithSenders, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader,
+    StaticFileSegment, TransactionMeta, TransactionSigned, TransactionSignedNoHash, Withdrawal,
+    Withdrawals,
 };
 use reth_stages_types::{PipelineTarget, StageId};
 use reth_storage_api::DBProvider;
@@ -1621,7 +1625,7 @@ impl BlockReader for StaticFileProvider {
     ) -> ProviderResult<Vec<SealedBlockWithSenders>> {
         Err(ProviderError::UnsupportedProvider)
     }
-    
+
     fn shadows(&self, _id: BlockHashOrNumber) -> ProviderResult<Option<Shadows>> {
         Err(ProviderError::UnsupportedProvider)
     }
@@ -1660,9 +1664,9 @@ impl RequestsProvider for StaticFileProvider {
 impl StatsReader for StaticFileProvider {
     fn count_entries<T: Table>(&self) -> ProviderResult<usize> {
         match T::NAME {
-            tables::CanonicalHeaders::NAME
-            | tables::Headers::NAME
-            | tables::HeaderTerminalDifficulties::NAME => Ok(self
+            tables::CanonicalHeaders::NAME |
+            tables::Headers::NAME |
+            tables::HeaderTerminalDifficulties::NAME => Ok(self
                 .get_highest_static_file_block(StaticFileSegment::Headers)
                 .map(|block| block + 1)
                 .unwrap_or_default()

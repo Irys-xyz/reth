@@ -13,7 +13,8 @@ use reth_evm::execute::BlockExecutorProvider;
 use reth_node_builder::{NodeTypesWithDB, NodeTypesWithEngine};
 use reth_node_core::{
     args::DatadirArgs,
-    dirs::{DataDirPath, PlatformPath}, irys_ext::NodeExitReason,
+    dirs::{DataDirPath, PlatformPath},
+    irys_ext::NodeExitReason,
 };
 use std::{path::PathBuf, sync::Arc};
 use tracing::info;

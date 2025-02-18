@@ -10,7 +10,6 @@ use alloy_rlp::{length_of_length, Decodable, Encodable, RlpDecodable, RlpEncodab
 use bytes::{Buf, BufMut};
 use core::{cmp::Ordering, ops::Deref};
 use derive_more::{DerefMut, From, IntoIterator};
-use irys_primitives::{IrysTxId, ShadowTxType};
 #[cfg(feature = "reth-codec")]
 use reth_codecs::{Compact, CompactZstd};
 use serde::{Deserialize, Serialize};

@@ -16,7 +16,6 @@ reth-codecs.workspace = true
 
 alloy-consensus = { workspace = true, features = ["serde"] }
 alloy-eips.workspace = true
-alloy-genesis.workspace = true
 alloy-primitives.workspace = true
 alloy-rlp.workspace = true
 

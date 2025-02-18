@@ -1,17 +1,6 @@
 //! A generic [`NodeComponentsBuilder`]
 
-use std::{
-    future::Future,
-    marker::PhantomData,
-    sync::{Arc, RwLock},
-};
-
-use reth_consensus::Consensus;
-use reth_evm::execute::BlockExecutorProvider;
-use reth_node_api::{EngineValidator, NodeTypesWithEngine};
-use reth_primitives::Header;
-use reth_transaction_pool::TransactionPool;
-
+use super::EngineValidatorBuilder;
 use crate::{
     components::{
         Components, ConsensusBuilder, ExecutorBuilder, NetworkBuilder, NodeComponents,
@@ -19,9 +8,13 @@ use crate::{
     },
     BuilderContext, ConfigureEvm, FullNodeTypes,
 };
-
-use super::EngineValidatorBuilder;
+use reth_consensus::Consensus;
+use reth_evm::execute::BlockExecutorProvider;
+use reth_node_api::{EngineValidator, NodeTypesWithEngine};
 use reth_node_core::irys_ext::IrysExt;
+use reth_primitives::Header;
+use reth_transaction_pool::TransactionPool;
+use std::{future::Future, marker::PhantomData};
 
 /// A generic, general purpose and customizable [`NodeComponentsBuilder`] implementation.
 ///

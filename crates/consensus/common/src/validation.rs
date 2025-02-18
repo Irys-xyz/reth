@@ -319,7 +319,8 @@ mod tests {
     use rand::Rng;
     use reth_chainspec::ChainSpecBuilder;
     use reth_primitives::{
-        constants::EMPTY_ROOT_HASH, proofs, Account, BlockBody, BlockHashOrNumber, Signature, Transaction, TransactionSigned, Withdrawal, Withdrawals
+        constants::EMPTY_ROOT_HASH, proofs, Account, BlockBody, BlockHashOrNumber, Signature,
+        Transaction, TransactionSigned, Withdrawal, Withdrawals,
     };
     use reth_storage_api::{
         errors::provider::ProviderResult, AccountReader, HeaderProvider, WithdrawalsProvider,
@@ -491,7 +492,13 @@ mod tests {
         (
             SealedBlock {
                 header: SealedHeader::new(header, seal),
-                body: BlockBody { transactions, ommers, withdrawals: None, requests: None, shadows: None },
+                body: BlockBody {
+                    transactions,
+                    ommers,
+                    withdrawals: None,
+                    requests: None,
+                    shadows: None,
+                },
             },
             parent,
         )
@@ -564,7 +571,7 @@ mod tests {
             ommers: vec![],
             withdrawals: Some(Withdrawals::default()),
             requests: None,
-            shadows: None
+            shadows: None,
         };
 
         let block = SealedBlock::new(header, body);

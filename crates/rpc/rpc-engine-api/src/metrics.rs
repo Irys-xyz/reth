@@ -13,7 +13,7 @@ pub(crate) struct EngineApiMetrics {
     /// Engine API forkchoiceUpdated response type metrics
     pub(crate) fcu_response: ForkchoiceUpdatedResponseMetrics,
     /// Engine API newPayload response type metrics
-    pub(crate) new_payload_response: NewPayloadStatusResponseMetrics,
+    pub(crate) _new_payload_response: NewPayloadStatusResponseMetrics,
 }
 
 /// Beacon consensus engine latency metrics.
@@ -21,29 +21,29 @@ pub(crate) struct EngineApiMetrics {
 #[metrics(scope = "engine.rpc")]
 pub(crate) struct EngineApiLatencyMetrics {
     /// Latency for `engine_newPayloadV1`
-    pub(crate) new_payload_v1: Histogram,
+    pub(crate) _new_payload_v1: Histogram,
     /// Latency for `engine_newPayloadV2`
-    pub(crate) new_payload_v2: Histogram,
+    pub(crate) _new_payload_v2: Histogram,
     /// Latency for `engine_newPayloadV3`
     pub(crate) new_payload_v3: Histogram,
     /// Latency for `engine_newPayloadV4`
-    pub(crate) new_payload_v4: Histogram,
+    pub(crate) _new_payload_v4: Histogram,
     /// Latency for `engine_newPayloadIrys`
-    pub(crate) new_payload_irys: Histogram,
+    pub(crate) _new_payload_irys: Histogram,
     /// Latency for `engine_forkchoiceUpdatedV1`
-    pub(crate) fork_choice_updated_v1: Histogram,
+    pub(crate) _fork_choice_updated_v1: Histogram,
     /// Latency for `engine_forkchoiceUpdatedV2`
-    pub(crate) fork_choice_updated_v2: Histogram,
+    pub(crate) _fork_choice_updated_v2: Histogram,
     /// Latency for `engine_forkchoiceUpdatedV3`
     pub(crate) fork_choice_updated_v3: Histogram,
     /// Latency for `engine_getPayloadV1`
-    pub(crate) get_payload_v1: Histogram,
+    pub(crate) _get_payload_v1: Histogram,
     /// Latency for `engine_getPayloadV2`
-    pub(crate) get_payload_v2: Histogram,
+    pub(crate) _get_payload_v2: Histogram,
     /// Latency for `engine_getPayloadV3`
     pub(crate) get_payload_v3: Histogram,
     /// Latency for `engine_getPayloadV4`
-    pub(crate) get_payload_v4: Histogram,
+    pub(crate) _get_payload_v4: Histogram,
     /// Latency for `engine_getPayloadBodiesByRangeV1`
     pub(crate) get_payload_bodies_by_range_v1: Histogram,
     /// Latency for `engine_getPayloadBodiesByRangeV2`
@@ -53,7 +53,7 @@ pub(crate) struct EngineApiLatencyMetrics {
     /// Latency for `engine_getPayloadBodiesByHashV2`
     pub(crate) get_payload_bodies_by_hash_v2: Histogram,
     /// Latency for `engine_exchangeTransitionConfigurationV1`
-    pub(crate) exchange_transition_configuration: Histogram,
+    pub(crate) _exchange_transition_configuration: Histogram,
 }
 
 /// Metrics for engine API forkchoiceUpdated responses.
@@ -79,6 +79,7 @@ pub(crate) struct ForkchoiceUpdatedResponseMetrics {
     pub(crate) forkchoice_updated_error: Counter,
 }
 
+#[allow(dead_code)]
 /// Metrics for engine API newPayload responses.
 #[derive(Metrics)]
 #[metrics(scope = "engine.rpc")]
@@ -108,7 +109,7 @@ pub(crate) struct NewPayloadStatusResponseMetrics {
 
 impl NewPayloadStatusResponseMetrics {
     /// Increment the newPayload counter based on the given rpc result
-    pub(crate) fn update_response_metrics(
+    pub(crate) fn _update_response_metrics(
         &self,
         result: &Result<PayloadStatus, EngineApiError>,
         gas_used: u64,

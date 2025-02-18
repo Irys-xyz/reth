@@ -45,7 +45,9 @@ pub trait HasName {
     fn name(&self) -> &'static str;
 }
 
+/// Used to get the custom table type.
 pub trait HasTableType {
+    /// Get the custom table type.
     fn table_type(&self) -> TableType;
 }
 

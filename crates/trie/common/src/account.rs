@@ -19,10 +19,13 @@ pub struct TrieAccount {
     pub storage_root: B256,
     /// Hash of the account's bytecode.
     pub code_hash: B256,
-
+    /// Account's stake status.
     pub stake: Option<Stake>,
+    /// Optional vector of commitments.
     pub commitments: Option<Commitments>,
+    /// Details of the last transaction.
     pub last_tx: Option<LastTx>,
+    /// Is mining permitted.
     pub mining_permission: Option<bool>,
 }
 
@@ -55,7 +58,7 @@ impl From<GenesisAccount> for TrieAccount {
             stake: account.stake,
             commitments: account.commitments,
             last_tx: account.last_tx,
-            mining_permission: account.mining_permission
+            mining_permission: account.mining_permission,
         }
     }
 }
@@ -70,7 +73,7 @@ impl From<(Account, B256)> for TrieAccount {
             stake: account.stake,
             commitments: account.commitments,
             last_tx: account.last_tx,
-            mining_permission: account.mining_permission
+            mining_permission: account.mining_permission,
         }
     }
 }
@@ -85,7 +88,7 @@ impl From<(AccountInfo, B256)> for TrieAccount {
             stake: account.stake,
             commitments: account.commitments,
             last_tx: account.last_tx,
-            mining_permission: account.mining_permission
+            mining_permission: account.mining_permission,
         }
     }
 }

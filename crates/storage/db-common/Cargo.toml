@@ -24,7 +24,6 @@ reth-fs-util.workspace = true
 reth-node-types.workspace = true
 
 # eth
-alloy-genesis.workspace = true
 alloy-primitives.workspace = true
 
 # misc

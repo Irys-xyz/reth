@@ -91,7 +91,7 @@ impl Compact for AlloyHeader {
             parent_beacon_block_root: self.parent_beacon_block_root,
             extra_fields: extra_fields.into_option(),
             extra_data: self.extra_data.clone(),
-            shadows_root: self.shadows_root
+            shadows_root: self.shadows_root,
         };
         header.to_compact(buf)
     }
@@ -120,7 +120,7 @@ impl Compact for AlloyHeader {
             parent_beacon_block_root: header.parent_beacon_block_root,
             requests_root: header.extra_fields.and_then(|h| h.requests_root),
             extra_data: header.extra_data,
-            shadows_root: header.shadows_root
+            shadows_root: header.shadows_root,
         };
         (alloy_header, buf)
     }

@@ -282,7 +282,7 @@ macro_rules! tables {
         /// let result = tables_to_generic!(table, |GenericTable| GenericTable::NAME);
         /// assert_eq!(result, table.name());
         /// ```
-        macro_rules! tables_to_generic {
+        macro_rules! _tables_to_generic {
             ($table:expr, |$generic_name:ident| $e:expr) => {
                 match $table {
                     $(

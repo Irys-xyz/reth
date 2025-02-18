@@ -81,6 +81,7 @@ pub trait NodeComponents<T: FullNodeTypes>: Clone + Unpin + Send + Sync + 'stati
     /// Returns the engine validator.
     fn engine_validator(&self) -> &Self::EngineValidator;
 
+    /// Returns an IrysExt container.
     fn irys_ext(&self) -> Option<IrysExt>;
 }
 

@@ -32,6 +32,7 @@ type PayloadFuture<P> = Pin<Box<dyn Future<Output = Result<P, PayloadBuilderErro
 /// A communication channel to the [`PayloadBuilderService`] that can retrieve payloads.
 #[derive(Debug)]
 pub struct PayloadStore<T: PayloadTypes> {
+    /// Inner value as a handle to a payload builder.
     pub inner: PayloadBuilderHandle<T>,
 }
 

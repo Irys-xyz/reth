@@ -305,8 +305,8 @@ impl ChainSpec {
     #[inline]
     #[cfg(feature = "optimism")]
     pub fn is_optimism(&self) -> bool {
-        self.chain.is_optimism()
-            || self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
+        self.chain.is_optimism() ||
+            self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
     }
 
     /// Returns `true` if this chain contains Optimism configuration.
@@ -518,8 +518,8 @@ impl ChainSpec {
             // We filter out TTD-based forks w/o a pre-known block since those do not show up in the
             // fork filter.
             Some(match condition {
-                ForkCondition::Block(block)
-                | ForkCondition::TTD { fork_block: Some(block), .. } => ForkFilterKey::Block(block),
+                ForkCondition::Block(block) |
+                ForkCondition::TTD { fork_block: Some(block), .. } => ForkFilterKey::Block(block),
                 ForkCondition::Timestamp(time) => ForkFilterKey::Time(time),
                 _ => return None,
             })
@@ -537,8 +537,8 @@ impl ChainSpec {
         for (_, cond) in self.hardforks.forks_iter() {
             // handle block based forks and the sepolia merge netsplit block edge case (TTD
             // ForkCondition with Some(block))
-            if let ForkCondition::Block(block)
-            | ForkCondition::TTD { fork_block: Some(block), .. } = cond
+            if let ForkCondition::Block(block) |
+            ForkCondition::TTD { fork_block: Some(block), .. } = cond
             {
                 if cond.active_at_head(head) {
                     if block != current_applied {
@@ -792,8 +792,11 @@ pub trait ChainSpecProvider: Send + Sync {
 /// A helper to build custom chain specs
 #[derive(Debug, Default, Clone)]
 pub struct ChainSpecBuilder {
+    /// The type of chain.
     pub chain: Option<Chain>,
+    /// Genesis block.
     pub genesis: Option<Genesis>,
+    /// The chain hardforks.
     pub hardforks: ChainHardforks,
 }
 

@@ -25,7 +25,8 @@ use reth_execution_errors::{
 };
 use reth_execution_types::ExecutionOutcome;
 use reth_primitives::{
-    irys_primitives::Shadows, proofs, Block, BlockBody, BlockHashOrNumber, BlockWithSenders, Header, Requests, SealedBlock, SealedHeader, TransactionSigned, Withdrawals
+    irys_primitives::Shadows, proofs, Block, BlockBody, BlockHashOrNumber, BlockWithSenders,
+    Header, Requests, SealedBlock, SealedHeader, TransactionSigned, Withdrawals,
 };
 use reth_provider::{BlockReaderIdExt, StateProviderFactory, StateRootProvider};
 use reth_revm::database::StateProviderDatabase;
@@ -375,7 +376,7 @@ impl StorageInner {
                 ommers: ommers.clone(),
                 withdrawals: withdrawals.clone(),
                 requests: requests.clone(),
-            shadows: shadows.clone(),
+                shadows: shadows.clone(),
             },
         }
         .with_recovered_senders()
@@ -399,7 +400,8 @@ impl StorageInner {
         // root here
 
         let Block { mut header, body, .. } = block.block;
-        let body = BlockBody { transactions: body.transactions, ommers, withdrawals, requests, shadows };
+        let body =
+            BlockBody { transactions: body.transactions, ommers, withdrawals, requests, shadows };
 
         trace!(target: "consensus::auto", ?execution_outcome, ?header, ?body, "executed block, calculating state root and completing header");
 

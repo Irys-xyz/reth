@@ -9,21 +9,19 @@ use once_cell::sync::Lazy;
 use reth_db::tables;
 use reth_db_api::{database::Database, models::StoredBlockBodyIndices};
 use reth_primitives::{
-    Account, BlockBody, Header, Receipt, SealedBlock, SealedBlockWithSenders, SealedHeader,
-    Signature, Transaction, TransactionSigned, TxType, Withdrawal, Withdrawals,
     alloy_primitives, b256,
     hex_literal::hex,
     proofs::{state_root_unhashed, storage_root_unhashed},
     revm::compat::into_reth_acc,
-    Address, BlockNumber, Bytes, Header, Receipt, Receipts, SealedBlock, SealedBlockWithSenders,
-    TxType, Withdrawal, Withdrawals, B256, U256,
+    Account, Address, BlockBody, BlockNumber, Bytes, Header, Receipt, Receipts, SealedBlock,
+    SealedBlockWithSenders, SealedHeader, Signature, Transaction, TransactionSigned, TxType,
+    Withdrawal, Withdrawals, B256, U256,
 };
+use reth_trie::root::{state_root_unhashed, storage_root_unhashed};
 use revm::{
     db::BundleState,
     primitives::{shadow::Shadows, AccountInfo, HashMap},
 };
-use reth_trie::root::{state_root_unhashed, storage_root_unhashed};
-use revm::{db::BundleState, primitives::AccountInfo};
 use std::str::FromStr;
 
 /// Assert genesis block

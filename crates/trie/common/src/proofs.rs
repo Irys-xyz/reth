@@ -57,7 +57,7 @@ impl MultiProof {
                             stake: account.stake,
                             commitments: account.commitments,
                             last_tx: account.last_tx,
-                            mining_permission: account.mining_permission
+                            mining_permission: account.mining_permission,
                         })
                     }
                 }

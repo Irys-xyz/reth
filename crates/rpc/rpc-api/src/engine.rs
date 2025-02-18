@@ -3,22 +3,21 @@
 //! This contains the `engine_` namespace and the subset of the `eth_` namespace that is exposed to
 //! the consensus client.
 
-use alloy_eips::{eip4844::BlobAndProofV1};
+use alloy_eips::eip4844::BlobAndProofV1;
 use alloy_json_rpc::RpcObject;
 use alloy_primitives::{Address, BlockHash, Bytes, B256, U256, U64};
 use alloy_rpc_types::{
     state::StateOverride, BlockOverrides, EIP1186AccountProofResponse, Filter, Log, SyncStatus,
 };
 use alloy_rpc_types_engine::{
-    ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadBodiesV2, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV1Irys, ExecutionPayloadV3, ExecutionPayloadV4, ForkchoiceState, ForkchoiceUpdated, PayloadId, PayloadStatus, TransitionConfiguration
+    ClientVersionV1, ExecutionPayloadBodiesV1, ExecutionPayloadBodiesV2, ExecutionPayloadV1Irys,
+    ForkchoiceState, ForkchoiceUpdated, PayloadId, PayloadStatus,
 };
 use alloy_rpc_types_eth::transaction::TransactionRequest;
 use alloy_serde::JsonStorageKey;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use reth_engine_primitives::EngineTypes;
-use reth_primitives::{
- BlockId, BlockNumberOrTag,
-};
+use reth_primitives::{BlockId, BlockNumberOrTag};
 
 // NOTE: We can't use associated types in the `EngineApi` trait because of jsonrpsee, so we use a
 // generic here. It would be nice if the rpc macro would understand which types need to have serde.
@@ -50,9 +49,11 @@ pub trait EngineApi<Engine: EngineTypes> {
     //     parent_beacon_block_root: B256,
     // ) -> RpcResult<PayloadStatus>;
 
+    /// Ping command.
     #[method(name = "ping")]
     fn ping(&self) -> RpcResult<String>;
 
+    /// Submit a new Irys payload.
     #[method(name = "submitNewPayloadV1Irys")]
     async fn submit_new_payload_irys(
         &self,
@@ -150,7 +151,8 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// Note:
     /// > Provider software MAY stop the corresponding build process after serving this call.
     // #[method(name = "getPayloadV1")]
-    // async fn get_payload_v1(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV1>;
+    // async fn get_payload_v1(&self, payload_id: PayloadId) ->
+    // RpcResult<Engine::ExecutionPayloadV1>;
 
     // /// See also <https://github.com/ethereum/execution-apis/blob/6709c2a795b707202e93c4f2867fa0bf2640a84f/src/engine/shanghai.md#engine_getpayloadv2>
     // ///
@@ -158,7 +160,8 @@ pub trait EngineApi<Engine: EngineTypes> {
     // /// payload build process at the time of receiving this call. Note:
     // /// > Provider software MAY stop the corresponding build process after serving this call.
     // #[method(name = "getPayloadV2")]
-    // async fn get_payload_v2(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV2>;
+    // async fn get_payload_v2(&self, payload_id: PayloadId) ->
+    // RpcResult<Engine::ExecutionPayloadV2>;
 
     /// Post Cancun payload handler which also returns a blobs bundle.
     ///
@@ -168,7 +171,8 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// payload build process at the time of receiving this call. Note:
     /// > Provider software MAY stop the corresponding build process after serving this call.
     // #[method(name = "getPayloadV3")]
-    // async fn get_payload_v3(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV3>;
+    // async fn get_payload_v3(&self, payload_id: PayloadId) ->
+    // RpcResult<Engine::ExecutionPayloadV3>;
 
     #[method(name = "getPayloadV1Irys")]
     async fn get_payload_v1_irys(
@@ -184,7 +188,8 @@ pub trait EngineApi<Engine: EngineTypes> {
     /// payload build process at the time of receiving this call. Note:
     /// > Provider software MAY stop the corresponding build process after serving this call.
     // #[method(name = "getPayloadV4")]
-    // async fn get_payload_v4(&self, payload_id: PayloadId) -> RpcResult<Engine::ExecutionPayloadV4>;
+    // async fn get_payload_v4(&self, payload_id: PayloadId) ->
+    // RpcResult<Engine::ExecutionPayloadV4>;
 
     /// See also <https://github.com/ethereum/execution-apis/blob/6452a6b194d7db269bf1dbd087a267251d3cc7f8/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1>
     // #[method(name = "getPayloadBodiesByHashV1")]
@@ -205,12 +210,15 @@ pub trait EngineApi<Engine: EngineTypes> {
         &self,
         block_hashes: Vec<BlockHash>,
     ) -> RpcResult<ExecutionPayloadBodiesV2>;
+
+    /// Get full Irys payload.
     #[method(name = "getFullPayloadByHashV1Irys")]
     async fn get_full_payload_by_hash_v1_irys(
         &self,
         block_hash: BlockHash,
     ) -> RpcResult<Option<ExecutionPayloadV1Irys>>;
 
+    /// Get full Irys payload at specific height.
     #[method(name = "getFullPayloadByHeightV1Irys")]
     async fn get_full_payload_by_height_v1_irys(
         &self,

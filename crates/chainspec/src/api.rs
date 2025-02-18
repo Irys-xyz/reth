@@ -3,9 +3,9 @@ use alloc::vec::Vec;
 use alloy_chains::Chain;
 use alloy_eips::eip1559::BaseFeeParams;
 use alloy_primitives::B256;
-use reth_primitives::Genesis;
 use core::fmt::{Debug, Display};
 use reth_network_peers::NodeRecord;
+use reth_primitives::Genesis;
 use reth_primitives_traits::Header;
 
 /// Trait representing type configuring a chain spec.

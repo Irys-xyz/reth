@@ -1,12 +1,9 @@
-use crate::TransactionSigned;
-use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
-use bytes::BufMut;
-use serde::{Deserialize, Serialize};
-use alloy_rpc_types::engine::{BlobsBundleV1, PayloadAttributes};
+use alloy_rpc_types::engine::BlobsBundleV1;
 
 /// RLP encoding for blobs bundle
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlobsBundleV1Wrapper {
+    /// Inner value (BlobV1) of BlobsBundleV1Wrapper.
     pub inner: BlobsBundleV1,
 }
 

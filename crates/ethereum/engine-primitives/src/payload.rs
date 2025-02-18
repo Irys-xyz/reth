@@ -187,7 +187,7 @@ impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV4 {
 
 impl From<EthBuiltPayload> for ExecutionPayloadEnvelopeV1Irys {
     fn from(value: EthBuiltPayload) -> Self {
-        let EthBuiltPayload { block, fees, sidecars, shadow_receipts /*  is_empty, */, .. } = value;
+        let EthBuiltPayload { block, fees, sidecars, shadow_receipts /* is_empty, */, .. } = value;
         ExecutionPayloadEnvelopeV1Irys {
             execution_payload: block_to_payload_v1_irys(block.clone()),
             block_value: fees,
@@ -223,6 +223,7 @@ pub struct EthPayloadBuilderAttributes {
     pub prev_randao: B256,
     /// Withdrawals for the generated payload
     pub withdrawals: Withdrawals,
+    /// A Vector of Shadow transactions.
     pub shadows: Shadows,
     /// Root of the parent beacon block
     pub parent_beacon_block_root: Option<B256>,

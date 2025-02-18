@@ -374,7 +374,7 @@ where
         }
 
         // Run consensus engine to completion
-        let (tx, rx) = oneshot::channel();
+        let (tx, _rx) = oneshot::channel();
         info!(target: "reth::cli", "Starting consensus engine");
         ctx.task_executor().spawn_critical_blocking("consensus engine", async move {
             let res = beacon_consensus_engine.await;

@@ -5,7 +5,6 @@ use alloy_rpc_types::{Block, BlockTransactions};
 use alloy_rpc_types_engine::{ExecutionPayloadV1, ExecutionPayloadV2, ExecutionPayloadV3};
 use reth_node_api::EngineTypes;
 use reth_rpc_builder::auth::AuthServerHandle;
-use reth_tracing::tracing::warn;
 use ringbuffer::{AllocRingBuffer, RingBuffer};
 use std::future::Future;
 use tokio::sync::mpsc;
@@ -50,6 +49,7 @@ pub trait BlockProvider: Send + Sync + 'static {
     }
 }
 
+#[allow(dead_code)]
 /// Debug consensus client that sends FCUs and new payloads using recent blocks from an external
 /// provider like Etherscan or an RPC endpoint.
 #[derive(Debug)]
@@ -102,11 +102,11 @@ impl<P: BlockProvider + Clone> DebugConsensusClient<P> {
         //     )
         //     .await
         //         .inspect_err(|err|  {
-        //             warn!(target: "consensus::debug-client", %err, %block_hash,  %block_number, "failed to submit new payload to execution client");
-        //         });
+        //             warn!(target: "consensus::debug-client", %err, %block_hash,  %block_number,
+        // "failed to submit new payload to execution client");         });
 
-        //     // Load previous block hashes. We're using (head - 32) and (head - 64) as the safe and
-        //     // finalized block hashes.
+        //     // Load previous block hashes. We're using (head - 32) and (head - 64) as the safe
+        // and     // finalized block hashes.
         //     let safe_block_hash = self.block_provider.get_or_fetch_previous_block(
         //         &previous_block_hashes,
         //         block_number,
@@ -127,7 +127,8 @@ impl<P: BlockProvider + Clone> DebugConsensusClient<P> {
         //             (safe_block_hash, finalized_block_hash)
         //         }
         //         (safe_block_hash, finalized_block_hash) => {
-        //             warn!(target: "consensus::debug-client", ?safe_block_hash, ?finalized_block_hash, "failed to fetch safe or finalized hash from etherscan");
+        //             warn!(target: "consensus::debug-client", ?safe_block_hash,
+        // ?finalized_block_hash, "failed to fetch safe or finalized hash from etherscan");
         //             continue;
         //         }
         //     };
@@ -144,8 +145,8 @@ impl<P: BlockProvider + Clone> DebugConsensusClient<P> {
         //     )
         //     .await
         //     .inspect_err(|err|  {
-        //         warn!(target: "consensus::debug-client", %err, ?state, "failed to submit fork choice update to execution client");
-        //     });
+        //         warn!(target: "consensus::debug-client", %err, ?state, "failed to submit fork
+        // choice update to execution client");     });
         // }
     }
 }

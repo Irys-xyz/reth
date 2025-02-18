@@ -1,7 +1,5 @@
 //! Reth genesis initialization utility functions.
 
-// use alloy_genesis::GenesisAccount;
-use reth_primitives::GenesisAccount;
 use alloy_primitives::{Address, B256, U256};
 use reth_chainspec::EthChainSpec;
 use reth_codecs::Compact;
@@ -9,7 +7,9 @@ use reth_config::config::EtlConfig;
 use reth_db::tables;
 use reth_db_api::{transaction::DbTxMut, DatabaseError};
 use reth_etl::Collector;
-use reth_primitives::{Account, Bytecode, GotExpected, Receipts, StaticFileSegment, StorageEntry};
+use reth_primitives::{
+    Account, Bytecode, GenesisAccount, GotExpected, Receipts, StaticFileSegment, StorageEntry,
+};
 use reth_provider::{
     errors::provider::ProviderResult,
     providers::{StaticFileProvider, StaticFileWriter},
@@ -316,7 +316,7 @@ where
         Ok(Some(_)) => {}
         Err(e) => return Err(e),
     }
-    
+
     info!("writing genesis block hash {} to HeaderNumbers with height 0", block_hash);
     provider.tx_ref().put::<tables::HeaderNumbers>(block_hash, 0)?;
     provider.tx_ref().put::<tables::BlockBodyIndices>(0, Default::default())?;
@@ -478,8 +478,8 @@ where
 
         accounts.push((address, account));
 
-        if (index > 0 && index % AVERAGE_COUNT_ACCOUNTS_PER_GB_STATE_DUMP == 0)
-            || index == accounts_len - 1
+        if (index > 0 && index % AVERAGE_COUNT_ACCOUNTS_PER_GB_STATE_DUMP == 0) ||
+            index == accounts_len - 1
         {
             total_inserted_accounts += accounts.len();
 

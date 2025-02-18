@@ -27,7 +27,6 @@ alloy-rpc-types-eth = { workspace = true, default-features = false, features = [
 alloy-rpc-types.workspace = true
 alloy-serde.workspace = true
 
-irys-primitives.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

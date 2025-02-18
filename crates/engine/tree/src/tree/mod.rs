@@ -807,8 +807,8 @@ where
                             latest_valid_hash = Some(block_hash);
                             PayloadStatusEnum::Valid
                         }
-                        InsertPayloadOk2::Inserted(BlockStatus2::Disconnected { .. })
-                        | InsertPayloadOk2::AlreadySeen(BlockStatus2::Disconnected { .. }) => {
+                        InsertPayloadOk2::Inserted(BlockStatus2::Disconnected { .. }) |
+                        InsertPayloadOk2::AlreadySeen(BlockStatus2::Disconnected { .. }) => {
                             // not known to be invalid, but we don't know anything else
                             PayloadStatusEnum::Syncing
                         }
@@ -1457,8 +1457,8 @@ where
 
         let min_block = self.persistence_state.last_persisted_block.number;
         let should_persist =
-            self.state.tree_state.canonical_block_number().saturating_sub(min_block)
-                > self.config.persistence_threshold();
+            self.state.tree_state.canonical_block_number().saturating_sub(min_block) >
+                self.config.persistence_threshold();
         debug!("JESSEDEBUG should persist {}, min block {}", &should_persist, &min_block);
         should_persist
     }
@@ -1477,8 +1477,9 @@ where
         // let original_target_number =
         //     canonical_head_number.saturating_sub(self.config.memory_block_buffer_target());
 
-        // IRYS: try and get the block number of the finalized block, and use that as a target instead.
-        // this is so Reth forgets the same number of head blocks as Irys does when restarting.
+        // IRYS: try and get the block number of the finalized block, and use that as a target
+        // instead. this is so Reth forgets the same number of head blocks as Irys does when
+        // restarting.
         let target_number = match self
             .state
             .forkchoice_state_tracker
@@ -1794,8 +1795,8 @@ where
             match self.insert_block(child) {
                 Ok(res) => {
                     debug!(target: "engine::tree", child =?child_num_hash, ?res, "connected buffered block");
-                    if self.is_sync_target_head(child_num_hash.hash)
-                        && matches!(res, InsertPayloadOk2::Inserted(BlockStatus2::Valid))
+                    if self.is_sync_target_head(child_num_hash.hash) &&
+                        matches!(res, InsertPayloadOk2::Inserted(BlockStatus2::Valid))
                     {
                         self.make_canonical(child_num_hash.hash)?;
                     }
@@ -2410,8 +2411,8 @@ where
                 return Err(OnForkChoiceUpdated::invalid_state());
             }
             Ok(Some(finalized)) => {
-                if Some(finalized.num_hash())
-                    != self.canonical_in_memory_state.get_finalized_num_hash()
+                if Some(finalized.num_hash()) !=
+                    self.canonical_in_memory_state.get_finalized_num_hash()
                 {
                     // we're also persisting the finalized block on disk so we can reload it on
                     // restart this is required by optimism which queries the finalized block: <https://github.com/ethereum-optimism/optimism/blob/c383eb880f307caa3ca41010ec10f30f08396b2e/op-node/rollup/sync/start.go#L65-L65>

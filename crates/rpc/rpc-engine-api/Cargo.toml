@@ -26,9 +26,6 @@ reth-storage-api.workspace = true
 reth-tasks.workspace = true
 reth-transaction-pool.workspace = true
 
-eyre.workspace = true
-serde_json.workspace = true
-
 # ethereum
 alloy-eips.workspace = true
 alloy-primitives.workspace = true

@@ -12,7 +12,10 @@ use reth_node_core::{
     args::{
         DatabaseArgs, DatadirArgs, DebugArgs, DevArgs, NetworkArgs, PayloadBuilderArgs,
         PruningArgs, RpcServerArgs, TxPoolArgs,
-    }, irys_ext::NodeExitReason, node_config::NodeConfig, version
+    },
+    irys_ext::NodeExitReason,
+    node_config::NodeConfig,
+    version,
 };
 use reth_node_metrics::recorder::install_prometheus_recorder;
 use std::{ffi::OsString, fmt, future::Future, net::SocketAddr, path::PathBuf, sync::Arc};

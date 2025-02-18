@@ -40,9 +40,6 @@ use crate::{
     ReceiptProviderIdExt, RequestsProvider, StageCheckpointReader, StateProvider, StateProviderBox,
     StateProviderFactory, StateRootProvider, StaticFileProviderFactory, TransactionVariant,
     TransactionsProvider, WithdrawalsProvider,
-    ReceiptProviderIdExt, StageCheckpointReader, StateProvider, StateProviderBox,
-    StateProviderFactory, StateRootProvider, TransactionVariant, TransactionsProvider,
-    WithdrawalsProvider,
 };
 use reth_db::models::{AccountBeforeTx, StoredBlockBodyIndices};
 use reth_evm::ConfigureEvmEnv;

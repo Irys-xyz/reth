@@ -45,9 +45,9 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
     pub async fn submit_payload(
         &self,
         payload: E::BuiltPayload,
-        payload_builder_attributes: E::PayloadBuilderAttributes,
+        _payload_builder_attributes: E::PayloadBuilderAttributes,
         expected_status: PayloadStatusEnum,
-        versioned_hashes: Vec<B256>,
+        _versioned_hashes: Vec<B256>,
     ) -> eyre::Result<B256>
     where
         E::ExecutionPayloadV1Irys: From<E::BuiltPayload> + PayloadEnvelopeExt,
@@ -119,7 +119,7 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
     }
 
     // pub async fn add_shadows(&self, block_hash: B256, shadows: Shadows) -> eyre::Result<()> {
-    //     EngineApiClient::<E>::add_shadows_v1(&self.engine_api_client, block_hash, shadows).await?;
-    //     Ok(())
+    //     EngineApiClient::<E>::add_shadows_v1(&self.engine_api_client, block_hash,
+    // shadows).await?;     Ok(())
     // }
 }

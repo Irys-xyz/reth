@@ -5,8 +5,8 @@ use reth_chainspec::ChainSpec;
 use reth_cli::chainspec::ChainSpecParser;
 use reth_cli_runner::CliContext;
 use reth_node_api::NodeTypesWithEngine;
-use reth_node_ethereum::EthEngineTypes;
 use reth_node_core::irys_ext::NodeExitReason;
+use reth_node_ethereum::EthEngineTypes;
 
 mod build_block;
 mod execution;

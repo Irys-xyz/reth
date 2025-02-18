@@ -6,7 +6,7 @@ use bytes::Buf;
 use derive_more::Deref;
 use irys_primitives::{Commitments, GenesisAccount, LastTx, Stake};
 use reth_codecs::{add_arbitrary_tests, Compact};
-use revm_primitives::{ AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError,  JumpTable, };
+use revm_primitives::{AccountInfo, Bytecode as RevmBytecode, BytecodeDecodeError, JumpTable};
 use serde::{Deserialize, Serialize};
 
 /// Identifier for [`LegacyRaw`](RevmBytecode::LegacyRaw).
@@ -35,9 +35,13 @@ pub struct Account {
     pub balance: U256,
     /// Hash of the account's bytecode.
     pub bytecode_hash: Option<B256>,
+    /// The Stake for the Account.
     pub stake: Option<Stake>,
+    /// The Account's commitments.
     pub commitments: Option<Commitments>,
+    /// Details of the Accounts last transaction.
     pub last_tx: Option<LastTx>,
+    /// Is the Account permitted to mine.
     pub mining_permission: Option<bool>,
 }
 
@@ -50,11 +54,11 @@ impl Account {
     /// After `SpuriousDragon` empty account is defined as account with nonce == 0 && balance == 0
     /// && bytecode = None (or hash is [`KECCAK_EMPTY`]).
     pub fn is_empty(&self) -> bool {
-        self.nonce == 0
-            && self.balance.is_zero()
-            && self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY)
-            && self.stake.is_none()
-            && self.commitments.is_none()
+        self.nonce == 0 &&
+            self.balance.is_zero() &&
+            self.bytecode_hash.map_or(true, |hash| hash == KECCAK_EMPTY) &&
+            self.stake.is_none() &&
+            self.commitments.is_none()
     }
 
     /// Returns an account bytecode's hash.
@@ -168,7 +172,7 @@ impl From<&GenesisAccount> for Account {
             stake: value.stake,
             commitments: value.commitments.clone(),
             last_tx: value.last_tx,
-            mining_permission: value.mining_permission
+            mining_permission: value.mining_permission,
         }
     }
 }
@@ -183,7 +187,7 @@ impl From<AccountInfo> for Account {
             stake: revm_acc.stake,
             commitments: revm_acc.commitments,
             last_tx: revm_acc.last_tx,
-            mining_permission: revm_acc.mining_permission
+            mining_permission: revm_acc.mining_permission,
         }
     }
 }
@@ -198,7 +202,7 @@ impl From<Account> for AccountInfo {
             stake: reth_acc.stake,
             commitments: reth_acc.commitments,
             last_tx: reth_acc.last_tx,
-            mining_permission: reth_acc.mining_permission
+            mining_permission: reth_acc.mining_permission,
         }
     }
 }
