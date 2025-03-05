@@ -337,15 +337,7 @@ impl DatabaseEnv {
         // environment creation.
         debug_assert!(Tables::ALL.len() <= 256, "number of tables exceed max dbs");
         inner_env.set_max_dbs(256);
-        inner_env.set_geometry(Geometry {
-            // Maximum database size of 4 terabytes
-            size: Some(0..(4 * TERABYTE)),
-            // We grow the database in increments of 4 gigabytes
-            growth_step: Some(4 * GIGABYTE as isize),
-            // The database never shrinks
-            shrink_threshold: Some(0),
-            page_size: Some(PageSize::Set(default_page_size())),
-        });
+        inner_env.set_geometry(args.geometry);
 
         fn is_current_process(id: u32) -> bool {
             #[cfg(unix)]
