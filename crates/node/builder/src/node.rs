@@ -132,7 +132,6 @@ pub struct FullNode<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> {
 
 impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Clone for FullNode<Node, AddOns> {
     fn clone(&self) -> Self {
-        tracing::debug!("Cloning FullNode");
         Self {
             evm_config: self.evm_config.clone(),
             block_executor: self.block_executor.clone(),
