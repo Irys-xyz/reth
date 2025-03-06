@@ -130,12 +130,6 @@ pub struct FullNode<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> {
     pub irys_ext: Option<IrysExt>,
 }
 
-impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Drop for FullNode<Node, AddOns> {
-    fn drop(&mut self) {
-        tracing::debug!("Dropping FullNode");
-    }
-}
-
 impl<Node: FullNodeComponents, AddOns: NodeAddOns<Node>> Clone for FullNode<Node, AddOns> {
     fn clone(&self) -> Self {
         tracing::debug!("Cloning FullNode");
