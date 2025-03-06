@@ -6,6 +6,7 @@ use std::path::Path;
 
 pub use crate::implementation::mdbx::*;
 pub use reth_libmdbx::*;
+use reth_tracing::tracing;
 
 /// Creates a new database at the specified path if it doesn't exist. Does NOT create tables. Check
 /// [`init_db`].
@@ -47,6 +48,7 @@ pub fn open_db_read_only(path: &Path, args: DatabaseArguments) -> eyre::Result<D
 /// Opens up an existing database. Read/Write mode with `WriteMap` enabled. It doesn't create it or
 /// create tables if missing.
 pub fn open_db(path: &Path, args: DatabaseArguments) -> eyre::Result<DatabaseEnv> {
+    tracing::debug!("Opening DB {:?}", path);
     let db = DatabaseEnv::open(path, DatabaseEnvKind::RW, args.clone())
         .with_context(|| format!("Could not open database at path: {}", path.display()))?;
     db.record_client_version(args.client_version().clone())?;
