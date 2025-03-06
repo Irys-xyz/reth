@@ -67,7 +67,7 @@ where
                 canonical_stream: node.provider.canonical_state_stream(),
                 _marker: PhantomData::<Engine>,
             },
-            rpc: RpcTestContext { inner: node.rpc_registry },
+            rpc: RpcTestContext { inner: node.rpc_registry.clone() },
         })
     }
 
