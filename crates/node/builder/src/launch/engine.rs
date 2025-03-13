@@ -86,9 +86,6 @@ where
         self,
         target: NodeBuilderWithComponents<T, CB, AO>,
     ) -> eyre::Result<Self::Node> {
-        // TODO: make the reload rx channel optional
-        let (_, reload_rx) = unbounded_channel();
-
         let Self { ctx, engine_tree_config } = self;
         let NodeBuilderWithComponents {
             adapter: NodeTypesAdapter { database },
@@ -335,7 +332,7 @@ where
             .into_built_payload_stream()
             .fuse();
         let chainspec = ctx.chain_spec();
-        let (exit, _rx) = oneshot::channel();
+        let (exit, rx) = oneshot::channel();
         info!(target: "reth::cli", "Starting consensus engine");
         ctx.task_executor().spawn_critical("consensus engine", async move {
             if let Some(initial_target) = initial_target {
@@ -411,8 +408,7 @@ where
 
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
-                // async { rx.await? },
-                reload_rx,
+                async { rx.await? },
                 full_node.config.debug.terminate,
             ),
             node: full_node,

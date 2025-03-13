@@ -374,7 +374,7 @@ where
         }
 
         // Run consensus engine to completion
-        let (tx, _rx) = oneshot::channel();
+        let (tx, rx) = oneshot::channel();
         info!(target: "reth::cli", "Starting consensus engine");
         ctx.task_executor().spawn_critical_blocking("consensus engine", async move {
             let res = beacon_consensus_engine.await;
@@ -423,8 +423,6 @@ where
             });
         }
 
-        let (_, reload_rx) = unbounded_channel();
-
         let full_node = FullNode {
             evm_config: ctx.components().evm_config().clone(),
             block_executor: ctx.components().block_executor().clone(),
@@ -444,8 +442,7 @@ where
 
         let handle = NodeHandle {
             node_exit_future: NodeExitFuture::new(
-                // async { Ok(rx.await??) },
-                reload_rx,
+                async { Ok(rx.await??) },
                 full_node.config.debug.terminate,
             ),
             node: full_node,
