@@ -1,21 +1,20 @@
 //! Helper types for waiting for the node to exit.
 
-use crate::irys_ext::{NodeExitReason, ReloadPayload};
+use crate::irys_ext::{NodeExitReason};
 use std::{
     fmt,
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio::sync::mpsc::UnboundedReceiver;
+use futures::future::BoxFuture;
+use futures::{ready, FutureExt};
 
 /// A Future which resolves when the node exits
 pub struct NodeExitFuture {
     /// The consensus engine future.
     /// This can be polled to wait for the consensus engine to exit.
-    // consensus_engine_fut: Option<BoxFuture<'static, eyre::Result<()>>>,
-    /// reload rx - for reloading the node (notably used for updating the genesis config)
-    reload_rx: UnboundedReceiver<ReloadPayload>,
+    consensus_engine_fut: Option<BoxFuture<'static, eyre::Result<()>>>,
     /// Flag indicating whether the node should be terminated after the pipeline sync.
     terminate: bool,
 }
@@ -31,16 +30,15 @@ impl fmt::Debug for NodeExitFuture {
 
 impl NodeExitFuture {
     /// Create a new `NodeExitFuture`.
-    pub fn new(
-        // consensus_engine_fut: F,
-        reload_rx: UnboundedReceiver<ReloadPayload>,
+    pub fn new<F>(
+        consensus_engine_fut: F,
         terminate: bool,
     ) -> Self
-// where
-    //     F: Future<Output = eyre::Result<()>> + 'static + Send,
+where
+        F: Future<Output = eyre::Result<()>> + 'static + Send,
     {
         Self {
-            /* consensus_engine_fut: Some(Box::pin(consensus_engine_fut)) */ reload_rx,
+            consensus_engine_fut: Some(Box::pin(consensus_engine_fut)),
             terminate,
         }
     }
@@ -52,32 +50,21 @@ impl Future for NodeExitFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
 
-        match this.reload_rx.poll_recv(cx) {
-            Poll::Ready(v) => match v {
-                Some(v) => {
-                    return Poll::Ready(Ok(NodeExitReason::Reload(v)));
+        if let Some(rx) = this.consensus_engine_fut.as_mut() {
+            match ready!(rx.poll_unpin(cx)) {
+                Ok(_) => {
+                    this.consensus_engine_fut.take();
+                    if this.terminate {
+                        Poll::Ready(Ok(NodeExitReason::Normal))
+                    } else {
+                        Poll::Pending
+                    }
                 }
-                None => (),
-            },
-            Poll::Pending => (),
-        };
-        Poll::Pending
-
-        // if let Some(rx) = this.consensus_engine_fut.as_mut() {
-        //     match ready!(rx.poll_unpin(cx)) {
-        //         Ok(_) => {
-        //             this.consensus_engine_fut.take();
-        //             if this.terminate {
-        //                 Poll::Ready(Ok(NodeExitReason::Normal))
-        //             } else {
-        //                 Poll::Pending
-        //             }
-        //         }
-        //         Err(err) => Poll::Ready(Err(err)),
-        //     }
-        // } else {
-        //     Poll::Pending
-        // }
+                Err(err) => Poll::Ready(Err(err)),
+            }
+        } else {
+            Poll::Pending
+        }
     }
 }
 
