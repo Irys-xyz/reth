@@ -267,33 +267,6 @@ macro_rules! tables {
                 pub(super) const $name: &'static str = stringify!($name);
             )*
         }
-
-        /// Maps a run-time [`Tables`] enum value to its corresponding compile-time [`Table`] type.
-        ///
-        /// This is a simpler alternative to [`TableViewer`].
-        ///
-        /// # Examples
-        ///
-        /// ```
-        /// use reth_db::{Tables, tables_to_generic};
-        /// use reth_db_api::table::Table;
-        ///
-        /// let table = Tables::Headers;
-        /// let result = tables_to_generic!(table, |GenericTable| GenericTable::NAME);
-        /// assert_eq!(result, table.name());
-        /// ```
-        macro_rules! _tables_to_generic {
-            ($table:expr, |$generic_name:ident| $e:expr) => {
-                match $table {
-                    $(
-                        Tables::$name => {
-                            use $crate::tables::$name as $generic_name;
-                            $e
-                        },
-                    )*
-                }
-            };
-        }
     };
 }
 
