@@ -184,8 +184,6 @@ impl NetworkState {
     /// See also <https://github.com/ethereum/devp2p/blob/master/caps/eth.md>
     #[allow(unused_variables)]
     pub(crate) fn announce_new_block(&mut self, msg: NewBlockMessage) {
-        // DISABLED
-        return;
         // send a `NewBlock` message to a fraction of the connected peers (square root of the total
         // number of peers)
         #[allow(unreachable_code)]
@@ -230,9 +228,6 @@ impl NetworkState {
     /// but sending `NewBlockHash` broadcast to all peers that haven't seen it yet.
     #[allow(unused_variables)]
     pub(crate) fn announce_new_block_hash(&mut self, msg: NewBlockMessage) {
-        // DISABLED
-        return;
-        #[allow(unreachable_code)]
         let number = msg.block.block.header.number;
         let hashes = NewBlockHashes(vec![BlockHashNumber { hash: msg.hash, number }]);
         for (peer_id, peer) in &mut self.active_peers {
@@ -270,11 +265,7 @@ impl NetworkState {
     /// This will keep track of blocks we know a peer has
     #[allow(unused_variables)]
     pub(crate) fn on_new_block(&mut self, peer_id: PeerId, hash: B256) {
-        // DISABLED
-        return;
-
         // Mark the blocks as seen
-        #[allow(unreachable_code)]
         if let Some(peer) = self.active_peers.get_mut(&peer_id) {
             peer.blocks.insert(hash);
         }
@@ -283,11 +274,7 @@ impl NetworkState {
     /// Invoked for a `NewBlockHashes` broadcast message.
     #[allow(unused_variables)]
     pub(crate) fn on_new_block_hashes(&mut self, peer_id: PeerId, hashes: Vec<BlockHashNumber>) {
-        // DISABLED
-        return;
-
         // Mark the blocks as seen
-        #[allow(unreachable_code)]
         if let Some(peer) = self.active_peers.get_mut(&peer_id) {
             peer.blocks.extend(hashes.into_iter().map(|b| b.hash));
         }
@@ -355,8 +342,8 @@ impl NetworkState {
                 self.state_fetcher.on_pending_disconnect(&peer_id);
                 self.queued_messages.push_back(StateAction::Disconnect { peer_id, reason });
             }
-            PeerAction::DisconnectBannedIncoming { peer_id } |
-            PeerAction::DisconnectUntrustedIncoming { peer_id } => {
+            PeerAction::DisconnectBannedIncoming { peer_id }
+            | PeerAction::DisconnectUntrustedIncoming { peer_id } => {
                 self.state_fetcher.on_pending_disconnect(&peer_id);
                 self.queued_messages.push_back(StateAction::Disconnect { peer_id, reason: None });
             }
@@ -380,10 +367,6 @@ impl NetworkState {
     /// caller to select the peer.
     #[allow(unused_variables)]
     fn handle_block_request(&mut self, peer: PeerId, request: BlockRequest) {
-        // DISABLED
-        return;
-
-        #[allow(unreachable_code)]
         if let Some(ref mut peer) = self.active_peers.get_mut(&peer) {
             let (request, response) = match request {
                 BlockRequest::GetBlockHeaders(request) => {
