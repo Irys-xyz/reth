@@ -15,7 +15,6 @@ use crate::{EthVersion, SharedTransactions};
 use alloy_primitives::bytes::{Buf, BufMut};
 use alloy_rlp::{length_of_length, Decodable, Encodable, Header};
 use std::{fmt::Debug, sync::Arc};
-use tracing::info;
 
 /// [`MAX_MESSAGE_SIZE`] is the maximum cap on the size of a protocol message.
 // https://github.com/ethereum/go-ethereum/blob/30602163d5d8321fbc68afdcbbaf2362b2641bde/eth/protocols/eth/protocol.go#L50
@@ -46,7 +45,6 @@ impl ProtocolMessage {
     /// Create a new `ProtocolMessage` from a message type and message rlp bytes.
     pub fn decode_message(version: EthVersion, buf: &mut &[u8]) -> Result<Self, MessageError> {
         let message_type = EthMessageID::decode(buf)?;
-        info!("JESSEDEBUG2 protocol message ID: {:?}", &message_type);
         let message = match message_type {
             EthMessageID::Status => EthMessage::Status(Status::decode(buf)?),
             EthMessageID::NewBlockHashes => {
@@ -220,7 +218,6 @@ pub enum EthMessage {
 impl EthMessage {
     /// Returns the message's ID.
     pub fn message_id(&self) -> EthMessageID {
-        info!("JESSEDEBUG2 sending {:?}", &self);
         match self {
             Self::Status(_) => EthMessageID::Status,
             Self::NewBlockHashes(_) => EthMessageID::NewBlockHashes,

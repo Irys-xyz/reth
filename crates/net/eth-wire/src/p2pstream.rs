@@ -23,7 +23,7 @@ use std::{
     time::Duration,
 };
 use tokio_stream::Stream;
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -474,7 +474,6 @@ where
                     this.pinger.on_pong()?
                 }
                 _ if id == P2PMessageID::Disconnect as u8 => {
-                    info!("JESSEDEBUG2 DISCONNECTED 1");
                     // At this point, the `decompress_buf` contains the snappy decompressed
                     // disconnect message.
                     //

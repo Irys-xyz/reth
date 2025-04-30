@@ -372,7 +372,7 @@ where
                 .expect("unable to build payload");
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             // todo: redo this
-            let built_payload = loop {
+            let _built_payload = loop {
                 match self.inner.payload_store.inner.best_payload(payload_id).await {
                     Some(v) => match v {
                         Ok(v) => {
@@ -405,6 +405,7 @@ where
 
             // self.submit_new_payload_irys(payload).await?;
             return Ok(payload);
+            // can't return built_payload due to serde :c
             // return Ok(built_payload);
         }
     }

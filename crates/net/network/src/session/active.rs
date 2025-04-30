@@ -213,7 +213,6 @@ impl ActiveSession {
                 on_request!(req, BlockBodies, GetBlockBodies)
             }
             EthMessage::BlockBodies(resp) => {
-                info!("JESSEDEBUG2 BLOCK BODIES {:?}", &resp);
                 on_response!(resp, GetBlockBodies)
             }
             EthMessage::GetPooledTransactions(req) => {

@@ -138,7 +138,6 @@ where
         <Engine as EngineTypes>::ExecutionPayloadV1Irys:
             From<Engine::BuiltPayload> + PayloadEnvelopeExt,
     {
-        use reth_payload_primitives::PayloadBuilder;
         // trigger new payload building draining the pool
         // self.payload.payload_builder.new_payload(attributes.clone()).await?;
 
@@ -151,7 +150,7 @@ where
         // wait for the payload builder to have finished building
         let p2 = self.payload.wait_for_built_payload(eth_attr.payload_id()).await;
         // trigger resolve payload via engine api
-        let execution_payload = self.engine_api.get_payload_v1_irys(eth_attr.payload_id()).await?;
+        let _ = self.engine_api.get_payload_v1_irys(eth_attr.payload_id()).await?;
         // ensure we're also receiving the built payload as event
         // let built_payload = self.payload.expect_built_payload().await?;
         // self.

@@ -21,7 +21,7 @@ use reth_primitives::{BlockBody, Header};
 use reth_storage_api::{BlockReader, HeaderProvider, ReceiptProvider};
 use tokio::sync::{mpsc::Receiver, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{info, warn};
+use tracing::{debug, warn};
 
 use crate::{
     budget::DEFAULT_BUDGET_TRY_DRAIN_DOWNLOADERS, metered_poll_nested_stream_with_budget,
@@ -165,12 +165,11 @@ where
         let mut bodies = Vec::new();
 
         let mut total_bytes = 0;
-        info!("JESSEDEBUG2 getting block bodies {:?}", &request.0);
+        debug!("Getting block bodies {:?}", &request.0);
 
         for hash in request.0 {
             if let Some(block) = self.client.block_by_hash(hash).unwrap_or_default() {
                 let body: BlockBody = block.into();
-                info!("JESSEDEBUG2 got block body! {}", &hash);
                 total_bytes += body.length();
                 bodies.push(body);
 
@@ -178,7 +177,7 @@ where
                     break;
                 }
             } else {
-                warn!("JESSEDEBUG2 unable to get block body {}", &hash);
+                warn!("Unable to get block body {}", &hash);
                 break;
             }
         }
