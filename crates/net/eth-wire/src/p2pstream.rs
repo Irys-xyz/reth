@@ -23,7 +23,7 @@ use std::{
     time::Duration,
 };
 use tokio_stream::Stream;
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -474,6 +474,7 @@ where
                     this.pinger.on_pong()?
                 }
                 _ if id == P2PMessageID::Disconnect as u8 => {
+                    info!("JESSEDEBUG2 DISCONNECTED 1");
                     // At this point, the `decompress_buf` contains the snappy decompressed
                     // disconnect message.
                     //
@@ -620,10 +621,10 @@ where
                 Poll::Ready(Err(err)) => break Poll::Ready(Err(err.into())),
                 Poll::Ready(Ok(())) => {
                     let Some(message) = this.outgoing_messages.pop_front() else {
-                        break Poll::Ready(Ok(()))
+                        break Poll::Ready(Ok(()));
                     };
                     if let Err(err) = this.inner.as_mut().start_send(message) {
-                        break Poll::Ready(Err(err.into()))
+                        break Poll::Ready(Err(err.into()));
                     }
                 }
             }

@@ -372,7 +372,7 @@ where
                 .expect("unable to build payload");
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             // todo: redo this
-            let _b = loop {
+            let built_payload = loop {
                 match self.inner.payload_store.inner.best_payload(payload_id).await {
                     Some(v) => match v {
                         Ok(v) => {
@@ -384,7 +384,7 @@ where
                                 continue;
                             } else {
                                 trace!("JESSEDEBUG got payload {:?}", &v.block().hash());
-                                break v.block().clone();
+                                break v;
                             }
                         }
                         Err(e) => {
@@ -403,7 +403,9 @@ where
                 .await
                 .expect("unable to get payload from payload store");
 
+            // self.submit_new_payload_irys(payload).await?;
             return Ok(payload);
+            // return Ok(built_payload);
         }
     }
 
@@ -1357,8 +1359,8 @@ mod tests {
                 blocks
                     .iter()
                     .filter(|b| {
-                        !first_missing_range.contains(&b.number) &&
-                            !second_missing_range.contains(&b.number)
+                        !first_missing_range.contains(&b.number)
+                            && !second_missing_range.contains(&b.number)
                     })
                     .map(|b| (b.hash(), b.clone().unseal())),
             );
@@ -1387,8 +1389,8 @@ mod tests {
                 // ensure we still return trailing `None`s here because by-hash will not be aware
                 // of the missing block's number, and cannot compare it to the current best block
                 .map(|b| {
-                    if first_missing_range.contains(&b.number) ||
-                        second_missing_range.contains(&b.number)
+                    if first_missing_range.contains(&b.number)
+                        || second_missing_range.contains(&b.number)
                     {
                         None
                     } else {
@@ -1418,8 +1420,8 @@ mod tests {
                     .chain_spec
                     .fork(EthereumHardfork::Paris)
                     .ttd()
-                    .unwrap() +
-                    U256::from(1),
+                    .unwrap()
+                    + U256::from(1),
                 ..Default::default()
             };
 

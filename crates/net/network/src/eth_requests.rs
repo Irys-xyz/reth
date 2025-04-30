@@ -21,6 +21,7 @@ use reth_primitives::{BlockBody, Header};
 use reth_storage_api::{BlockReader, HeaderProvider, ReceiptProvider};
 use tokio::sync::{mpsc::Receiver, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
+use tracing::{info, warn};
 
 use crate::{
     budget::DEFAULT_BUDGET_TRY_DRAIN_DOWNLOADERS, metered_poll_nested_stream_with_budget,
@@ -133,7 +134,7 @@ where
                 headers.push(header);
 
                 if headers.len() >= MAX_HEADERS_SERVE || total_bytes > SOFT_RESPONSE_LIMIT {
-                    break
+                    break;
                 }
             } else {
                 break;
@@ -164,18 +165,20 @@ where
         let mut bodies = Vec::new();
 
         let mut total_bytes = 0;
+        info!("JESSEDEBUG2 getting block bodies {:?}", &request.0);
 
         for hash in request.0 {
             if let Some(block) = self.client.block_by_hash(hash).unwrap_or_default() {
                 let body: BlockBody = block.into();
-
+                info!("JESSEDEBUG2 got block body! {}", &hash);
                 total_bytes += body.length();
                 bodies.push(body);
 
                 if bodies.len() >= MAX_BODIES_SERVE || total_bytes > SOFT_RESPONSE_LIMIT {
-                    break
+                    break;
                 }
             } else {
+                warn!("JESSEDEBUG2 unable to get block body {}", &hash);
                 break;
             }
         }
@@ -208,7 +211,7 @@ where
                 receipts.push(receipt);
 
                 if receipts.len() >= MAX_RECEIPTS_SERVE || total_bytes > SOFT_RESPONSE_LIMIT {
-                    break
+                    break;
                 }
             } else {
                 break;
