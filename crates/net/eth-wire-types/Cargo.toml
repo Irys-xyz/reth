@@ -16,7 +16,6 @@ workspace = true
 reth-chainspec.workspace = true
 reth-codecs-derive.workspace = true
 reth-primitives.workspace = true
-
 # ethereum
 alloy-chains = { workspace = true, features = ["rlp"] }
 alloy-eips.workspace = true

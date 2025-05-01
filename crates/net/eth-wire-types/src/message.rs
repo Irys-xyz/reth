@@ -12,7 +12,6 @@ use super::{
     NewPooledTransactionHashes68, NodeData, PooledTransactions, Receipts, Status, Transactions,
 };
 use crate::{EthVersion, SharedTransactions};
-
 use alloy_primitives::bytes::{Buf, BufMut};
 use alloy_rlp::{length_of_length, Decodable, Encodable, Header};
 use std::{fmt::Debug, sync::Arc};
@@ -46,7 +45,6 @@ impl ProtocolMessage {
     /// Create a new `ProtocolMessage` from a message type and message rlp bytes.
     pub fn decode_message(version: EthVersion, buf: &mut &[u8]) -> Result<Self, MessageError> {
         let message_type = EthMessageID::decode(buf)?;
-
         let message = match message_type {
             EthMessageID::Status => EthMessage::Status(Status::decode(buf)?),
             EthMessageID::NewBlockHashes => {
@@ -91,14 +89,14 @@ impl ProtocolMessage {
             }
             EthMessageID::GetNodeData => {
                 if version >= EthVersion::Eth67 {
-                    return Err(MessageError::Invalid(version, EthMessageID::GetNodeData))
+                    return Err(MessageError::Invalid(version, EthMessageID::GetNodeData));
                 }
                 let request_pair = RequestPair::<GetNodeData>::decode(buf)?;
                 EthMessage::GetNodeData(request_pair)
             }
             EthMessageID::NodeData => {
                 if version >= EthVersion::Eth67 {
-                    return Err(MessageError::Invalid(version, EthMessageID::GetNodeData))
+                    return Err(MessageError::Invalid(version, EthMessageID::GetNodeData));
                 }
                 let request_pair = RequestPair::<NodeData>::decode(buf)?;
                 EthMessage::NodeData(request_pair)
@@ -219,7 +217,7 @@ pub enum EthMessage {
 
 impl EthMessage {
     /// Returns the message's ID.
-    pub const fn message_id(&self) -> EthMessageID {
+    pub fn message_id(&self) -> EthMessageID {
         match self {
             Self::Status(_) => EthMessageID::Status,
             Self::NewBlockHashes(_) => EthMessageID::NewBlockHashes,
@@ -483,7 +481,7 @@ where
         // RequestPair
         let consumed_len = initial_length - buf.len();
         if consumed_len != header.payload_length {
-            return Err(alloy_rlp::Error::UnexpectedLength)
+            return Err(alloy_rlp::Error::UnexpectedLength);
         }
 
         Ok(Self { request_id, message })
