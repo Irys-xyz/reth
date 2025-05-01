@@ -81,18 +81,6 @@ pub struct BlockchainProvider<N: NodeTypesWithDB> {
     pub chain_info: ChainInfoTracker,
 }
 
-use std::fmt;
-
-impl<N: NodeTypesWithDB> fmt::Debug for BlockchainProvider<N> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BlockchainProvider")
-            .field("database", &self.database)
-            .field("tree", &"[Arc<dyn TreeViewer>]")
-            .field("chain_info", &self.chain_info)
-            .finish()
-    }
-}
-
 impl<N: ProviderNodeTypes> Clone for BlockchainProvider<N> {
     fn clone(&self) -> Self {
         Self {

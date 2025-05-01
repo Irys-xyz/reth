@@ -41,19 +41,6 @@ impl<E: EngineTypes> EngineApiTestContext<E> {
         Ok(self.engine_api_client.request("engine_getPayloadV1Irys", (payload_id,)).await?)
     }
 
-    pub async fn build_payload_v1_irys(
-        &self,
-        parent: B256,
-        payload_attributes: E::PayloadAttributes,
-    ) -> eyre::Result<E::ExecutionPayloadV1Irys> {
-        Ok(EngineApiClient::<E>::build_new_payload_irys(
-            &self.engine_api_client,
-            parent,
-            payload_attributes,
-        )
-        .await?)
-    }
-
     /// Submits a payload to the engine api
     pub async fn submit_payload(
         &self,

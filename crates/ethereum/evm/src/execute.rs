@@ -166,20 +166,19 @@ where
         //     Default::default(),
         // ))
         // .build();
-
-        // let prev = evm.context.evm.inner.journaled_state.checkpoint();
-
+        let prev = evm.context.evm.inner.journaled_state.checkpoint();
+        // TODO: fix this
         let shadow_exec =
             apply_block_shadows(block.body.shadows.as_ref(), &mut evm).map_err(move |err| {
                 let new_err = err.map_db_err(|e| e.into());
                 BlockValidationError::EVM { hash: B256::ZERO, error: Box::new(new_err) }
             })?;
-        info!("shadow exec2: {:#?}", &shadow_exec);
+        info!("shadow exec: {:#?}", &shadow_exec);
         let ss = evm.context.evm.inner.journaled_state.state.clone();
 
         evm.db_mut().commit(ss);
 
-        // evm.context.evm.inner.journaled_state.checkpoint_revert(prev);
+        evm.context.evm.inner.journaled_state.checkpoint_revert(prev);
 
         // execute transactions
         let mut cumulative_gas_used = 0;
