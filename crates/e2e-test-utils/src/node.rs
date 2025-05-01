@@ -129,6 +129,71 @@ where
         Ok((built_payload, eth_attr))
     }
 
+    pub async fn new_payload_irys(
+        &mut self,
+        // attributes: Engine::PayloadBuilderAttributes,
+        attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
+    ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
+    where
+        <Engine as EngineTypes>::ExecutionPayloadV1Irys:
+            From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+    {
+        // trigger new payload building draining the pool
+        // self.payload.payload_builder.new_payload(attributes.clone()).await?;
+
+        // let eth_attr = attributes;
+
+        let eth_attr = self.payload.new_payload(attributes_generator).await.unwrap();
+
+        // first event is the payload attributes
+        // self.payload.expect_attr_event(eth_attr.clone()).await?;
+        // wait for the payload builder to have finished building
+        let p2 = self.payload.wait_for_built_payload(eth_attr.payload_id()).await;
+        // trigger resolve payload via engine api
+        let _ = self.engine_api.get_payload_v1_irys(eth_attr.payload_id()).await?;
+        // ensure we're also receiving the built payload as event
+        // let built_payload = self.payload.expect_built_payload().await?;
+        // self.
+        // Ok((built_payload, eth_attr))
+        Ok((/* execution_payload */ p2, eth_attr))
+    }
+
+    pub async fn new_payload_irys2(
+        &mut self,
+        parent: B256,
+        attributes: Engine::PayloadAttributes,
+    ) -> eyre::Result<(
+        Engine::ExecutionPayloadV1Irys,
+        Engine::BuiltPayload,
+        Engine::PayloadBuilderAttributes,
+    )>
+    where
+        <Engine as EngineTypes>::ExecutionPayloadV1Irys:
+            From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+    {
+        let payload_builder_attributes =
+            <Engine as reth_node_builder::PayloadTypes>::PayloadBuilderAttributes::try_new(
+                parent, attributes,
+            )
+            .expect("unable to build PayloadBuilderAttributes");
+        use reth_payload_primitives::PayloadBuilder;
+        // trigger new payload building draining the pool
+        self.payload.payload_builder.new_payload(payload_builder_attributes.clone()).await?;
+
+        let eth_attr = payload_builder_attributes;
+        // first event is the payload attributes
+        // self.payload.expect_attr_event(eth_attr.clone()).await?;
+        // wait for the payload builder to have finished building
+        let built_payload = self.payload.wait_for_built_payload(eth_attr.payload_id()).await;
+        // trigger resolve payload via engine api
+        let execution_payload = self.engine_api.get_payload_v1_irys(eth_attr.payload_id()).await?;
+        // ensure we're also receiving the built payload as event
+        // let built_payload = self.payload.expect_built_payload().await?;
+        // self.
+        // Ok((built_payload, eth_attr))
+        Ok((execution_payload, built_payload, eth_attr))
+    }
+
     /// Advances the node forward one block
     pub async fn advance_block(
         &mut self,
@@ -140,6 +205,34 @@ where
             From<Engine::BuiltPayload> + PayloadEnvelopeExt,
     {
         let (payload, eth_attr) = self.new_payload(attributes_generator).await?;
+
+        let block_hash = self
+            .engine_api
+            .submit_payload(
+                payload.clone(),
+                eth_attr.clone(),
+                PayloadStatusEnum::Valid,
+                versioned_hashes,
+            )
+            .await?;
+
+        // trigger forkchoice update via engine api to commit the block to the blockchain
+        self.engine_api.update_forkchoice(block_hash, block_hash).await?;
+
+        Ok((payload, eth_attr))
+    }
+
+    /// Advances the node forward one block
+    pub async fn advance_block_irys(
+        &mut self,
+        versioned_hashes: Vec<B256>,
+        attributes_generator: impl Fn(u64) -> Engine::PayloadBuilderAttributes,
+    ) -> eyre::Result<(Engine::BuiltPayload, Engine::PayloadBuilderAttributes)>
+    where
+        <Engine as EngineTypes>::ExecutionPayloadV1Irys:
+            From<Engine::BuiltPayload> + PayloadEnvelopeExt,
+    {
+        let (payload, eth_attr) = self.new_payload_irys(attributes_generator).await?;
 
         let block_hash = self
             .engine_api
@@ -220,6 +313,37 @@ where
         let head = self.engine_api.canonical_stream.next().await.unwrap();
         let tx = head.tip().transactions().next();
         assert_eq!(tx.unwrap().hash().as_slice(), tip_tx_hash.as_slice());
+
+        loop {
+            // wait for the block to commit
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            if let Some(latest_block) =
+                self.inner.provider.block_by_number_or_tag(BlockNumberOrTag::Latest)?
+            {
+                if latest_block.number == block_number {
+                    // make sure the block hash we submitted via FCU engine api is the new latest
+                    // block using an RPC call
+                    assert_eq!(latest_block.hash_slow(), block_hash);
+                    break;
+                }
+            }
+        }
+        Ok(())
+    }
+    /// Asserts that a new block has been added to the blockchain
+    /// and the tx has been included in the block.
+    ///
+    /// Does NOT work for pipeline since there's no stream notification!
+    pub async fn assert_new_block2(
+        &self,
+        block_hash: B256,
+        block_number: BlockNumber,
+    ) -> eyre::Result<()> {
+        // get head block from notifications stream and verify the tx has been pushed to the
+        // pool is actually present in the canonical block
+        // let head = self.engine_api.canonical_stream.next().await.unwrap();
+        // let tx = head.tip().transactions().next();
+        // assert_eq!(tx.unwrap().hash().as_slice(), tip_tx_hash.as_slice());
 
         loop {
             // wait for the block to commit
