@@ -228,18 +228,6 @@ pub mod test_utils {
         Arc::new(TempDatabase::new(db, path))
     }
 
-    /// Create read/write database for testing
-    pub fn create_test_rw_db_with_path2<P: AsRef<Path>>(path: P) -> Arc<DatabaseEnv> {
-        let path = path.as_ref().to_path_buf();
-        let db = init_db(
-            path.as_path(),
-            DatabaseArguments::new(ClientVersion::default())
-                .with_max_read_transaction_duration(Some(MaxReadTransactionDuration::Unbounded)),
-        )
-        .expect(ERROR_DB_CREATION);
-        Arc::new(db)
-    }
-
     /// Create read only database for testing
     pub fn create_test_ro_db() -> Arc<TempDatabase<DatabaseEnv>> {
         let args = DatabaseArguments::new(ClientVersion::default())

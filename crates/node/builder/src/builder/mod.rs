@@ -208,41 +208,6 @@ impl<DB, ChainSpec: EthChainSpec> NodeBuilder<DB, ChainSpec> {
 
         WithLaunchContext { builder: self.with_database(db), task_executor }
     }
-
-    #[cfg(feature = "test-utils")]
-    pub fn testing_node2(
-        mut self,
-        task_executor: TaskExecutor,
-    ) -> WithLaunchContext<NodeBuilder<Arc<reth_db::DatabaseEnv>, ChainSpec>> {
-        let path = reth_node_core::dirs::MaybePlatformPath::<DataDirPath>::from(
-            reth_db::test_utils::tempdir_path(),
-        );
-        self.config = self.config.with_datadir_args(reth_node_core::args::DatadirArgs {
-            datadir: path.clone(),
-            ..Default::default()
-        });
-
-        let data_dir =
-            path.unwrap_or_chain_default(self.config.chain.chain(), self.config.datadir.clone());
-
-        let db = reth_db::test_utils::create_test_rw_db_with_path2(data_dir.db());
-
-        WithLaunchContext { builder: self.with_database(db), task_executor }
-    }
-
-    // /// Creates an _ephemeral_ preconfigured node for testing purposes.
-    // pub fn testing_node_2(
-    //     self,
-    //     task_executor: TaskExecutor,
-    // ) -> WithLaunchContext<NodeBuilder<Arc<DatabaseEnv>>> {
-    //     let (db, path) = create_test_rw_db_2();
-    //     let db_path_str = path.to_str().expect("Path is not valid unicode");
-    //     let path =
-    //         MaybePlatformPath::<DataDirPath>::from_str(db_path_str).expect("Path is not valid");
-    //     let data_dir = path.unwrap_or_chain_default(self.config.chain.chain);
-
-    //     WithLaunchContext { builder: self.with_database(db), task_executor }
-    // }
 }
 
 impl<DB, ChainSpec> NodeBuilder<DB, ChainSpec>
