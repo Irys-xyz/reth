@@ -14,6 +14,7 @@ use reth_db_api::{
     database::Database,
     database_metrics::DatabaseMetrics,
     models::ClientVersion,
+    table::TableInfo,
     transaction::{DbTx, DbTxMut},
 };
 use reth_libmdbx::{
@@ -137,6 +138,13 @@ impl DatabaseArguments {
         if let Some(growth_step) = growth_step {
             self.geometry.growth_step = Some(growth_step as isize);
         }
+        self
+    }
+
+    /// Sets the "shrink threshold" for the database (how much free space it'll allow before
+    /// shrinking it's FS footprint)
+    pub const fn with_shrink_threshold(mut self, shrink_threshold: isize) -> Self {
+        self.geometry.shrink_threshold = Some(shrink_threshold);
         self
     }
 
@@ -417,7 +425,7 @@ impl DatabaseEnv {
                     LogLevel::Extra => 7,
                 });
             } else {
-                return Err(DatabaseError::LogLevelUnavailable(log_level))
+                return Err(DatabaseError::LogLevelUnavailable(log_level));
             }
         }
 
@@ -437,6 +445,12 @@ impl DatabaseEnv {
     /// Enables metrics on the database.
     pub fn with_metrics(mut self) -> Self {
         self.metrics = Some(DatabaseEnvMetrics::new().into());
+        self
+    }
+
+    /// register custom tables with DatabaseEnvMetrics
+    pub fn with_metrics_and_tables<T: TableSet + TableInfo>(mut self, tables: &[T]) -> Self {
+        self.metrics = Some(DatabaseEnvMetrics::new_with_tables(tables).into());
         self
     }
 
@@ -465,7 +479,7 @@ impl DatabaseEnv {
     /// Records version that accesses the database with write privileges.
     pub fn record_client_version(&self, version: ClientVersion) -> Result<(), DatabaseError> {
         if version.is_empty() {
-            return Ok(())
+            return Ok(());
         }
 
         let tx = self.tx_mut()?;
