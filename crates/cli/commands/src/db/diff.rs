@@ -1,5 +1,5 @@
 use clap::Parser;
-use reth_db::{open_db_read_only, tables_to_generic, DatabaseEnv};
+use reth_db::{open_db_read_only, DatabaseEnv, Tables_to_generic};
 use reth_db_api::{
     cursor::DbCursorRO, database::Database, table::Table, transaction::DbTx, Tables,
 };
@@ -78,7 +78,7 @@ impl Command {
             secondary_tx.disable_long_read_transaction_safety();
 
             let output_dir = self.output.clone();
-            tables_to_generic!(table, |Table| find_diffs::<Table>(
+            Tables_to_generic!(table, |Table| find_diffs::<Table>(
                 primary_tx,
                 secondary_tx,
                 output_dir
@@ -309,12 +309,12 @@ where
     ) {
         // do not bother comparing if the key is already in the discrepancies map
         if self.discrepancies.contains_key(&key) {
-            return
+            return;
         }
 
         // do not bother comparing if the key is already in the extra elements map
         if self.extra_elements.contains_key(&key) {
-            return
+            return;
         }
 
         match (first, second) {
