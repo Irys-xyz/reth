@@ -31,13 +31,13 @@ pub mod transaction;
 pub mod wallet;
 
 /// Helper for payload operations
-mod payload;
+pub mod payload;
 
 /// Helper for network operations
-mod network;
+pub mod network;
 
 /// Helper for rpc operations
-mod rpc;
+pub mod rpc;
 
 /// Creates the initial setup with `num_nodes` started and interconnected.
 pub async fn setup<N>(

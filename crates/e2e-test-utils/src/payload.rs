@@ -9,7 +9,7 @@ use tokio_stream::wrappers::BroadcastStream;
 #[derive(derive_more::Debug)]
 pub struct PayloadTestContext<T: PayloadTypes> {
     pub payload_event_stream: BroadcastStream<Events<T>>,
-    payload_builder: PayloadBuilderHandle<T>,
+    pub payload_builder: PayloadBuilderHandle<T>,
     pub timestamp: u64,
     #[debug(skip)]
     attributes_generator: Box<dyn Fn(u64) -> T::PayloadBuilderAttributes + Send + Sync>,
@@ -60,7 +60,7 @@ impl<T: PayloadTypes> PayloadTestContext<T> {
             let payload = self.payload_builder.best_payload(payload_id).await.unwrap().unwrap();
             if payload.block().body().transactions().is_empty() {
                 tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-                continue
+                continue;
             }
             // Resolve payload once its built
             self.payload_builder
