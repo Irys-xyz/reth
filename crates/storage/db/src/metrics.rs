@@ -1,8 +1,7 @@
 use crate::Tables;
 use metrics::Histogram;
-use reth_db_api::{table::TableInfo, TableSet};
 use reth_metrics::{metrics::Counter, Metrics};
-use rustc_hash::FxHashMap;
+pub use rustc_hash::FxHashMap;
 use std::time::{Duration, Instant};
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
@@ -14,15 +13,15 @@ const LARGE_VALUE_THRESHOLD_BYTES: usize = 4096;
 /// Requires a metric recorder to be registered before creating an instance of this struct.
 /// Otherwise, metric recording will no-op.
 #[derive(Debug)]
-pub(crate) struct DatabaseEnvMetrics {
+pub struct DatabaseEnvMetrics {
     /// Caches `OperationMetrics` handles for each table and operation tuple.
-    operations: FxHashMap<(&'static str, Operation), OperationMetrics>,
+    pub operations: FxHashMap<(&'static str, Operation), OperationMetrics>,
     /// Caches `TransactionMetrics` handles for counters grouped by only transaction mode.
     /// Updated both at tx open and close.
-    transactions: FxHashMap<TransactionMode, TransactionMetrics>,
+    pub transactions: FxHashMap<TransactionMode, TransactionMetrics>,
     /// Caches `TransactionOutcomeMetrics` handles for counters grouped by transaction mode and
     /// outcome. Can only be updated at tx close, as outcome is only known at that point.
-    transaction_outcomes:
+    pub transaction_outcomes:
         FxHashMap<(TransactionMode, TransactionOutcome), TransactionOutcomeMetrics>,
 }
 
@@ -58,40 +57,9 @@ impl DatabaseEnvMetrics {
         operations
     }
 
-    pub(crate) fn new_with_tables<T: TableSet + TableInfo>(tables: &[T]) -> Self {
-        // Pre-populate metric handle maps with all possible combinations of labels
-        // to avoid runtime locks on the map when recording metrics.
-        Self {
-            operations: Self::generate_operation_handles_with_tables(tables),
-            transactions: Self::generate_transaction_handles(),
-            transaction_outcomes: Self::generate_transaction_outcome_handles(),
-        }
-    }
-
-    pub(crate) fn generate_operation_handles_with_tables<T: TableSet + TableInfo>(
-        tables: &[T],
-    ) -> FxHashMap<(&'static str, Operation), OperationMetrics> {
-        let mut operations = FxHashMap::with_capacity_and_hasher(
-            (Tables::COUNT + tables.len()) * Operation::COUNT,
-            Default::default(),
-        );
-        for table in tables {
-            for operation in Operation::iter() {
-                operations.insert(
-                    (table.name(), operation),
-                    OperationMetrics::new_with_labels(&[
-                        (Labels::Table.as_str(), table.name()),
-                        (Labels::Operation.as_str(), operation.as_str()),
-                    ]),
-                );
-            }
-        }
-        operations
-    }
-
     /// Generate a map of all possible transaction modes to metric handles.
     /// Used for tracking a counter of open transactions.
-    fn generate_transaction_handles() -> FxHashMap<TransactionMode, TransactionMetrics> {
+    pub fn generate_transaction_handles() -> FxHashMap<TransactionMode, TransactionMetrics> {
         TransactionMode::iter()
             .map(|mode| {
                 (
@@ -107,7 +75,7 @@ impl DatabaseEnvMetrics {
 
     /// Generate a map of all possible transaction mode and outcome handles.
     /// Used for tracking various stats for finished transactions (e.g. commit duration).
-    fn generate_transaction_outcome_handles(
+    pub fn generate_transaction_outcome_handles(
     ) -> FxHashMap<(TransactionMode, TransactionOutcome), TransactionOutcomeMetrics> {
         let mut transaction_outcomes = FxHashMap::with_capacity_and_hasher(
             TransactionMode::COUNT * TransactionOutcome::COUNT,
@@ -175,7 +143,7 @@ impl DatabaseEnvMetrics {
 
 /// Transaction mode for the database, either read-only or read-write.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumCount, EnumIter)]
-pub(crate) enum TransactionMode {
+pub enum TransactionMode {
     /// Read-only transaction mode.
     ReadOnly,
     /// Read-write transaction mode.
@@ -199,7 +167,7 @@ impl TransactionMode {
 
 /// Transaction outcome after a database operation - commit, abort, or drop.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumCount, EnumIter)]
-pub(crate) enum TransactionOutcome {
+pub enum TransactionOutcome {
     /// Successful commit of the transaction.
     Commit,
     /// Aborted transaction.
@@ -226,7 +194,7 @@ impl TransactionOutcome {
 
 /// Types of operations conducted on the database: get, put, delete, and various cursor operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumCount, EnumIter)]
-pub(crate) enum Operation {
+pub enum Operation {
     /// Database get operation.
     Get,
     /// Database put operation.
@@ -249,7 +217,7 @@ pub(crate) enum Operation {
 
 impl Operation {
     /// Returns the operation as a string.
-    pub(crate) const fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Get => "get",
             Self::Put => "put",
@@ -265,7 +233,7 @@ impl Operation {
 }
 
 /// Enum defining labels for various aspects used in metrics.
-enum Labels {
+pub enum Labels {
     /// Label representing a table.
     Table,
     /// Label representing a transaction mode.
@@ -278,7 +246,7 @@ enum Labels {
 
 impl Labels {
     /// Converts each label variant into its corresponding string representation.
-    pub(crate) const fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Table => "table",
             Self::TransactionMode => "mode",
@@ -290,7 +258,7 @@ impl Labels {
 
 #[derive(Metrics, Clone)]
 #[metrics(scope = "database.transaction")]
-pub(crate) struct TransactionMetrics {
+pub struct TransactionMetrics {
     /// Total number of opened database transactions (cumulative)
     opened_total: Counter,
     /// Total number of closed database transactions (cumulative)
@@ -309,7 +277,8 @@ impl TransactionMetrics {
 
 #[derive(Metrics, Clone)]
 #[metrics(scope = "database.transaction")]
-pub(crate) struct TransactionOutcomeMetrics {
+/// Metrics for transaction outcomes
+pub struct TransactionOutcomeMetrics {
     /// The time a database transaction has been open
     open_duration_seconds: Histogram,
     /// The time it took to close a database transaction
@@ -364,7 +333,7 @@ impl TransactionOutcomeMetrics {
 
 #[derive(Metrics, Clone)]
 #[metrics(scope = "database.operation")]
-pub(crate) struct OperationMetrics {
+pub struct OperationMetrics {
     /// Total number of database operations made
     calls_total: Counter,
     /// The time it took to execute a database operation (`put/upsert/insert/append/append_dup`)

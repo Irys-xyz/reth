@@ -181,7 +181,7 @@ pub struct DatabaseEnv {
     /// Libmdbx-sys environment.
     inner: Environment,
     /// Cache for metric handles. If `None`, metrics are not recorded.
-    metrics: Option<Arc<DatabaseEnvMetrics>>,
+    pub metrics: Option<Arc<DatabaseEnvMetrics>>,
     /// Write lock for when dealing with a read-write environment.
     _lock_file: Option<StorageLock>,
 }
@@ -445,12 +445,6 @@ impl DatabaseEnv {
     /// Enables metrics on the database.
     pub fn with_metrics(mut self) -> Self {
         self.metrics = Some(DatabaseEnvMetrics::new().into());
-        self
-    }
-
-    /// register custom tables with DatabaseEnvMetrics
-    pub fn with_metrics_and_tables<T: TableSet + TableInfo>(mut self, tables: &[T]) -> Self {
-        self.metrics = Some(DatabaseEnvMetrics::new_with_tables(tables).into());
         self
     }
 
