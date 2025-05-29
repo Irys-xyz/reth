@@ -279,10 +279,10 @@ macro_rules! tables {
         /// # Examples
         ///
         /// ```
-        /// use reth_db_api::{table::Table, Tables, tables_to_generic};
+        /// use reth_db_api::{table::Table, Tables, Tables_to_generic};
         ///
         /// let table = Tables::Headers;
-        /// let result = tables_to_generic!(table, |GenericTable| <GenericTable as Table>::NAME);
+        /// let result = Tables_to_generic!(table, |GenericTable| <GenericTable as Table>::NAME);
         /// assert_eq!(result, table.name());
         /// ```
             #[macro_export]
