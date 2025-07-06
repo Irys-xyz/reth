@@ -245,7 +245,7 @@ impl TaskManager {
         while self.graceful_tasks.load(Ordering::Relaxed) > 0 {
             if when.map(|when| std::time::Instant::now() > when).unwrap_or(false) {
                 debug!("graceful shutdown timed out");
-                return false
+                return false;
             }
             std::hint::spin_loop();
         }
@@ -280,12 +280,11 @@ pub struct PanickedTaskError {
     task_name: &'static str,
     error: Option<String>,
 }
-
 impl Display for PanickedTaskError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let task_name = self.task_name;
         if let Some(error) = &self.error {
-            write!(f, "Critical task `{task_name}` panicked: `{error}`")
+            write!(f, "Critical task `{task_name}` panicked: `{:?}`", &error)
         } else {
             write!(f, "Critical task `{task_name}` panicked")
         }
