@@ -9,17 +9,6 @@ $ reth init-state --help
 Usage: reth init-state [OPTIONS] <STATE_DUMP_FILE>
 
 Options:
-      --instance <INSTANCE>
-          Add a new instance of a node.
-
-          Configures the ports of the node to avoid conflicts with the defaults. This is useful for running multiple nodes on the same machine.
-
-          Max number of instances is 200. It is chosen in a way so that it's not possible to have port numbers that conflict with each other.
-
-          Changes to the following port numbers: - `DISCOVERY_PORT`: default + `instance` - 1 - `AUTH_PORT`: default + `instance` * 100 - 100 - `HTTP_RPC_PORT`: default - `instance` + 1 - `WS_RPC_PORT`: default + `instance` * 2 - 2
-
-          [default: 1]
-
   -h, --help
           Print help (see a summary with '-h')
 
@@ -46,7 +35,7 @@ Datadir:
           Possible values are either a built-in chain or the path to a chain specification file.
 
           Built-in chains:
-              mainnet, sepolia, holesky, dev
+              mainnet, sepolia, holesky, hoodi, dev
 
           [default: mainnet]
 
@@ -68,6 +57,31 @@ Database:
           Open environment in exclusive/monopolistic mode. Makes it possible to open a database on an NFS volume
 
           [possible values: true, false]
+
+      --db.max-size <MAX_SIZE>
+          Maximum database size (e.g., 4TB, 8MB)
+
+      --db.growth-step <GROWTH_STEP>
+          Database growth step (e.g., 4GB, 4KB)
+
+      --db.read-transaction-timeout <READ_TRANSACTION_TIMEOUT>
+          Read transaction timeout in seconds, 0 means no timeout
+
+      --without-evm
+          Specifies whether to initialize the state without relying on EVM historical data.
+
+          When enabled, and before inserting the state, it creates a dummy chain up to the last EVM block specified. It then, appends the first block provided block.
+
+          - **Note**: **Do not** import receipts and blocks beforehand, or this will fail or be ignored.
+
+      --header <HEADER_FILE>
+          Header file containing the header in an RLP encoded format.
+
+      --total-difficulty <TOTAL_DIFFICULTY>
+          Total difficulty of the header.
+
+      --header-hash <HEADER_HASH>
+          Hash of the header.
 
   <STATE_DUMP_FILE>
           JSONL file with state dump.

@@ -44,7 +44,8 @@ impl<'a> StructHandler<'a> {
 
     /// Generates `to_compact` code for a struct field.
     fn to(&mut self, field_descriptor: &StructFieldDescriptor) {
-        let (name, ftype, is_compact, use_alt_impl) = field_descriptor;
+        let StructFieldDescriptor { name, ftype, is_compact, use_alt_impl, is_reference: _ } =
+            field_descriptor;
 
         let to_compact_ident = if *use_alt_impl {
             format_ident!("specialized_to_compact")
@@ -66,7 +67,7 @@ impl<'a> StructHandler<'a> {
                 })
             }
 
-            return
+            return;
         }
 
         let name = format_ident!("{name}");
@@ -97,7 +98,7 @@ impl<'a> StructHandler<'a> {
 
     /// Generates `from_compact` code for a struct field.
     fn from(&mut self, field_descriptor: &StructFieldDescriptor, known_types: &[&str]) {
-        let (name, ftype, is_compact, use_alt_impl) = field_descriptor;
+        let StructFieldDescriptor { name, ftype, is_compact, use_alt_impl, .. } = field_descriptor;
 
         let (name, len) = if name.is_empty() {
             self.is_wrapper = true;
@@ -129,13 +130,15 @@ impl<'a> StructHandler<'a> {
         // relying on the length provided by the higher-level deserializer. For example, a
         // type "T" with two "u64" fields doesn't need the length parameter from
         // "T::from_compact(buf, len)" since the length of "u64" is known internally (bitpacked).
-        assert!(
-            known_types.contains(&ftype.as_str()) ||
-                is_flag_type(ftype) ||
-                self.fields_iterator.peek().is_none(),
-            "`{ftype}` field should be placed as the last one since it's not known.
-            If it's an alias type (which are not supported by proc_macro), be sure to add it to either `known_types` or `get_bit_size` lists in the derive crate."
-        );
+
+        // IRYS MODIFICATION - TODO implement something like #[compact_ignore] to surgically disable this,
+        // assert!(
+        //     known_types.contains(&ftype.as_str()) ||
+        //         is_flag_type(ftype) ||
+        //         self.fields_iterator.peek().is_none(),
+        //     "`{ftype}` field should be placed as the last one since it's not known.
+        //     If it's an alias type (which are not supported by proc_macro), be sure to add it to either `known_types` or `get_bit_size` lists in the derive crate."
+        // );
 
         if ftype == "Bytes" {
             self.lines.push(quote! {

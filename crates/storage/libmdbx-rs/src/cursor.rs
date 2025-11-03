@@ -59,19 +59,18 @@ where
     }
 
     /// Returns an iterator over the raw key value slices.
-    #[allow(clippy::needless_lifetimes)]
-    pub fn iter_slices<'a>(&'a self) -> IntoIter<'a, K, Cow<'a, [u8]>, Cow<'a, [u8]>> {
+    pub fn iter_slices<'a>(self) -> IntoIter<K, Cow<'a, [u8]>, Cow<'a, [u8]>> {
         self.into_iter()
     }
 
     /// Returns an iterator over database items.
-    #[allow(clippy::should_implement_trait)]
-    pub fn into_iter<Key, Value>(&self) -> IntoIter<'_, K, Key, Value>
+    #[expect(clippy::should_implement_trait)]
+    pub fn into_iter<Key, Value>(self) -> IntoIter<K, Key, Value>
     where
         Key: TableObject,
         Value: TableObject,
     {
-        IntoIter::new(self.clone(), MDBX_NEXT, MDBX_NEXT)
+        IntoIter::new(self, MDBX_NEXT, MDBX_NEXT)
     }
 
     /// Retrieves a key/data pair from the cursor. Depending on the cursor op,
@@ -101,7 +100,7 @@ where
                 assert_ne!(data_ptr, data_val.iov_base);
                 let key_out = {
                     // MDBX wrote in new key
-                    if key_ptr == key_val.iov_base {
+                    if ptr::eq(key_ptr, key_val.iov_base) {
                         None
                     } else {
                         Some(Key::decode_val::<K>(txn, key_val)?)
@@ -212,7 +211,7 @@ where
     }
 
     /// Position at next data item
-    #[allow(clippy::should_implement_trait)]
+    #[expect(clippy::should_implement_trait)]
     pub fn next<Key, Value>(&mut self) -> Result<Option<(Key, Value)>>
     where
         Key: TableObject,
@@ -372,7 +371,7 @@ where
     {
         let res: Result<Option<((), ())>> = self.set_range(key);
         if let Err(error) = res {
-            return Iter::Err(Some(error))
+            return Iter::Err(Some(error));
         };
         Iter::new(self, ffi::MDBX_GET_CURRENT, ffi::MDBX_NEXT)
     }
@@ -407,7 +406,7 @@ where
     {
         let res: Result<Option<((), ())>> = self.set_range(key);
         if let Err(error) = res {
-            return IterDup::Err(Some(error))
+            return IterDup::Err(Some(error));
         };
         IterDup::new(self, ffi::MDBX_GET_CURRENT)
     }
@@ -423,11 +422,20 @@ where
             Ok(Some(_)) => (),
             Ok(None) => {
                 let _: Result<Option<((), ())>> = self.last();
-                return Iter::new(self, ffi::MDBX_NEXT, ffi::MDBX_NEXT)
+                return Iter::new(self, ffi::MDBX_NEXT, ffi::MDBX_NEXT);
             }
             Err(error) => return Iter::Err(Some(error)),
         };
         Iter::new(self, ffi::MDBX_GET_CURRENT, ffi::MDBX_NEXT_DUP)
+    }
+
+    /// get the number of dupsort values associated with the current key
+    pub fn get_dup_count(&self) -> Result<u32> {
+        let mut count: usize = 0;
+        unsafe {
+            let _v = mdbx_result(ffi::mdbx_cursor_count(self.cursor, &mut count))?;
+        }
+        Ok(count as u32)
     }
 }
 
@@ -508,7 +516,7 @@ unsafe impl<K> Sync for Cursor<K> where K: TransactionKind {}
 
 /// An iterator over the key/value pairs in an MDBX database.
 #[derive(Debug)]
-pub enum IntoIter<'cur, K, Key, Value>
+pub enum IntoIter<K, Key, Value>
 where
     K: TransactionKind,
     Key: TableObject,
@@ -535,11 +543,11 @@ where
         /// The next and subsequent operations to perform.
         next_op: ffi::MDBX_cursor_op,
 
-        _marker: PhantomData<(&'cur (), Key, Value)>,
+        _marker: PhantomData<(Key, Value)>,
     },
 }
 
-impl<K, Key, Value> IntoIter<'_, K, Key, Value>
+impl<K, Key, Value> IntoIter<K, Key, Value>
 where
     K: TransactionKind,
     Key: TableObject,
@@ -547,11 +555,11 @@ where
 {
     /// Creates a new iterator backed by the given cursor.
     fn new(cursor: Cursor<K>, op: ffi::MDBX_cursor_op, next_op: ffi::MDBX_cursor_op) -> Self {
-        IntoIter::Ok { cursor, op, next_op, _marker: Default::default() }
+        Self::Ok { cursor, op, next_op, _marker: Default::default() }
     }
 }
 
-impl<K, Key, Value> Iterator for IntoIter<'_, K, Key, Value>
+impl<K, Key, Value> Iterator for IntoIter<K, Key, Value>
 where
     K: TransactionKind,
     Key: TableObject,
@@ -747,13 +755,13 @@ where
     }
 }
 
-impl<'cur, K, Key, Value> Iterator for IterDup<'cur, K, Key, Value>
+impl<K, Key, Value> Iterator for IterDup<'_, K, Key, Value>
 where
     K: TransactionKind,
     Key: TableObject,
     Value: TableObject,
 {
-    type Item = IntoIter<'cur, K, Key, Value>;
+    type Item = IntoIter<K, Key, Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {

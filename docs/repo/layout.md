@@ -82,15 +82,13 @@ The networking component mainly lives in [`net/network`](../../crates/net/networ
 Different consensus mechanisms.
 
 - [`consensus/common`](../../crates/consensus/common): Common consensus functions and traits (e.g. fee calculation)
-- [`consensus/auto-seal`](../../crates/consensus/auto-seal): A consensus mechanism that auto-seals blocks for local development (also commonly known as "auto-mine")
-- [`consensus/beacon`](../../crates/consensus/beacon): Consensus mechanism that handles messages from a beacon node ("eth2")
 
 ### Execution
 
 Crates related to transaction execution.
 
 - [`revm`](../../crates/revm): Revm utils and implementations specific to reth.
-- [`evm`](../../crates/evm): Traits for configuring an EVM specifics.
+- [`evm`](../../crates/evm/evm): Traits for configuring an EVM specifics.
 - [`execution-types`](../../crates/evm/execution-types): Commonly used types for (EVM) block execution.
 - [`execution-errors`](../../crates/evm/execution-errors): Commonly used error types used when doing block execution.
 
@@ -98,7 +96,6 @@ Crates related to transaction execution.
 
 These crates implement the main syncing drivers of reth.
 
-- [`blockchain-tree`](../../crates/blockchain-tree): A tree-like structure for handling multiple chains of unfinalized blocks. This is the main component during live sync (i.e. syncing at the tip)
 - [`stages`](../../crates/stages): A pipelined sync, including implementation of various stages. This is used during initial sync and is faster than the tree-like structure for longer sync ranges.
 
 ### RPC
@@ -133,7 +130,7 @@ The IPC transport lives in [`rpc/ipc`](../../crates/rpc/ipc).
   - Supported transports: HTTP, WS, IPC
   - Supported namespaces: `eth_`, `engine_`, `debug_`
 - [`rpc/rpc-eth-api`](../../crates/rpc/rpc-eth-api/): Reth RPC 'eth' namespace API (including interface and implementation), this crate is re-exported by `rpc/rpc-api`
-- [`rpc/rpc-eth-types`](../../crates/rpc/rpc-eth-types/): Types `supporting implementation` of 'eth' namespace RPC server API
+- [`rpc/rpc-eth-types`](../../crates/rpc/rpc-eth-types/): Types `supporting the implementation` of 'eth' namespace RPC server API
 - [`rpc/rpc-server-types`](../../crates/rpc/rpc-server-types/): RPC server types and constants
 
 #### Utilities Crates
@@ -160,7 +157,7 @@ These crates define primitive types or algorithms.
 
 ### Optimism
 
-Crates related to the Optimism rollup are lives in [optimism](../../crates/optimism/).
+Crates related to the Optimism rollup live in [optimism](../../crates/optimism/).
 
 ### Misc
 
@@ -168,7 +165,9 @@ Small utility crates.
 
 - [`tasks`](../../crates/tasks): An executor-agnostic task abstraction, used to spawn tasks on different async executors. Supports blocking tasks and handles panics gracefully. A tokio implementation is provided by default.
 - [`metrics/common`](../../crates/metrics/src/common): Common metrics types (e.g. metered channels)
+- [`metrics`](https://github.com/metrics-rs/metrics): Reth use [metrics][metrics] for metrics collection, which is a lightweight metrics facade
 - [`metrics/metrics-derive`](https://github.com/rkrasiuk/metrics-derive): A derive-style API for creating metrics
+- [`metrics/reth-node-metrics`](../../crates/node/metrics/): The implementation of metrics server, recorder, hooks.
 - [`tracing`](../../crates/tracing): A small utility crate to install a uniform [`tracing`][tracing] subscriber
 
 [libmdbx-rs]: https://crates.io/crates/libmdbx
@@ -177,3 +176,4 @@ Small utility crates.
 [tracing]: https://crates.io/crates/tracing
 [eip-1459]: https://eips.ethereum.org/EIPS/eip-1459
 [engine-spec]: https://github.com/ethereum/execution-apis/tree/main/src/engine
+[metrics]: https://github.com/metrics-rs/metrics

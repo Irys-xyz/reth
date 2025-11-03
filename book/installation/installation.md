@@ -21,8 +21,8 @@ The most important requirement is by far the disk, whereas CPU and RAM requireme
 
 |           | Archive Node                          | Full Node                             |
 |-----------|---------------------------------------|---------------------------------------|
-| Disk      | At least 2.2TB (TLC NVMe recommended) | At least 1.2TB (TLC NVMe recommended) |
-| Memory    | 8GB+                                  | 8GB+                                  |
+| Disk      | At least 2.8TB (TLC NVMe recommended) | At least 1.8TB (TLC NVMe recommended) |
+| Memory    | 16GB+                                 | 8GB+                                  |
 | CPU       | Higher clock speed over core count    | Higher clock speeds over core count   |
 | Bandwidth | Stable 24Mbps+                        | Stable 24Mbps+                        |
 
@@ -39,18 +39,18 @@ Prior to purchasing an NVMe drive, it is advisable to research and determine whe
 ### Disk
 
 There are multiple types of disks to sync Reth, with varying size requirements, depending on the syncing mode.
-As of April 2024 at block number 19.6M:
+As of April 2025 at block number 22.1M:
 
-* Archive Node: At least 2.14TB is required
-* Full Node: At least 1.13TB is required
+* Archive Node: At least 2.8TB is required
+* Full Node: At least 1.8TB is required
 
-NVMe drives are recommended for the best performance, with SSDs being a cheaper alternative. HDDs are the cheapest option, but they will take the longest to sync, and are not recommended.
+NVMe based SSD drives are recommended for the best performance, with SATA SSDs being a cheaper alternative. HDDs are the cheapest option, but they will take the longest to sync, and are not recommended.
 
 As of February 2024, syncing an Ethereum mainnet node to block 19.3M on NVMe drives takes about 50 hours, while on a GCP "Persistent SSD" it takes around 5 days.
 
 > **Note**
 >
-> It is highly recommended to choose a TLC drive when using NVMe, and not a QLC drive. See [the note](#qlc-and-tlc) above. A list of recommended drives can be found [here]( https://gist.github.com/yorickdowne/f3a3e79a573bf35767cd002cc977b038).
+> It is highly recommended to choose a TLC drive when using an NVMe drive, and not a QLC drive. See [the note](#qlc-and-tlc) above. A list of recommended drives can be found [here]( https://gist.github.com/yorickdowne/f3a3e79a573bf35767cd002cc977b038).
 
 ### CPU
 

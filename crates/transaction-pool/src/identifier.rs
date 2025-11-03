@@ -19,7 +19,6 @@ pub struct SenderIdentifiers {
 
 impl SenderIdentifiers {
     /// Returns the address for the given identifier.
-    #[allow(dead_code)]
     pub fn address(&self, id: &SenderId) -> Option<&Address> {
         self.sender_to_address.get(id)
     }
@@ -37,6 +36,14 @@ impl SenderIdentifiers {
             self.sender_to_address.insert(id, addr);
             id
         })
+    }
+
+    /// Returns the existing [`SenderId`] or assigns a new one if it's missing
+    pub fn sender_ids_or_create(
+        &mut self,
+        addrs: impl IntoIterator<Item = Address>,
+    ) -> Vec<SenderId> {
+        addrs.into_iter().filter_map(|addr| self.sender_id(&addr)).collect()
     }
 
     /// Returns the current identifier and increments the counter.
@@ -58,6 +65,11 @@ impl SenderId {
     /// Returns a `Bound` for [`TransactionId`] starting with nonce `0`
     pub const fn start_bound(self) -> std::ops::Bound<TransactionId> {
         std::ops::Bound::Included(TransactionId::new(self, 0))
+    }
+
+    /// Converts the sender to a [`TransactionId`] with the given nonce.
+    pub const fn into_transaction_id(self, nonce: u64) -> TransactionId {
+        TransactionId::new(self, nonce)
     }
 }
 

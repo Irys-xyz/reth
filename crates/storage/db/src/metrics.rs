@@ -1,7 +1,7 @@
 use crate::Tables;
-use metrics::{Gauge, Histogram};
+use metrics::Histogram;
 use reth_metrics::{metrics::Counter, Metrics};
-use rustc_hash::FxHashMap;
+pub use rustc_hash::FxHashMap;
 use std::time::{Duration, Instant};
 use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
@@ -13,15 +13,15 @@ const LARGE_VALUE_THRESHOLD_BYTES: usize = 4096;
 /// Requires a metric recorder to be registered before creating an instance of this struct.
 /// Otherwise, metric recording will no-op.
 #[derive(Debug)]
-pub(crate) struct DatabaseEnvMetrics {
+pub struct DatabaseEnvMetrics {
     /// Caches `OperationMetrics` handles for each table and operation tuple.
-    operations: FxHashMap<(&'static str, Operation), OperationMetrics>,
+    pub operations: FxHashMap<(&'static str, Operation), OperationMetrics>,
     /// Caches `TransactionMetrics` handles for counters grouped by only transaction mode.
     /// Updated both at tx open and close.
-    transactions: FxHashMap<TransactionMode, TransactionMetrics>,
+    pub transactions: FxHashMap<TransactionMode, TransactionMetrics>,
     /// Caches `TransactionOutcomeMetrics` handles for counters grouped by transaction mode and
     /// outcome. Can only be updated at tx close, as outcome is only known at that point.
-    transaction_outcomes:
+    pub transaction_outcomes:
         FxHashMap<(TransactionMode, TransactionOutcome), TransactionOutcomeMetrics>,
 }
 
@@ -59,7 +59,7 @@ impl DatabaseEnvMetrics {
 
     /// Generate a map of all possible transaction modes to metric handles.
     /// Used for tracking a counter of open transactions.
-    fn generate_transaction_handles() -> FxHashMap<TransactionMode, TransactionMetrics> {
+    pub fn generate_transaction_handles() -> FxHashMap<TransactionMode, TransactionMetrics> {
         TransactionMode::iter()
             .map(|mode| {
                 (
@@ -75,7 +75,7 @@ impl DatabaseEnvMetrics {
 
     /// Generate a map of all possible transaction mode and outcome handles.
     /// Used for tracking various stats for finished transactions (e.g. commit duration).
-    fn generate_transaction_outcome_handles(
+    pub fn generate_transaction_outcome_handles(
     ) -> FxHashMap<(TransactionMode, TransactionOutcome), TransactionOutcomeMetrics> {
         let mut transaction_outcomes = FxHashMap::with_capacity_and_hasher(
             TransactionMode::COUNT * TransactionOutcome::COUNT,
@@ -104,10 +104,11 @@ impl DatabaseEnvMetrics {
         value_size: Option<usize>,
         f: impl FnOnce() -> R,
     ) -> R {
-        self.operations
-            .get(&(table, operation))
-            .expect("operation & table metric handle not found")
-            .record(value_size, f)
+        if let Some(metrics) = self.operations.get(&(table, operation)) {
+            metrics.record(value_size, f)
+        } else {
+            f()
+        }
     }
 
     /// Record metrics for opening a database transaction.
@@ -142,7 +143,7 @@ impl DatabaseEnvMetrics {
 
 /// Transaction mode for the database, either read-only or read-write.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumCount, EnumIter)]
-pub(crate) enum TransactionMode {
+pub enum TransactionMode {
     /// Read-only transaction mode.
     ReadOnly,
     /// Read-write transaction mode.
@@ -166,7 +167,7 @@ impl TransactionMode {
 
 /// Transaction outcome after a database operation - commit, abort, or drop.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumCount, EnumIter)]
-pub(crate) enum TransactionOutcome {
+pub enum TransactionOutcome {
     /// Successful commit of the transaction.
     Commit,
     /// Aborted transaction.
@@ -193,7 +194,7 @@ impl TransactionOutcome {
 
 /// Types of operations conducted on the database: get, put, delete, and various cursor operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, EnumCount, EnumIter)]
-pub(crate) enum Operation {
+pub enum Operation {
     /// Database get operation.
     Get,
     /// Database put operation.
@@ -216,7 +217,7 @@ pub(crate) enum Operation {
 
 impl Operation {
     /// Returns the operation as a string.
-    pub(crate) const fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Get => "get",
             Self::Put => "put",
@@ -232,7 +233,7 @@ impl Operation {
 }
 
 /// Enum defining labels for various aspects used in metrics.
-enum Labels {
+pub enum Labels {
     /// Label representing a table.
     Table,
     /// Label representing a transaction mode.
@@ -245,7 +246,7 @@ enum Labels {
 
 impl Labels {
     /// Converts each label variant into its corresponding string representation.
-    pub(crate) const fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Table => "table",
             Self::TransactionMode => "mode",
@@ -257,24 +258,27 @@ impl Labels {
 
 #[derive(Metrics, Clone)]
 #[metrics(scope = "database.transaction")]
-pub(crate) struct TransactionMetrics {
-    /// Total number of currently open database transactions
-    open_total: Gauge,
+pub struct TransactionMetrics {
+    /// Total number of opened database transactions (cumulative)
+    opened_total: Counter,
+    /// Total number of closed database transactions (cumulative)
+    closed_total: Counter,
 }
 
 impl TransactionMetrics {
     pub(crate) fn record_open(&self) {
-        self.open_total.increment(1.0);
+        self.opened_total.increment(1);
     }
 
     pub(crate) fn record_close(&self) {
-        self.open_total.decrement(1.0);
+        self.closed_total.increment(1);
     }
 }
 
 #[derive(Metrics, Clone)]
 #[metrics(scope = "database.transaction")]
-pub(crate) struct TransactionOutcomeMetrics {
+/// Metrics for transaction outcomes
+pub struct TransactionOutcomeMetrics {
     /// The time a database transaction has been open
     open_duration_seconds: Histogram,
     /// The time it took to close a database transaction
@@ -329,7 +333,7 @@ impl TransactionOutcomeMetrics {
 
 #[derive(Metrics, Clone)]
 #[metrics(scope = "database.operation")]
-pub(crate) struct OperationMetrics {
+pub struct OperationMetrics {
     /// Total number of database operations made
     calls_total: Counter,
     /// The time it took to execute a database operation (`put/upsert/insert/append/append_dup`)
@@ -347,7 +351,7 @@ impl OperationMetrics {
 
         // Record duration only for large values to prevent the performance hit of clock syscall
         // on small operations
-        if value_size.map_or(false, |size| size > LARGE_VALUE_THRESHOLD_BYTES) {
+        if value_size.is_some_and(|size| size > LARGE_VALUE_THRESHOLD_BYTES) {
             let start = Instant::now();
             let result = f();
             self.large_value_duration_seconds.record(start.elapsed());
