@@ -209,7 +209,7 @@ pub fn get_bit_size(ftype: &str) -> u8 {
         "U256" => 6,
 
         // IRYS MODIFICATIONS
-        "u32" => 3,
+        "u32" | "i32" => 3,
         "u8" => 1,
 
         _ => 0,
